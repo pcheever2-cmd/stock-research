@@ -229,15 +229,16 @@ def export_dashboard_parquet():
 
     conn = sqlite3.connect(DATABASE_NAME)
     query = """
-        SELECT symbol, current_price, avg_price_target,
+        SELECT symbol, company_name, current_price, avg_price_target,
                min_price_target, max_price_target,
                upside_percent, num_analysts, recommendation,
-               cap_category, industry, recent_ratings, last_updated,
+               cap_category, sector, industry, recent_ratings, last_updated,
                long_term_score, value_score,
                trend_score, fundamentals_score, valuation_score,
                momentum_score, market_risk_score,
-               projected_revenue_growth,
-               projected_eps_growth
+               projected_revenue_growth, projected_eps_growth,
+               ev_ebitda, debt_ebitda, ocf_ev,
+               trend_signal, trend_signal_count
         FROM stock_consensus
         WHERE num_analysts >= 1
         ORDER BY upside_percent DESC

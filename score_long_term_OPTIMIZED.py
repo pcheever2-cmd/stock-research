@@ -274,8 +274,52 @@ def calculate_scores(row: pd.Series, indicators: Dict, market_bullish: bool) -> 
     if proj_ebitda_growth and proj_ebitda_growth > 15:
         value_score += 10
     
-    return (lt_score, value_score, trend_score, fundamentals_score, 
-            valuation_score, momentum_score, market_risk_score)
+    raw_indicators = {
+        'close': close, 'sma50': sma50, 'sma200': sma200,
+        'rsi': rsi, 'adx': adx,
+    }
+
+    return (lt_score, value_score, trend_score, fundamentals_score,
+            valuation_score, momentum_score, market_risk_score), raw_indicators
+
+# ==================== TREND SIGNAL DETECTION ====================
+def detect_trend_signals(current: dict, previous: dict) -> Tuple[Optional[str], int]:
+    """
+    Compare current vs previous indicator values to detect trend transitions.
+    Returns (comma-separated signal string, count of active signals).
+    """
+    signals = []
+
+    curr_sma50 = current.get('sma50')
+    curr_sma200 = current.get('sma200')
+    prev_sma50 = previous.get('sma50')
+    prev_sma200 = previous.get('sma200')
+    curr_close = current.get('close')
+    prev_close = previous.get('close_price_technical')
+    curr_rsi = current.get('rsi')
+    prev_rsi = previous.get('rsi')
+
+    # 1. Golden Cross: SMA50 crosses above SMA200
+    if (curr_sma50 and curr_sma200 and prev_sma50 and prev_sma200 and
+            curr_sma50 > curr_sma200 and prev_sma50 <= prev_sma200):
+        signals.append("Golden Cross")
+
+    # 2. Price breaks above SMA50
+    if (curr_close and curr_sma50 and prev_close and prev_sma50 and
+            curr_close > curr_sma50 and prev_close <= prev_sma50):
+        signals.append("Price > SMA50")
+
+    # 3. RSI recovery from oversold
+    if (curr_rsi and prev_rsi and prev_rsi < 30 and curr_rsi >= 40):
+        signals.append("RSI Recovery")
+
+    # 4. Bullish alignment (current-state flag, not crossover)
+    if (curr_close and curr_sma50 and curr_sma200 and
+            curr_close > curr_sma50 > curr_sma200):
+        signals.append("Bullish Aligned")
+
+    signal_str = ", ".join(signals) if signals else None
+    return signal_str, len(signals)
 
 # ==================== MAIN PROCESSING ====================
 async def score_stock(row: pd.Series, fetcher: AsyncIndicatorFetcher, market_bullish: bool) -> Optional[Dict]:
@@ -286,18 +330,28 @@ async def score_stock(row: pd.Series, fetcher: AsyncIndicatorFetcher, market_bul
         # Fetch all indicators in parallel
         indicators = await fetcher.fetch_all_indicators(ticker)
         
-        # Calculate scores
-        scores = calculate_scores(row, indicators, market_bullish)
-        
+        # Calculate scores + raw indicators
+        scores, raw = calculate_scores(row, indicators, market_bullish)
+
         if scores[0] == 0:  # No valid data
             log.debug(f"  {ticker}: No technical data")
             return None
-        
+
         lt_score, value_score, trend, fundamentals, valuation, momentum, market_risk = scores
-        
+
+        # Detect trend signals by comparing current indicators to previous (stored in DB)
+        previous = {
+            'sma50': row.get('sma50'),
+            'sma200': row.get('sma200'),
+            'close_price_technical': row.get('close_price_technical'),
+            'rsi': row.get('rsi'),
+        }
+        trend_signal, trend_signal_count = detect_trend_signals(raw, previous)
+
+        signal_info = f" | Signals: {trend_signal}" if trend_signal else ""
         log.info(f"{ticker:<6} | LT {lt_score:>3}/100 | Value {value_score:>3}/100 | "
-                f"Trend {trend:>2}/25 | Fund {fundamentals:>2}/25 | Val {valuation:>2}/16")
-        
+                f"Trend {trend:>2}/25 | Fund {fundamentals:>2}/25 | Val {valuation:>2}/16{signal_info}")
+
         return {
             'symbol': ticker,
             'long_term_score': lt_score,
@@ -309,6 +363,20 @@ async def score_stock(row: pd.Series, fetcher: AsyncIndicatorFetcher, market_bul
             'market_risk_score': market_risk,
             'market_bullish': 1 if market_bullish else 0,
             'scored_at': datetime.utcnow().isoformat(),
+            # Raw indicators (current values)
+            'sma50': raw.get('sma50'),
+            'sma200': raw.get('sma200'),
+            'rsi': raw.get('rsi'),
+            'adx': raw.get('adx'),
+            'close_price_technical': raw.get('close'),
+            # Previous values (rotate old current -> prev)
+            'prev_sma50': row.get('sma50'),
+            'prev_sma200': row.get('sma200'),
+            'prev_rsi': row.get('rsi'),
+            'prev_close_technical': row.get('close_price_technical'),
+            # Trend signals
+            'trend_signal': trend_signal,
+            'trend_signal_count': trend_signal_count,
         }
         
     except Exception as e:
@@ -325,15 +393,21 @@ def save_scores_batch(results: list):
     
     for row in results:
         cur.execute("""
-            UPDATE stock_consensus 
-            SET long_term_score = ?, value_score = ?, trend_score = ?, 
-                fundamentals_score = ?, valuation_score = ?, momentum_score = ?, 
-                market_risk_score = ?, market_bullish = ?, scored_at = ?
+            UPDATE stock_consensus
+            SET long_term_score = ?, value_score = ?, trend_score = ?,
+                fundamentals_score = ?, valuation_score = ?, momentum_score = ?,
+                market_risk_score = ?, market_bullish = ?, scored_at = ?,
+                sma50 = ?, sma200 = ?, rsi = ?, adx = ?, close_price_technical = ?,
+                prev_sma50 = ?, prev_sma200 = ?, prev_rsi = ?, prev_close_technical = ?,
+                trend_signal = ?, trend_signal_count = ?
             WHERE symbol = ?
         """, (
             row['long_term_score'], row['value_score'], row['trend_score'],
             row['fundamentals_score'], row['valuation_score'], row['momentum_score'],
             row['market_risk_score'], row['market_bullish'], row['scored_at'],
+            row['sma50'], row['sma200'], row['rsi'], row['adx'], row['close_price_technical'],
+            row['prev_sma50'], row['prev_sma200'], row['prev_rsi'], row['prev_close_technical'],
+            row['trend_signal'], row['trend_signal_count'],
             row['symbol']
         ))
     

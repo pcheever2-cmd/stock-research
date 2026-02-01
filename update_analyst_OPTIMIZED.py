@@ -342,7 +342,16 @@ async def process_ticker(ticker: str, fetcher: AsyncFMPFetcher) -> Optional[Dict
         metrics = metrics or {}
         ev_ebitda = safe_get(metrics, 'evToEBITDATTM')
         enterprise_value = safe_get(metrics, 'enterpriseValueTTM')
-        
+
+        # Debt/EBITDA from key-metrics-ttm (net debt / EBITDA)
+        debt_ebitda = safe_get(metrics, 'netDebtToEBITDATTM')
+        if debt_ebitda is not None and debt_ebitda < 0:
+            debt_ebitda = None  # Negative means net cash position, not useful as debt metric
+
+        # OCF/EV from key-metrics-ttm (inverse of EV/OCF)
+        ev_to_ocf = safe_get(metrics, 'evToOperatingCashFlowTTM')
+        ocf_ev = round(1.0 / ev_to_ocf, 4) if ev_to_ocf and ev_to_ocf > 0 else None
+
         # Ratios
         ratios_data = data.get('ratios')
         if isinstance(ratios_data, Exception):
@@ -354,9 +363,13 @@ async def process_ticker(ticker: str, fetcher: AsyncFMPFetcher) -> Optional[Dict
             ratios = ratios_data
         ratios = ratios or {}
         ebitda = safe_get(ratios, 'ebitdaTTM')
-        
-        # Industry from profile
-        industry = safe_get(profile, 'industry') or safe_get(profile, 'sector') or 'N/A'
+
+        # Company name from profile
+        company_name = safe_get(profile, 'companyName') or ticker
+
+        # Industry and sector from profile (keep separate)
+        industry = safe_get(profile, 'industry') or 'N/A'
+        sector = safe_get(profile, 'sector') or 'N/A'
         
         # Market cap category
         cap_category = (
@@ -382,10 +395,14 @@ async def process_ticker(ticker: str, fetcher: AsyncFMPFetcher) -> Optional[Dict
             'consensus_rating': recommendation,
             'cap_category': cap_category,
             'industry': industry,
+            'sector': sector,
+            'company_name': company_name,
             'recent_ratings': recent_ratings,
             'enterprise_value': enterprise_value,
             'ebitda': ebitda,
             'ev_ebitda': ev_ebitda,
+            'debt_ebitda': debt_ebitda,
+            'ocf_ev': ocf_ev,
             'projected_revenue_growth': rev_growth,
             'projected_eps_growth': eps_growth,
             'projected_ebitda_growth': ebitda_growth,

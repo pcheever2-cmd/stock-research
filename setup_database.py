@@ -125,7 +125,23 @@ def ensure_database():
         ("projected_eps_next_year", "REAL"),
         ("projected_eps_growth", "REAL"),
         ("peg_ratio", "REAL"),
-        ("forward_pe", "REAL")
+        ("forward_pe", "REAL"),
+        # Phase 1: New data fields
+        ("company_name", "TEXT"),
+        ("sector", "TEXT"),
+        ("ocf_ev", "REAL"),
+        # Phase 3: Raw technical indicators for trend detection
+        ("sma50", "REAL"),
+        ("sma200", "REAL"),
+        ("rsi", "REAL"),
+        ("adx", "REAL"),
+        ("close_price_technical", "REAL"),
+        ("prev_sma50", "REAL"),
+        ("prev_sma200", "REAL"),
+        ("prev_rsi", "REAL"),
+        ("prev_close_technical", "REAL"),
+        ("trend_signal", "TEXT"),
+        ("trend_signal_count", "INTEGER"),
     ]
 
     cur.execute("PRAGMA table_info(stock_consensus)")
@@ -151,6 +167,7 @@ def ensure_database():
     cur.execute("CREATE INDEX IF NOT EXISTS idx_consensus_debt_ebitda ON stock_consensus(debt_ebitda)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_consensus_peg ON stock_consensus(peg_ratio)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_consensus_forward_pe ON stock_consensus(forward_pe)")
+    cur.execute("CREATE INDEX IF NOT EXISTS idx_consensus_sector ON stock_consensus(sector)")
 
     # Metadata update
     cur.execute("""
