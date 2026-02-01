@@ -1,0 +1,31 @@
+# Database (stored as GitHub Release asset, not in repo)
+*.db
+
+# Logs
+*.log
+
+# Environment / secrets
+.env
+
+# Cache
+cache/
+
+# Archived legacy files
+archived files 1.4/
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Portfolio (personal data)
+Portfolio.csv
