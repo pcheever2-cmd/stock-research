@@ -132,9 +132,9 @@ with tab1:
 
     filtered = filtered[
         (filtered['num_analysts'] >= min_analysts) &
-        (filtered['upside_percent'] >= min_upside) &
-        (filtered['long_term_score'] >= min_lt) &
-        (filtered['value_score'] >= min_value) &
+        (filtered['upside_percent'].fillna(-999) >= min_upside) &
+        (filtered['long_term_score'].fillna(0) >= min_lt) &
+        (filtered['value_score'].fillna(0) >= min_value) &
         (filtered['projected_revenue_growth'].fillna(-999) >= min_rev_growth) &
         (filtered['projected_eps_growth'].fillna(-999) >= min_eps_growth)
     ].copy()
@@ -218,7 +218,7 @@ with tab1:
             'Momentum (/10)': '{:.0f}',
             'Mkt/Risk (/10)': '{:.0f}'
         }) \
-        .applymap(color_upside, subset=['Low ↑ %', 'Mean ↑ %', 'High ↑ %']) \
+        .map(color_upside, subset=['Low ↑ %', 'Mean ↑ %', 'High ↑ %']) \
         .background_gradient(subset=['Value Score'], cmap='Blues', vmin=0, vmax=100) \
         .background_gradient(subset=['LT Score'], cmap='Oranges', vmin=0, vmax=100) \
         .background_gradient(subset=['Rev Growth %'], cmap='YlGn', vmin=0, vmax=50) \
