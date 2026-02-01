@@ -106,6 +106,13 @@ with tab1:
         if df.empty:
             return None
 
+        # Ensure new columns exist (handles older parquet files missing them)
+        for col, default in [('company_name', None), ('sector', None), ('ev_ebitda', None),
+                              ('debt_ebitda', None), ('ocf_ev', None),
+                              ('trend_signal', None), ('trend_signal_count', 0)]:
+            if col not in df.columns:
+                df[col] = default
+
         # Calculate low/high upsides
         df['upside_low'] = ((df['min_price_target'] - df['current_price']) / df['current_price'] * 100).round(1)
         df['upside_high'] = ((df['max_price_target'] - df['current_price']) / df['current_price'] * 100).round(1)
