@@ -130,14 +130,17 @@ with tab1:
     if selected_rec != 'All':
         filtered = filtered[filtered['recommendation'] == selected_rec]
 
-    filtered = filtered[
+    mask = (
         (filtered['num_analysts'] >= min_analysts) &
         (filtered['upside_percent'].fillna(-999) >= min_upside) &
         (filtered['long_term_score'].fillna(0) >= min_lt) &
-        (filtered['value_score'].fillna(0) >= min_value) &
-        (filtered['projected_revenue_growth'].fillna(-999) >= min_rev_growth) &
-        (filtered['projected_eps_growth'].fillna(-999) >= min_eps_growth)
-    ].copy()
+        (filtered['value_score'].fillna(0) >= min_value)
+    )
+    if min_rev_growth > 0:
+        mask = mask & (filtered['projected_revenue_growth'].fillna(-999) >= min_rev_growth)
+    if min_eps_growth > 0:
+        mask = mask & (filtered['projected_eps_growth'].fillna(-999) >= min_eps_growth)
+    filtered = filtered[mask].copy()
 
     # ── Key Metrics ───────────────────────────────────────────────────────────
     col1, col2, col3, col4 = st.columns(4)
