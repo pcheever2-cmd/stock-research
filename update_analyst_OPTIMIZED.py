@@ -213,9 +213,10 @@ def calculate_growth_metrics(estimates_data: list) -> Tuple[Optional[float], Opt
     # Get analyst count from most recent year
     num_analysts = 0
     for year in estimates_data[:3]:
-        count = (safe_get(year, 'numberOfAnalysts', default=0) or 
-                safe_get(year, 'numAnalysts', default=0) or 
-                safe_get(year, 'numberOfAnalystsEps', default=0) or 0)
+        count = (safe_get(year, 'numAnalystsRevenue', default=0) or
+                safe_get(year, 'numAnalystsEps', default=0) or
+                safe_get(year, 'numberOfAnalysts', default=0) or
+                safe_get(year, 'numAnalysts', default=0) or 0)
         num_analysts = max(num_analysts, count)
     
     return rev_growth, eps_growth, ebitda_growth, max(num_analysts, 1)
