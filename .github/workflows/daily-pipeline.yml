@@ -34,6 +34,9 @@ jobs:
             exit 1
           }
 
+      - name: Ensure database schema is up to date
+        run: python setup_database.py
+
       - name: Run pipeline
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
@@ -44,8 +47,16 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload data nasdaq_stocks.db --clobber 2>/dev/null || \
-          gh release create data nasdaq_stocks.db --title "Pipeline Data" --notes "Auto-updated stock database"
+          echo "Uploading nasdaq_stocks.db to release 'data'..."
+          gh release upload data nasdaq_stocks.db --clobber || {
+            echo "Upload --clobber failed, deleting asset and retrying..."
+            gh release delete-asset data nasdaq_stocks.db --yes 2>/dev/null || true
+            gh release upload data nasdaq_stocks.db || {
+              echo "Upload still failed, recreating release..."
+              gh release delete data --yes 2>/dev/null || true
+              gh release create data nasdaq_stocks.db --title "Pipeline Data" --notes "Auto-updated stock database"
+            }
+          }
 
       - name: Commit updated parquet data
         run: |
