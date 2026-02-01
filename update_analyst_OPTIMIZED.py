@@ -364,8 +364,9 @@ async def process_ticker(ticker: str, fetcher: AsyncFMPFetcher) -> Optional[Dict
         ratios = ratios or {}
         ebitda = safe_get(ratios, 'ebitdaTTM')
 
-        # Company name from profile
+        # Company name and description from profile
         company_name = safe_get(profile, 'companyName') or ticker
+        company_description = safe_get(profile, 'description')
 
         # Industry and sector from profile (keep separate)
         industry = safe_get(profile, 'industry') or 'N/A'
@@ -397,6 +398,7 @@ async def process_ticker(ticker: str, fetcher: AsyncFMPFetcher) -> Optional[Dict
             'industry': industry,
             'sector': sector,
             'company_name': company_name,
+            'company_description': company_description,
             'recent_ratings': recent_ratings,
             'enterprise_value': enterprise_value,
             'ebitda': ebitda,

@@ -142,6 +142,8 @@ def ensure_database():
         ("prev_close_technical", "REAL"),
         ("trend_signal", "TEXT"),
         ("trend_signal_count", "INTEGER"),
+        # Company description from FMP profile
+        ("company_description", "TEXT"),
     ]
 
     cur.execute("PRAGMA table_info(stock_consensus)")

@@ -74,7 +74,8 @@ with tab1:
             try:
                 conn = sqlite3.connect(DATABASE_NAME)
                 query = """
-                    SELECT symbol, company_name, current_price, avg_price_target,
+                    SELECT symbol, company_name, company_description,
+                           current_price, avg_price_target,
                            min_price_target, max_price_target,
                            upside_percent, num_analysts, recommendation,
                            cap_category, sector, industry, recent_ratings, last_updated,
@@ -107,7 +108,8 @@ with tab1:
             return None
 
         # Ensure new columns exist (handles older parquet files missing them)
-        for col, default in [('company_name', None), ('sector', None), ('ev_ebitda', None),
+        for col, default in [('company_name', None), ('company_description', None),
+                              ('sector', None), ('ev_ebitda', None),
                               ('debt_ebitda', None), ('ocf_ev', None),
                               ('trend_signal', None), ('trend_signal_count', 0)]:
             if col not in df.columns:
@@ -380,6 +382,10 @@ with tab1:
                 f"{row['Mean Up %']:+.1f}%  |  {row['Analysts']:.0f} analysts  |  {row['Rating'] or 'N/A'}{trend_label}"
             ):
                 orig_row = filtered.loc[row.name]
+                desc = orig_row.get('company_description')
+                if pd.notna(desc) and desc:
+                    st.markdown(f"**About:** {desc[:500]}{'...' if len(str(desc)) > 500 else ''}")
+                    st.markdown("---")
                 if orig_row['recent_ratings'] and "No recent" not in str(orig_row['recent_ratings']):
                     st.markdown(orig_row['recent_ratings'].replace('\n', '  \n'))
                 else:

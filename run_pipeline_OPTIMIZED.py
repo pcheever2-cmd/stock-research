@@ -229,7 +229,8 @@ def export_dashboard_parquet():
 
     conn = sqlite3.connect(DATABASE_NAME)
     query = """
-        SELECT symbol, company_name, current_price, avg_price_target,
+        SELECT symbol, company_name, company_description,
+               current_price, avg_price_target,
                min_price_target, max_price_target,
                upside_percent, num_analysts, recommendation,
                cap_category, sector, industry, recent_ratings, last_updated,
