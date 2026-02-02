@@ -154,8 +154,10 @@ def color_grade_action(val):
 
 @st.cache_data(ttl=3600, show_spinner="Loading stock data...")
 def load_data():
-    """Load all stock_consensus data + compute conviction tiers"""
+    """Load all stock_consensus data + compute conviction tiers.
+    Returns (df, data_source_label) tuple."""
     df = None
+    source = "none"
 
     if Path(DATABASE_NAME).exists():
         try:
@@ -184,6 +186,7 @@ def load_data():
             """
             df = pd.read_sql_query(query, conn)
             conn.close()
+            source = "SQLite"
         except Exception as e:
             st.warning(f"SQLite not available ({e}), trying parquet...")
             df = None
@@ -192,12 +195,13 @@ def load_data():
         parquet = Path(PARQUET_PATH)
         if parquet.exists():
             df = pd.read_parquet(parquet)
+            source = "Parquet"
         else:
             st.error("No data source found. Run the pipeline first.")
-            return None
+            return None, "none"
 
     if df.empty:
-        return None
+        return None, source
 
     # Ensure columns exist (handles older parquet files)
     for col, default in [('company_name', None), ('company_description', None),
@@ -248,7 +252,7 @@ def load_data():
         'ev_ebitda': 1, 'debt_ebitda': 1, 'ocf_ev': 4,
         'peg_ratio': 1, 'forward_pe': 1, 'rsi': 1,
     })
-    return df
+    return df, source
 
 
 @st.cache_data(ttl=3600, show_spinner="Loading analyst estimates...")
@@ -354,10 +358,11 @@ def load_score_movers():
 # LOAD ALL DATA
 # ══════════════════════════════════════════════════════════════════════════════
 
-df = load_data()
-if df is None or df.empty:
+result = load_data()
+if result is None or result[0] is None or result[0].empty:
     st.warning("No data found. Run your update and scoring scripts first.")
     st.stop()
+df, _data_source = result
 
 # ── Live Price Overlay (runs before tabs so all tabs get updated prices) ─────
 market_open = is_market_open()
@@ -387,6 +392,9 @@ else:
 # ── Common Sidebar Filters ───────────────────────────────────────────────────
 st.sidebar.header("Filters")
 st.sidebar.caption("These filters apply to all tabs")
+
+_scored = df['value_score_v2'].notna().sum()
+st.sidebar.caption(f"Data: {_data_source} | {len(df):,} stocks | {_scored:,} scored")
 
 ticker_search = st.sidebar.text_input(
     "Quick Ticker Search",
