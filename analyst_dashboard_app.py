@@ -230,7 +230,7 @@ def load_data():
     df['max_price_target_display'] = df['max_price_target'].apply(lambda x: '-' if pd.isna(x) else f"${x:,.2f}")
     df['upside_low_display'] = df['upside_low'].apply(lambda x: '-' if pd.isna(x) else f"{x:+.1f}%")
     df['upside_high_display'] = df['upside_high'].apply(lambda x: '-' if pd.isna(x) else f"{x:+.1f}%")
-    df['last_updated'] = pd.to_datetime(df['last_updated']).dt.date
+    df['last_updated'] = pd.to_datetime(df['last_updated'], format='ISO8601', errors='coerce').dt.date
 
     # SMA status for Research tab
     df['sma_status'] = df.apply(
