@@ -179,7 +179,7 @@ async def check_market_regime(fetcher: AsyncIndicatorFetcher) -> bool:
     return is_bullish
 
 # ==================== SCORING LOGIC ====================
-def calculate_scores(row: pd.Series, indicators: Dict, market_bullish: bool) -> Tuple[int, int, int, int, int, int, int]:
+def calculate_scores(row: pd.Series, indicators: Dict, market_bullish: bool):
     """Calculate all scores for one stock"""
     
     # Extract indicator values
@@ -189,7 +189,7 @@ def calculate_scores(row: pd.Series, indicators: Dict, market_bullish: bool) -> 
     adx_data = indicators.get('adx')
     
     if not sma200_data:
-        return 0, 0, 0, 0, 0, 0, 0  # Can't score without price data
+        return (0, 0, 0, 0, 0, 0, 0, 0), {}  # Can't score without price data
     
     close = sma200_data.get('close', 0)
     sma200 = sma200_data.get('sma', 0)
@@ -235,11 +235,11 @@ def calculate_scores(row: pd.Series, indicators: Dict, market_bullish: bool) -> 
         elif ev_ebitda < 30:
             valuation_score += 3
     
-    # === MOMENTUM SCORE (max 10) ===
+    # === MOMENTUM SCORE (max 10) — V2 tweaks: RSI 40-55 (was 40-65), ADX > 20 (was > 25) ===
     momentum_score = 0
-    if rsi and 40 <= rsi <= 65:
+    if rsi and 40 <= rsi <= 55:
         momentum_score += 5
-    if adx and adx > 25:
+    if adx and adx > 20:
         momentum_score += 5
     
     # === MARKET RISK SCORE (max 10) ===
@@ -270,16 +270,53 @@ def calculate_scores(row: pd.Series, indicators: Dict, market_bullish: bool) -> 
     
     if proj_eps_growth and proj_eps_growth > 15:
         value_score += 15
-    
+
     if proj_ebitda_growth and proj_ebitda_growth > 15:
         value_score += 10
-    
+
+    # === VALUE SCORE V2 (continuous, max 100) ===
+    # Valuation component (max 40, min -10)
+    if ev_ebitda is not None:
+        if ev_ebitda < 0:
+            v2_val = -10
+        elif ev_ebitda < 8:
+            v2_val = 40
+        elif ev_ebitda < 12:
+            v2_val = 30
+        elif ev_ebitda < 16:
+            v2_val = 20
+        elif ev_ebitda < 22:
+            v2_val = 10
+        else:
+            v2_val = 0
+    else:
+        v2_val = 0
+
+    # Revenue Growth component (max 25)
+    rev = proj_rev_growth or 0
+    rev_capped = min(rev, 50)
+    v2_rev = max(0, min(rev_capped / 2, 25))
+    if rev > 60:
+        v2_rev *= 0.7
+
+    # EPS Growth component (max 20, min -5)
+    eps = proj_eps_growth or 0
+    v2_eps = max(-5, min(eps / 2, 20))
+
+    # Quality component (max 15)
+    ebitda_g = proj_ebitda_growth or 0
+    v2_quality = 10.0 if ebitda_g > 10 else 0.0
+    if ev_ebitda is not None and 0 < ev_ebitda <= 25:
+        v2_quality += 5.0
+
+    value_score_v2 = int(max(0, min(v2_val + v2_rev + v2_eps + v2_quality, 100)))
+
     raw_indicators = {
         'close': close, 'sma50': sma50, 'sma200': sma200,
         'rsi': rsi, 'adx': adx,
     }
 
-    return (lt_score, value_score, trend_score, fundamentals_score,
+    return (lt_score, value_score, value_score_v2, trend_score, fundamentals_score,
             valuation_score, momentum_score, market_risk_score), raw_indicators
 
 # ==================== TREND SIGNAL DETECTION ====================
@@ -337,7 +374,7 @@ async def score_stock(row: pd.Series, fetcher: AsyncIndicatorFetcher, market_bul
             log.debug(f"  {ticker}: No technical data")
             return None
 
-        lt_score, value_score, trend, fundamentals, valuation, momentum, market_risk = scores
+        lt_score, value_score, value_score_v2, trend, fundamentals, valuation, momentum, market_risk = scores
 
         # Detect trend signals by comparing current indicators to previous (stored in DB)
         previous = {
@@ -349,13 +386,14 @@ async def score_stock(row: pd.Series, fetcher: AsyncIndicatorFetcher, market_bul
         trend_signal, trend_signal_count = detect_trend_signals(raw, previous)
 
         signal_info = f" | Signals: {trend_signal}" if trend_signal else ""
-        log.info(f"{ticker:<6} | LT {lt_score:>3}/100 | Value {value_score:>3}/100 | "
+        log.info(f"{ticker:<6} | LT {lt_score:>3}/100 | V1 {value_score:>3} | V2 {value_score_v2:>3} | "
                 f"Trend {trend:>2}/25 | Fund {fundamentals:>2}/25 | Val {valuation:>2}/16{signal_info}")
 
         return {
             'symbol': ticker,
             'long_term_score': lt_score,
             'value_score': value_score,
+            'value_score_v2': value_score_v2,
             'trend_score': trend,
             'fundamentals_score': fundamentals,
             'valuation_score': valuation,
@@ -394,7 +432,8 @@ def save_scores_batch(results: list):
     for row in results:
         cur.execute("""
             UPDATE stock_consensus
-            SET long_term_score = ?, value_score = ?, trend_score = ?,
+            SET long_term_score = ?, value_score = ?, value_score_v2 = ?,
+                trend_score = ?,
                 fundamentals_score = ?, valuation_score = ?, momentum_score = ?,
                 market_risk_score = ?, market_bullish = ?, scored_at = ?,
                 sma50 = ?, sma200 = ?, rsi = ?, adx = ?, close_price_technical = ?,
@@ -402,7 +441,8 @@ def save_scores_batch(results: list):
                 trend_signal = ?, trend_signal_count = ?
             WHERE symbol = ?
         """, (
-            row['long_term_score'], row['value_score'], row['trend_score'],
+            row['long_term_score'], row['value_score'], row['value_score_v2'],
+            row['trend_score'],
             row['fundamentals_score'], row['valuation_score'], row['momentum_score'],
             row['market_risk_score'], row['market_bullish'], row['scored_at'],
             row['sma50'], row['sma200'], row['rsi'], row['adx'], row['close_price_technical'],
