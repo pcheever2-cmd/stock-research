@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 """
-COVERAGE EXPANSION - Discover and add more stocks to database
-Uses FMP screener to find stocks with analyst coverage that aren't in your DB yet
+COVERAGE EXPANSION - Discover and add stocks from all US exchanges
+Uses FMP stable API to find actively traded stocks on NYSE, NASDAQ, and AMEX.
 """
 
 import asyncio
 import aiohttp
 import sqlite3
 import logging
+from datetime import datetime, timedelta
 from typing import List, Set
-import pandas as pd
 
 from config import FMP_API_KEY, DATABASE_NAME
+
 BASE_URL = 'https://financialmodelingprep.com'
 
 logging.basicConfig(
@@ -23,235 +24,161 @@ log = logging.getLogger(__name__)
 # ==================== STOCK DISCOVERY ====================
 
 async def fetch_json(session: aiohttp.ClientSession, url: str, params: dict = None) -> list:
-    """Generic JSON fetcher"""
+    """Generic JSON fetcher with error handling"""
     if params is None:
         params = {}
     params['apikey'] = FMP_API_KEY
-    
+
     try:
         async with session.get(url, params=params) as response:
             if response.status == 200:
-                return await response.json()
-            elif response.status == 403:
-                # Get the response text to see the error message
-                error_text = await response.text()
-                log.warning(f"API error 403 for {url}: {error_text[:200]}")
-                return []
+                data = await response.json()
+                return data if isinstance(data, list) else []
             else:
-                log.warning(f"API error {response.status} for {url}")
+                text = await response.text()
+                log.warning(f"API {response.status} for {url}: {text[:200]}")
                 return []
     except Exception as e:
-        log.error(f"Fetch error: {e}")
+        log.error(f"Fetch error for {url}: {e}")
         return []
 
-async def discover_stocks_from_screener(session: aiohttp.ClientSession) -> Set[str]:
-    """Use FMP stock screener to find stocks with analyst coverage"""
-    log.info("Discovering stocks from screener...")
-    
+
+async def discover_from_screener(session: aiohttp.ClientSession) -> Set[str]:
+    """Use FMP stable company-screener to get all actively traded US stocks"""
+    log.info("Discovering stocks from company screener...")
+
     discovered = set()
-    
-    # Strategy 1: Get stocks with price targets
-    screener_url = f"{BASE_URL}/api/v3/stock-screener"
-    
-    # Multiple screener queries to maximize coverage
-    queries = [
-        # Large caps with coverage
-        {
-            'marketCapMoreThan': 10_000_000_000,
-            'limit': 1000
-        },
-        # Mid caps with coverage
-        {
-            'marketCapMoreThan': 2_000_000_000,
-            'marketCapLowerThan': 10_000_000_000,
-            'limit': 1000
-        },
-        # Small caps with good volume
-        {
-            'marketCapMoreThan': 300_000_000,
-            'marketCapLowerThan': 2_000_000_000,
-            'volumeMoreThan': 100_000,
-            'limit': 1000
-        },
-        # High growth stocks
-        {
-            'marketCapMoreThan': 100_000_000,
-            'limit': 500
-        }
-    ]
-    
-    for query in queries:
-        results = await fetch_json(session, screener_url, query)
-        symbols = [r['symbol'] for r in results if r.get('symbol') and r.get('exchangeShortName') in ['NASDAQ', 'NYSE', 'AMEX']]
+    screener_url = f"{BASE_URL}/stable/company-screener"
+
+    for exchange in ['NYSE', 'NASDAQ', 'AMEX']:
+        results = await fetch_json(session, screener_url, {
+            'exchange': exchange,
+            'isActivelyTrading': 'true',
+            'isEtf': 'false',
+            'isFund': 'false',
+            'limit': 10000,
+        })
+        symbols = [
+            r['symbol'] for r in results
+            if r.get('symbol')
+            and r.get('exchangeShortName') in ('NYSE', 'NASDAQ', 'AMEX')
+            and not r.get('symbol', '').endswith(('-UN', '-WT', '.WS'))
+        ]
         discovered.update(symbols)
-        log.info(f"  Found {len(symbols)} stocks (total unique: {len(discovered)})")
-        await asyncio.sleep(0.5)  # Rate limiting
-    
-    return discovered
-
-async def discover_from_indexes(session: aiohttp.ClientSession) -> Set[str]:
-    """Get stocks from major indexes"""
-    log.info("Discovering stocks from major indexes...")
-    
-    discovered = set()
-    
-    indexes = ['SPY', 'QQQ', 'DIA', 'IWM', 'MDY']  # S&P500, Nasdaq100, Dow30, Russell2000, MidCap
-    
-    for index in indexes:
-        # Try v4 endpoint first (newer)
-        url = f"{BASE_URL}/api/v4/etf-holder/{index}"
-        holdings = await fetch_json(session, url)
-        
-        # If v4 fails, try v3
-        if not holdings:
-            url = f"{BASE_URL}/api/v3/etf-holder/{index}"
-            holdings = await fetch_json(session, url)
-        
-        if holdings:
-            symbols = [h.get('asset') or h.get('symbol') for h in holdings]
-            symbols = [s for s in symbols if s]  # Filter out None values
-            discovered.update(symbols)
-            log.info(f"  {index}: {len(symbols)} holdings")
-        else:
-            log.warning(f"  {index}: No holdings data available")
-        
+        log.info(f"  {exchange}: {len(symbols)} stocks")
         await asyncio.sleep(0.3)
-    
+
     return discovered
 
-async def discover_from_analyst_upgrades(session: aiohttp.ClientSession) -> Set[str]:
-    """Get stocks from recent analyst upgrades/downgrades"""
-    log.info("Discovering stocks from recent analyst activity...")
-    
-    # Try v4 endpoint first
-    url = f"{BASE_URL}/api/v4/upgrades-downgrades"
-    params = {'limit': 500}
-    activity = await fetch_json(session, url, params)
-    
-    # If v4 fails, try v3
-    if not activity:
-        url = f"{BASE_URL}/api/v3/upgrades-downgrades"
-        activity = await fetch_json(session, url, params)
-    
-    if activity:
-        symbols = {a.get('symbol') for a in activity if a.get('symbol')}
-        log.info(f"  Found {len(symbols)} stocks with recent analyst activity")
-        return symbols
-    else:
-        log.warning("  Could not fetch analyst activity data")
-        return set()
 
 async def discover_from_earnings(session: aiohttp.ClientSession) -> Set[str]:
-    """Get stocks with upcoming earnings (= likely have coverage)"""
+    """Get stocks from upcoming earnings calendar (stable endpoint)"""
     log.info("Discovering stocks from earnings calendar...")
-    
+
     discovered = set()
-    
-    # Get earnings for next few days
-    for days_ahead in [0, 1, 2, 3, 7, 14]:
-        # Try v4 first
-        url = f"{BASE_URL}/api/v4/earnings-calendar"
-        params = {'from': days_ahead, 'to': days_ahead}
-        
-        earnings = await fetch_json(session, url, params)
-        
-        # If v4 fails, try v3
-        if not earnings:
-            url = f"{BASE_URL}/api/v3/earnings-calendar"
-            earnings = await fetch_json(session, url, params)
-        
-        if earnings:
-            symbols = {e.get('symbol') for e in earnings if e.get('symbol')}
-            discovered.update(symbols)
-        
+    today = datetime.now()
+
+    for days_ahead in [0, 7, 14, 30]:
+        from_date = (today + timedelta(days=max(0, days_ahead - 3))).strftime('%Y-%m-%d')
+        to_date = (today + timedelta(days=days_ahead)).strftime('%Y-%m-%d')
+        results = await fetch_json(session, f"{BASE_URL}/stable/earnings-calendar", {
+            'from': from_date,
+            'to': to_date,
+        })
+        symbols = {
+            r.get('symbol') for r in results
+            if r.get('symbol')
+            and '.' not in r.get('symbol', '')  # Exclude non-US (e.g. .L, .TO)
+            and '-' not in r.get('symbol', '')   # Exclude units/warrants
+        }
+        discovered.update(symbols)
         await asyncio.sleep(0.2)
-    
-    log.info(f"  Found {len(discovered)} stocks with upcoming earnings")
+
+    log.info(f"  Found {len(discovered)} US stocks with upcoming earnings")
     return discovered
+
 
 # ==================== DATABASE OPERATIONS ====================
 
 def get_existing_symbols() -> Set[str]:
     """Get symbols already in database"""
     conn = sqlite3.connect(DATABASE_NAME)
-    df = pd.read_sql_query("SELECT DISTINCT symbol FROM stock_consensus", conn)
+    rows = conn.execute("SELECT DISTINCT symbol FROM stock_consensus").fetchall()
     conn.close()
-    return set(df['symbol'].tolist())
+    return {r[0] for r in rows}
+
 
 def add_new_symbols(new_symbols: List[str]):
-    """Add new symbols to database (minimal row for update scripts to fill)"""
+    """Add new symbols to database (minimal placeholder rows)"""
     if not new_symbols:
         log.info("No new symbols to add")
-        return
-    
+        return 0
+
     conn = sqlite3.connect(DATABASE_NAME)
     cur = conn.cursor()
-    
-    # Insert minimal placeholder rows
-    for symbol in new_symbols:
+    added = 0
+
+    for symbol in sorted(new_symbols):
         try:
             cur.execute("""
                 INSERT OR IGNORE INTO stock_consensus (symbol, last_updated)
                 VALUES (?, NULL)
             """, (symbol,))
+            if cur.rowcount > 0:
+                added += 1
         except Exception as e:
             log.warning(f"Could not add {symbol}: {e}")
-    
+
     conn.commit()
     conn.close()
-    log.info(f"✓ Added {len(new_symbols)} new symbols to database")
+    log.info(f"Added {added} new symbols to database")
+    return added
+
 
 # ==================== MAIN ====================
 
 async def main():
-    log.info("="*60)
-    log.info("🔍 COVERAGE EXPANSION - Discovering New Stocks")
-    log.info("="*60)
-    
-    # Get current coverage
+    log.info("=" * 60)
+    log.info("COVERAGE EXPANSION - All US Exchanges (NYSE + NASDAQ + AMEX)")
+    log.info("=" * 60)
+
     existing = get_existing_symbols()
-    log.info(f"Current database has {len(existing)} stocks\n")
-    
-    # Discover new stocks
+    log.info(f"Current database: {len(existing)} stocks\n")
+
     all_discovered = set()
-    
+
     async with aiohttp.ClientSession() as session:
-        # Run all discovery methods
-        tasks = [
-            discover_stocks_from_screener(session),
-            discover_from_indexes(session),
-            discover_from_analyst_upgrades(session),
-            discover_from_earnings(session)
-        ]
-        
-        results = await asyncio.gather(*tasks)
-        
-        for discovered_set in results:
-            all_discovered.update(discovered_set)
-    
-    log.info(f"\n📊 Discovery Results:")
-    log.info(f"  Total discovered: {len(all_discovered)}")
-    log.info(f"  Already in database: {len(all_discovered & existing)}")
-    
-    # Find new symbols
+        results = await asyncio.gather(
+            discover_from_screener(session),
+            discover_from_earnings(session),
+        )
+        for s in results:
+            all_discovered.update(s)
+
     new_symbols = all_discovered - existing
+    overlap = all_discovered & existing
+
+    log.info(f"\nDiscovery Results:")
+    log.info(f"  Total discovered: {len(all_discovered)}")
+    log.info(f"  Already in database: {len(overlap)}")
     log.info(f"  NEW stocks to add: {len(new_symbols)}")
-    
+
     if new_symbols:
-        log.info(f"\nSample of new stocks: {list(new_symbols)[:20]}")
-        
-        # Add to database
+        log.info(f"\nSample of new stocks: {sorted(list(new_symbols))[:30]}")
         response = input(f"\nAdd {len(new_symbols)} new stocks to database? (y/n): ")
         if response.lower() == 'y':
-            add_new_symbols(list(new_symbols))
-            log.info("\n✅ Coverage expansion complete!")
-            log.info("Next: Run update_analyst_OPTIMIZED.py to fetch data for new stocks")
+            added = add_new_symbols(list(new_symbols))
+            log.info(f"\nCoverage expansion complete! Added {added} stocks.")
+            log.info("Next steps:")
+            log.info("  1. Run: python run_pipeline_OPTIMIZED.py  (fetch data + score)")
+            log.info("  2. Push updated parquet to deploy")
         else:
             log.info("Cancelled - no stocks added")
     else:
-        log.info("\n✅ No new stocks found - your coverage is already comprehensive!")
-    
-    log.info("\n" + "="*60)
+        log.info("\nNo new stocks found - coverage is already comprehensive!")
+
+    log.info("\n" + "=" * 60)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
