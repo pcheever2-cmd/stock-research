@@ -230,15 +230,21 @@ def export_dashboard_parquet():
     conn = sqlite3.connect(DATABASE_NAME)
     query = """
         SELECT symbol, company_name, company_description,
-               current_price, avg_price_target,
+               current_price, avg_price_target, median_price_target,
                min_price_target, max_price_target,
                upside_percent, num_analysts, recommendation,
-               cap_category, sector, industry, recent_ratings, last_updated,
-               long_term_score, value_score,
+               consensus_rating, recent_ratings,
+               cap_category, sector, industry, last_updated,
+               enterprise_value, ebitda, ev_ebitda,
+               total_debt, debt_ebitda, ocf_ev,
+               peg_ratio, forward_pe, forward_ev_ebitda, ev_ebitda_reduction,
+               projected_revenue_growth, projected_eps_growth,
+               projected_ebitda_growth, earnings_growth,
+               projected_revenue_next_year, projected_eps_next_year,
+               sma50, sma200, rsi, adx, close_price_technical,
+               long_term_score, value_score, value_score_v2,
                trend_score, fundamentals_score, valuation_score,
                momentum_score, market_risk_score,
-               projected_revenue_growth, projected_eps_growth,
-               ev_ebitda, debt_ebitda, ocf_ev,
                trend_signal, trend_signal_count
         FROM stock_consensus
         WHERE num_analysts >= 1
