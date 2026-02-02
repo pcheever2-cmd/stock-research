@@ -8,7 +8,13 @@ import requests
 from pathlib import Path
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
-from config import DATABASE_NAME, PARQUET_PATH, BACKTEST_DB
+try:
+    from config import DATABASE_NAME, PARQUET_PATH, BACKTEST_DB
+except Exception:
+    _root = Path(__file__).parent
+    DATABASE_NAME = str(_root / 'nasdaq_stocks.db')
+    PARQUET_PATH = str(_root / 'data' / 'dashboard_data.parquet')
+    BACKTEST_DB = str(_root / 'backtest.db')
 
 st.set_page_config(page_title="Stock Research Dashboard", layout="wide")
 

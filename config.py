@@ -7,10 +7,11 @@ Centralized configuration for Stock Research pipeline.
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-
-# Load .env if it exists (local development only; ignored in CI)
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed (e.g. Streamlit Cloud)
 
 PROJECT_ROOT = Path(__file__).parent
 
@@ -51,6 +52,9 @@ ANALYST_ENDPOINTS = {
     'price_target_summary': f'{FMP_BASE_URL}/stable/price-target-summary',
 }
 
-# Ensure directories exist
-CACHE_DIR.mkdir(exist_ok=True)
-PARQUET_DIR.mkdir(exist_ok=True)
+# Ensure directories exist (may fail on read-only filesystems like Streamlit Cloud)
+try:
+    CACHE_DIR.mkdir(exist_ok=True)
+    PARQUET_DIR.mkdir(exist_ok=True)
+except OSError:
+    pass
