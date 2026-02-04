@@ -28,11 +28,20 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release download data --pattern "nasdaq_stocks.db" --dir . 2>/dev/null || {
-            echo "No existing database found in releases."
-            echo "Please upload the initial database manually: gh release create data nasdaq_stocks.db"
-            exit 1
-          }
+          # Check if release exists first
+          if gh release view data > /dev/null 2>&1; then
+            gh release download data --pattern "nasdaq_stocks.db" --dir . 2>/dev/null || {
+              echo "Release 'data' exists but nasdaq_stocks.db not found."
+              echo "Will create fresh database."
+            }
+          else
+            echo "No 'data' release found. Will create fresh database."
+          fi
+          # If no database, create empty one (setup_database.py will initialize it)
+          if [ ! -f nasdaq_stocks.db ]; then
+            echo "Creating empty database file..."
+            touch nasdaq_stocks.db
+          fi
 
       - name: Ensure database schema is up to date
         run: python setup_database.py
@@ -48,15 +57,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Uploading nasdaq_stocks.db to release 'data'..."
-          gh release upload data nasdaq_stocks.db --clobber || {
-            echo "Upload --clobber failed, deleting asset and retrying..."
-            gh release delete-asset data nasdaq_stocks.db --yes 2>/dev/null || true
-            gh release upload data nasdaq_stocks.db || {
-              echo "Upload still failed, recreating release..."
-              gh release delete data --yes 2>/dev/null || true
-              gh release create data nasdaq_stocks.db --title "Pipeline Data" --notes "Auto-updated stock database"
+          # Check if release exists
+          if gh release view data > /dev/null 2>&1; then
+            echo "Release 'data' exists, uploading with --clobber..."
+            gh release upload data nasdaq_stocks.db --clobber || {
+              echo "Upload --clobber failed, deleting asset and retrying..."
+              gh release delete-asset data nasdaq_stocks.db --yes 2>/dev/null || true
+              gh release upload data nasdaq_stocks.db
             }
-          }
+          else
+            echo "Release 'data' does not exist, creating it..."
+            gh release create data nasdaq_stocks.db --title "Pipeline Data" --notes "Auto-updated stock database"
+          fi
 
       - name: Commit updated parquet data
         run: |
