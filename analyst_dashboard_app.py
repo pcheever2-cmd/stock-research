@@ -429,7 +429,7 @@ if selected_industry != 'All':
 # ══════════════════════════════════════════════════════════════════════════════
 # TABS
 # ══════════════════════════════════════════════════════════════════════════════
-tab1, tab2, tab3 = st.tabs(["Research", "Analysis", "Movers"])
+tab1, tab2, tab3, tab4 = st.tabs(["Research", "Analysis", "Movers", "Hybrid Portfolio"])
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1: RESEARCH
@@ -873,6 +873,11 @@ with tab3:
     st.title("Movers & Category Changes")
     st.markdown("**Stocks jumping categories and improving buying position in our algorithm**")
 
+    # Refresh button for movers data
+    if st.button("🔄 Refresh Movers Data", key="refresh_movers"):
+        load_score_movers.clear()
+        st.rerun()
+
     # ── Load movers data ─────────────────────────────────────────────────────
     score_movers, date_now, date_7d, date_30d = load_score_movers()
     grades_all = load_recent_grades(days=30)
@@ -1134,6 +1139,124 @@ with tab3:
                 st.info("No analyst grade activity matching your filters.")
         else:
             st.info("No analyst grade data available. Run `collect_analyst_data.py` first.")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 4: HYBRID PORTFOLIO
+# ══════════════════════════════════════════════════════════════════════════════
+with tab4:
+    st.title("Hybrid Portfolio Tracker")
+    st.markdown("**55% Mega-Cap Core | 25% Options Alpha | 20% Growth Picks**")
+
+    # Load hybrid portfolio data
+    HYBRID_DB = str(_root / 'mock_portfolio.db')
+
+    if Path(HYBRID_DB).exists():
+        h_conn = sqlite3.connect(HYBRID_DB)
+
+        # Check if tables exist
+        tables = h_conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='hybrid_positions'"
+        ).fetchall()
+
+        if tables:
+            positions = pd.read_sql_query('''
+                SELECT symbol, position_type, entry_date, cost_basis, current_price,
+                       current_value, pnl, pnl_pct, status, notes, updated_at
+                FROM hybrid_positions WHERE status = 'open'
+                ORDER BY position_type, symbol
+            ''', h_conn)
+
+            if not positions.empty:
+                # Summary metrics
+                total_cost = positions['cost_basis'].sum()
+                total_value = positions['current_value'].sum() if positions['current_value'].notna().any() else total_cost
+                total_pnl = total_value - total_cost
+                total_pnl_pct = (total_pnl / total_cost * 100) if total_cost else 0
+
+                # Show summary cards
+                col1, col2, col3, col4 = st.columns(4)
+                with col1:
+                    st.metric("Total Value", f"${total_value:,.0f}", f"{total_pnl_pct:+.1f}%")
+                with col2:
+                    mega_cost = positions[positions['position_type'] == 'mega_cap']['cost_basis'].sum()
+                    st.metric("Mega-Cap (55%)", f"${mega_cost:,.0f}")
+                with col3:
+                    opt_cost = positions[positions['position_type'] == 'options']['cost_basis'].sum()
+                    st.metric("Options (25%)", f"${opt_cost:,.0f}")
+                with col4:
+                    growth_cost = positions[positions['position_type'] == 'growth']['cost_basis'].sum()
+                    st.metric("Growth (20%)", f"${growth_cost:,.0f}")
+
+                st.markdown("---")
+
+                # Positions by type
+                for pos_type, emoji, title in [
+                    ('mega_cap', '📊', 'Mega-Cap Core'),
+                    ('options', '🎯', 'Options Alpha'),
+                    ('growth', '🌱', 'Growth Picks')
+                ]:
+                    type_pos = positions[positions['position_type'] == pos_type]
+                    if not type_pos.empty:
+                        st.subheader(f"{emoji} {title}")
+
+                        display_cols = ['symbol', 'cost_basis', 'current_price', 'pnl', 'pnl_pct', 'entry_date']
+                        display_df = type_pos[display_cols].copy()
+                        display_df.columns = ['Symbol', 'Cost', 'Price', 'P&L', 'P&L %', 'Entry']
+
+                        def color_pnl(val):
+                            if pd.isna(val):
+                                return ''
+                            return 'color: green' if val > 0 else 'color: red' if val < 0 else ''
+
+                        styled = display_df.style.map(color_pnl, subset=['P&L', 'P&L %'])
+                        styled = styled.format({
+                            'Cost': '${:,.0f}',
+                            'Price': lambda x: f'${x:.2f}' if pd.notna(x) else 'N/A',
+                            'P&L': lambda x: f'${x:+,.0f}' if pd.notna(x) else '-',
+                            'P&L %': lambda x: f'{x:+.1f}%' if pd.notna(x) else '-',
+                        })
+                        st.dataframe(styled, use_container_width=True, hide_index=True)
+
+                # Daily snapshot chart
+                snapshots = pd.read_sql_query('''
+                    SELECT date, total_value, cumulative_pnl FROM hybrid_daily_snapshot
+                    ORDER BY date
+                ''', h_conn)
+
+                if len(snapshots) > 1:
+                    st.subheader("Portfolio Value Over Time")
+                    st.line_chart(snapshots.set_index('date')['total_value'])
+
+                # Last update time
+                last_update = positions['updated_at'].max()
+                st.caption(f"Last updated: {last_update}")
+            else:
+                st.info("No positions in hybrid portfolio yet. Run `setup_hybrid_portfolio.py` to initialize.")
+        else:
+            st.warning("Hybrid portfolio tables not found. Run `setup_hybrid_portfolio.py` to create them.")
+
+        h_conn.close()
+    else:
+        st.warning("Hybrid portfolio database not found. Run `setup_hybrid_portfolio.py` to create it.")
+
+    # Instructions
+    with st.expander("How to use this portfolio"):
+        st.markdown("""
+        **Initial Setup:**
+        1. Run `python setup_hybrid_portfolio.py` to create the portfolio
+
+        **Daily Updates:**
+        2. Run `python update_hybrid_portfolio.py` to fetch prices and track P&L
+
+        **Portfolio Structure:**
+        - **Mega-Cap Core (55%)**: AAPL, MSFT, NVDA, GOOG, AMZN, META, TSLA, BRK-B, AVGO, LLY
+        - **Options Alpha (25%)**: OTM5 calls on Bucket 1/3 signals with earnings beat
+        - **Growth Picks (20%)**: Long-term holds from quality signals
+
+        **Based on backtest showing:**
+        - +370% cumulative return vs SPY +83% (2021-2025)
+        - 36.3% CAGR vs SPY 12.8%
+        """)
 
 # ── Footer ───────────────────────────────────────────────────────────────────
 st.markdown("---")
