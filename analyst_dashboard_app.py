@@ -16,6 +16,27 @@ except Exception:
     PARQUET_PATH = str(_root / 'data' / 'dashboard_data.parquet')
     BACKTEST_DB = str(_root / 'backtest.db')
 
+# Additional paths for cloud deployment
+_root = Path(__file__).parent
+MOVERS_PARQUET = str(_root / 'data' / 'movers_data.parquet')
+HYBRID_DB = str(_root / 'mock_portfolio.db')
+GITHUB_REPO = "pcheever2-cmd/stock-research"
+
+
+def download_db_from_release(db_name: str, dest_path: str) -> bool:
+    """Download database from GitHub release for Streamlit Cloud deployment."""
+    try:
+        # GitHub release asset URL
+        url = f"https://github.com/{GITHUB_REPO}/releases/download/data/{db_name}"
+        resp = requests.get(url, timeout=60)
+        if resp.status_code == 200:
+            with open(dest_path, 'wb') as f:
+                f.write(resp.content)
+            return True
+    except Exception:
+        pass
+    return False
+
 st.set_page_config(page_title="Stock Research Dashboard", layout="wide")
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -308,7 +329,52 @@ def load_recent_grades(days=60):
 
 @st.cache_data(ttl=3600, show_spinner="Computing score changes...")
 def load_score_movers():
-    """Load score comparison data from backtest_daily_scores"""
+    """Load score comparison data from movers parquet or backtest_daily_scores"""
+    # Try parquet first (for Streamlit Cloud deployment)
+    if Path(MOVERS_PARQUET).exists():
+        try:
+            all_scores = pd.read_parquet(MOVERS_PARQUET)
+            if not all_scores.empty and 'date' in all_scores.columns:
+                dates = sorted(all_scores['date'].unique(), reverse=True)
+                if len(dates) >= 1:
+                    date_now = dates[0]
+                    date_7d = dates[min(6, len(dates)-1)]
+                    date_30d = dates[min(21, len(dates)-1)]
+
+                    # Get data for each date
+                    a = all_scores[all_scores['date'] == date_now].copy()
+                    b = all_scores[all_scores['date'] == date_7d][['symbol', 'lt_score', 'value_score_v2',
+                        'trend_score', 'fundamentals_score', 'rsi', 'ev_ebitda']].copy()
+                    c = all_scores[all_scores['date'] == date_30d][['symbol', 'lt_score', 'value_score_v2']].copy()
+
+                    # Rename columns
+                    a = a.rename(columns={
+                        'lt_score': 'lt_now', 'value_score_v2': 'v2_now',
+                        'trend_score': 'trend_now', 'fundamentals_score': 'fund_now',
+                        'valuation_score': 'val_now', 'momentum_score': 'mom_now',
+                        'close': 'close_now', 'rsi': 'rsi_now', 'ev_ebitda': 'ev_ebitda_now'
+                    })
+                    b = b.rename(columns={
+                        'lt_score': 'lt_7d', 'value_score_v2': 'v2_7d',
+                        'trend_score': 'trend_7d', 'fundamentals_score': 'fund_7d',
+                        'rsi': 'rsi_7d', 'ev_ebitda': 'ev_ebitda_7d'
+                    })
+                    c = c.rename(columns={'lt_score': 'lt_30d', 'value_score_v2': 'v2_30d'})
+
+                    # Merge
+                    df = a.merge(b, on='symbol', how='left').merge(c, on='symbol', how='left')
+
+                    # Compute changes
+                    df['lt_change_7d'] = df['lt_now'] - df['lt_7d']
+                    df['v2_change_7d'] = df['v2_now'] - df['v2_7d']
+                    df['lt_change_30d'] = df['lt_now'] - df['lt_30d']
+                    df['v2_change_30d'] = df['v2_now'] - df['v2_30d']
+
+                    return df, date_now, date_7d, date_30d
+        except Exception:
+            pass  # Fall through to database
+
+    # Fall back to database (for local development)
     if not Path(BACKTEST_DB).exists():
         return pd.DataFrame(), None, None, None
     conn = sqlite3.connect(BACKTEST_DB)
@@ -1147,10 +1213,12 @@ with tab4:
     st.title("Hybrid Portfolio Tracker")
     st.markdown("**55% Mega-Cap Core | 25% Options Alpha | 20% Growth Picks**")
 
-    # Load hybrid portfolio data
-    HYBRID_DB = str(Path(__file__).parent / 'mock_portfolio.db')
+    # Try to download hybrid portfolio database from GitHub release if not present locally
+    if not Path(HYBRID_DB).exists():
+        with st.spinner("Downloading portfolio data from GitHub..."):
+            download_db_from_release("mock_portfolio.db", HYBRID_DB)
 
-    if Path(HYBRID_DB).exists():
+    if Path(HYBRID_DB).exists() and Path(HYBRID_DB).stat().st_size > 0:
         h_conn = sqlite3.connect(HYBRID_DB)
 
         # Check if tables exist

@@ -24,24 +24,26 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Download database from release
+      - name: Download databases from release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Check if release exists first
           if gh release view data > /dev/null 2>&1; then
-            gh release download data --pattern "nasdaq_stocks.db" --dir . 2>/dev/null || {
-              echo "Release 'data' exists but nasdaq_stocks.db not found."
-              echo "Will create fresh database."
-            }
+            echo "Downloading databases from 'data' release..."
+            gh release download data --pattern "nasdaq_stocks.db" --dir . 2>/dev/null || echo "nasdaq_stocks.db not found in release."
+            gh release download data --pattern "backtest.db" --dir . 2>/dev/null || echo "backtest.db not found in release."
+            gh release download data --pattern "mock_portfolio.db" --dir . 2>/dev/null || echo "mock_portfolio.db not found in release."
           else
-            echo "No 'data' release found. Will create fresh database."
+            echo "No 'data' release found. Will create fresh databases."
           fi
-          # If no database, create empty one (setup_database.py will initialize it)
-          if [ ! -f nasdaq_stocks.db ]; then
-            echo "Creating empty database file..."
-            touch nasdaq_stocks.db
-          fi
+          # Create empty databases if they don't exist
+          for db in nasdaq_stocks.db backtest.db mock_portfolio.db; do
+            if [ ! -f "$db" ]; then
+              echo "Creating empty $db..."
+              touch "$db"
+            fi
+          done
 
       - name: Ensure database schema is up to date
         run: python setup_database.py
@@ -52,19 +54,48 @@ jobs:
           PYTHONUNBUFFERED: '1'
         run: python run_pipeline_OPTIMIZED.py
 
-      - name: Upload updated database to release
+      - name: Update hybrid portfolio
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          if [ -s mock_portfolio.db ]; then
+            echo "Updating hybrid portfolio positions..."
+            python update_hybrid_portfolio.py
+          else
+            echo "No hybrid portfolio found (mock_portfolio.db is empty)."
+            echo "Run setup_hybrid_portfolio.py locally first to initialize."
+          fi
+
+      - name: Export movers data to parquet
+        run: python export_movers_data.py
+
+      - name: Upload updated databases to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Uploading nasdaq_stocks.db to release 'data'..."
+          echo "Uploading databases to release 'data'..."
           # Check if release exists
           if gh release view data > /dev/null 2>&1; then
             echo "Release 'data' exists, uploading with --clobber..."
+            # Upload nasdaq_stocks.db
             gh release upload data nasdaq_stocks.db --clobber || {
-              echo "Upload --clobber failed, deleting asset and retrying..."
               gh release delete-asset data nasdaq_stocks.db --yes 2>/dev/null || true
               gh release upload data nasdaq_stocks.db
             }
+            # Upload backtest.db if it has data
+            if [ -s backtest.db ]; then
+              gh release upload data backtest.db --clobber || {
+                gh release delete-asset data backtest.db --yes 2>/dev/null || true
+                gh release upload data backtest.db
+              }
+            fi
+            # Upload mock_portfolio.db if it has data
+            if [ -s mock_portfolio.db ]; then
+              gh release upload data mock_portfolio.db --clobber || {
+                gh release delete-asset data mock_portfolio.db --yes 2>/dev/null || true
+                gh release upload data mock_portfolio.db
+              }
+            fi
           else
             echo "Release 'data' does not exist, creating it..."
             gh release create data nasdaq_stocks.db --title "Pipeline Data" --notes "Auto-updated stock database"
@@ -74,6 +105,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/dashboard_data.parquet
+          git add data/dashboard_data.parquet data/movers_data.parquet
           git diff --staged --quiet || git commit -m "Update dashboard data $(date +%Y-%m-%d)"
           git push
