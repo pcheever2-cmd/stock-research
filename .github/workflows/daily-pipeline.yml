@@ -54,6 +54,11 @@ jobs:
           PYTHONUNBUFFERED: '1'
         run: python run_pipeline_OPTIMIZED.py
 
+      - name: Enrich stock data (Forward P/E, PEG, Financial Scores)
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: python enrich_stock_data.py
+
       - name: Update hybrid portfolio
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}

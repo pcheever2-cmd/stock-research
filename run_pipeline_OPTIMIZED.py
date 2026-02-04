@@ -228,6 +228,7 @@ def export_dashboard_parquet():
     log.info("="*60)
 
     conn = sqlite3.connect(DATABASE_NAME)
+    # Export ALL stocks (not just analyst-covered) per user request
     query = """
         SELECT symbol, company_name, company_description,
                current_price, avg_price_target, median_price_target,
@@ -245,10 +246,10 @@ def export_dashboard_parquet():
                long_term_score, value_score, value_score_v2,
                trend_score, fundamentals_score, valuation_score,
                momentum_score, market_risk_score,
-               trend_signal, trend_signal_count
+               trend_signal, trend_signal_count,
+               altman_z_score, piotroski_score, market_cap, exchange
         FROM stock_consensus
-        WHERE num_analysts >= 1
-        ORDER BY upside_percent DESC
+        ORDER BY value_score_v2 DESC NULLS LAST, upside_percent DESC NULLS LAST
     """
     df = pd.read_sql_query(query, conn)
     conn.close()

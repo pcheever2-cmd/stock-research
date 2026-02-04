@@ -146,6 +146,13 @@ def ensure_database():
         ("company_description", "TEXT"),
         # V2 scoring (continuous value score, backtested)
         ("value_score_v2", "INTEGER"),
+        # Financial scores from FMP Financial Scores API
+        ("altman_z_score", "REAL"),
+        ("piotroski_score", "INTEGER"),
+        # Market cap from profile (for stocks without analyst coverage)
+        ("market_cap", "REAL"),
+        # Exchange info
+        ("exchange", "TEXT"),
     ]
 
     cur.execute("PRAGMA table_info(stock_consensus)")

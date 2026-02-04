@@ -1213,6 +1213,30 @@ with tab4:
     st.title("Hybrid Portfolio Tracker")
     st.markdown("**55% Mega-Cap Core | 25% Options Alpha | 20% Growth Picks**")
 
+    # Selection criteria explanation
+    with st.expander("📋 Selection Criteria (click to expand)", expanded=False):
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.markdown("""
+            **Bucket 1: Quality Growth Compounder**
+            - Value Score V2 >= 55
+            - Fundamentals Score >= 18
+            - EV/EBITDA between 5-20
+            - Revenue Growth > 10%
+            - Market Cap > $2B
+            - Analyst Coverage >= 6
+            """)
+        with col_b:
+            st.markdown("""
+            **Bucket 3: High-Growth Momentum**
+            - EPS Growth >= 35%
+            - EBITDA Growth >= 33%
+            - EV/EBITDA between 12-27
+            - RSI < 43 (oversold)
+
+            **Options requirement:** EPS Growth > 15%
+            """)
+
     # Try to download hybrid portfolio database from GitHub release if not present locally
     if not Path(HYBRID_DB).exists():
         with st.spinner("Downloading portfolio data from GitHub..."):
@@ -1233,6 +1257,33 @@ with tab4:
                 FROM hybrid_positions WHERE status = 'open'
                 ORDER BY position_type, symbol
             ''', h_conn)
+
+            # Load metrics from backtest.db or movers parquet for transparency
+            metrics_df = pd.DataFrame()
+            if Path(MOVERS_PARQUET).exists():
+                try:
+                    all_scores = pd.read_parquet(MOVERS_PARQUET)
+                    if not all_scores.empty and 'date' in all_scores.columns:
+                        latest_date = all_scores['date'].max()
+                        metrics_df = all_scores[all_scores['date'] == latest_date][[
+                            'symbol', 'lt_score', 'value_score_v2', 'fundamentals_score',
+                            'ev_ebitda', 'eps_growth', 'ebitda_growth', 'rev_growth', 'rsi'
+                        ]].copy()
+                except Exception:
+                    pass
+            elif Path(BACKTEST_DB).exists():
+                try:
+                    b_conn = sqlite3.connect(BACKTEST_DB)
+                    latest = b_conn.execute('SELECT MAX(date) FROM backtest_daily_scores').fetchone()[0]
+                    if latest:
+                        metrics_df = pd.read_sql_query(f'''
+                            SELECT symbol, lt_score, value_score_v2, fundamentals_score,
+                                   ev_ebitda, eps_growth, ebitda_growth, rev_growth, rsi
+                            FROM backtest_daily_scores WHERE date = '{latest}'
+                        ''', b_conn)
+                    b_conn.close()
+                except Exception:
+                    pass
 
             if not positions.empty:
                 # Summary metrics
@@ -1257,32 +1308,112 @@ with tab4:
 
                 st.markdown("---")
 
-                # Positions by type
-                for pos_type, emoji, title in [
-                    ('mega_cap', '📊', 'Mega-Cap Core'),
-                    ('options', '🎯', 'Options Alpha'),
-                    ('growth', '🌱', 'Growth Picks')
+                # Helper to determine which bucket a stock qualifies for
+                def get_bucket_reason(row):
+                    reasons = []
+                    # Check Bucket 1 criteria
+                    b1 = (row.get('value_score_v2', 0) >= 55 and
+                          row.get('fundamentals_score', 0) >= 18 and
+                          5 <= (row.get('ev_ebitda') or 0) <= 20 and
+                          (row.get('rev_growth') or 0) > 10)
+                    # Check Bucket 3 criteria
+                    b3 = ((row.get('eps_growth') or 0) >= 35 and
+                          (row.get('ebitda_growth') or 0) >= 33 and
+                          12 <= (row.get('ev_ebitda') or 0) <= 27 and
+                          (row.get('rsi') or 100) < 43)
+                    if b1:
+                        reasons.append('B1')
+                    if b3:
+                        reasons.append('B3')
+                    return ', '.join(reasons) if reasons else '-'
+
+                # Positions by type with metrics
+                for pos_type, emoji, title, description in [
+                    ('mega_cap', '📊', 'Mega-Cap Core', 'Top 10 mega-caps by market cap (buy & hold)'),
+                    ('options', '🎯', 'Options Alpha', 'OTM5 calls on Bucket 1/3 stocks with EPS Growth > 15%'),
+                    ('growth', '🌱', 'Growth Picks', 'Long-term holds from Bucket 1/3 signals')
                 ]:
                     type_pos = positions[positions['position_type'] == pos_type]
                     if not type_pos.empty:
                         st.subheader(f"{emoji} {title}")
+                        st.caption(description)
 
-                        display_cols = ['symbol', 'cost_basis', 'current_price', 'pnl', 'pnl_pct', 'entry_date']
-                        display_df = type_pos[display_cols].copy()
-                        display_df.columns = ['Symbol', 'Cost', 'Price', 'P&L', 'P&L %', 'Entry']
+                        if pos_type == 'mega_cap':
+                            # Mega-caps are hardcoded, just show basic info
+                            display_df = type_pos[['symbol', 'cost_basis', 'current_price', 'pnl', 'pnl_pct', 'notes']].copy()
+                            display_df['Weight'] = display_df['notes'].apply(
+                                lambda x: x.split(' - ')[1] if ' - ' in str(x) else ''
+                            )
+                            display_df = display_df[['symbol', 'Weight', 'cost_basis', 'current_price', 'pnl', 'pnl_pct']]
+                            display_df.columns = ['Symbol', 'Weight', 'Cost', 'Price', 'P&L', 'P&L %']
+                        else:
+                            # Options and Growth - show why they were selected
+                            display_df = type_pos[['symbol', 'cost_basis', 'current_price', 'pnl', 'pnl_pct']].copy()
+
+                            # Merge metrics if available
+                            if not metrics_df.empty:
+                                display_df = display_df.merge(
+                                    metrics_df[['symbol', 'eps_growth', 'ebitda_growth', 'ev_ebitda', 'rsi', 'value_score_v2', 'fundamentals_score', 'rev_growth']],
+                                    on='symbol', how='left'
+                                )
+                                display_df['Bucket'] = display_df.apply(get_bucket_reason, axis=1)
+
+                                if pos_type == 'options':
+                                    display_df = display_df[['symbol', 'Bucket', 'eps_growth', 'ebitda_growth', 'ev_ebitda', 'rsi', 'cost_basis', 'pnl_pct']]
+                                    display_df.columns = ['Symbol', 'Bucket', 'EPS Gr%', 'EBITDA Gr%', 'EV/EBITDA', 'RSI', 'Cost', 'P&L %']
+                                else:  # growth
+                                    display_df = display_df[['symbol', 'Bucket', 'value_score_v2', 'fundamentals_score', 'rev_growth', 'ev_ebitda', 'cost_basis', 'pnl_pct']]
+                                    display_df.columns = ['Symbol', 'Bucket', 'V2 Score', 'Fund Score', 'Rev Gr%', 'EV/EBITDA', 'Cost', 'P&L %']
+                            else:
+                                display_df.columns = ['Symbol', 'Cost', 'Price', 'P&L', 'P&L %']
 
                         def color_pnl(val):
                             if pd.isna(val):
                                 return ''
                             return 'color: green' if val > 0 else 'color: red' if val < 0 else ''
 
-                        styled = display_df.style.map(color_pnl, subset=['P&L', 'P&L %'])
-                        styled = styled.format({
-                            'Cost': '${:,.0f}',
-                            'Price': lambda x: f'${x:.2f}' if pd.notna(x) else 'N/A',
-                            'P&L': lambda x: f'${x:+,.0f}' if pd.notna(x) else '-',
-                            'P&L %': lambda x: f'{x:+.1f}%' if pd.notna(x) else '-',
-                        })
+                        def color_bucket(val):
+                            if val == 'B1':
+                                return 'background-color: #e6f3ff'
+                            elif val == 'B3':
+                                return 'background-color: #fff3e6'
+                            elif val == 'B1, B3':
+                                return 'background-color: #e6ffe6'
+                            return ''
+
+                        # Build format dict based on columns present
+                        fmt = {}
+                        if 'Cost' in display_df.columns:
+                            fmt['Cost'] = '${:,.0f}'
+                        if 'Price' in display_df.columns:
+                            fmt['Price'] = lambda x: f'${x:.2f}' if pd.notna(x) else 'N/A'
+                        if 'P&L' in display_df.columns:
+                            fmt['P&L'] = lambda x: f'${x:+,.0f}' if pd.notna(x) else '-'
+                        if 'P&L %' in display_df.columns:
+                            fmt['P&L %'] = lambda x: f'{x:+.1f}%' if pd.notna(x) else '-'
+                        if 'EPS Gr%' in display_df.columns:
+                            fmt['EPS Gr%'] = lambda x: f'{x:.0f}%' if pd.notna(x) else '-'
+                        if 'EBITDA Gr%' in display_df.columns:
+                            fmt['EBITDA Gr%'] = lambda x: f'{x:.0f}%' if pd.notna(x) else '-'
+                        if 'Rev Gr%' in display_df.columns:
+                            fmt['Rev Gr%'] = lambda x: f'{x:.0f}%' if pd.notna(x) else '-'
+                        if 'EV/EBITDA' in display_df.columns:
+                            fmt['EV/EBITDA'] = lambda x: f'{x:.1f}' if pd.notna(x) else '-'
+                        if 'RSI' in display_df.columns:
+                            fmt['RSI'] = lambda x: f'{x:.0f}' if pd.notna(x) else '-'
+                        if 'V2 Score' in display_df.columns:
+                            fmt['V2 Score'] = lambda x: f'{x:.0f}' if pd.notna(x) else '-'
+                        if 'Fund Score' in display_df.columns:
+                            fmt['Fund Score'] = lambda x: f'{x:.0f}' if pd.notna(x) else '-'
+
+                        styled = display_df.style.format(fmt, na_rep='-')
+                        if 'P&L %' in display_df.columns:
+                            styled = styled.map(color_pnl, subset=['P&L %'])
+                        if 'P&L' in display_df.columns:
+                            styled = styled.map(color_pnl, subset=['P&L'])
+                        if 'Bucket' in display_df.columns:
+                            styled = styled.map(color_bucket, subset=['Bucket'])
+
                         st.dataframe(styled, use_container_width=True, hide_index=True)
 
                 # Daily snapshot chart
