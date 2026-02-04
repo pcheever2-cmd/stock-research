@@ -1148,7 +1148,7 @@ with tab4:
     st.markdown("**55% Mega-Cap Core | 25% Options Alpha | 20% Growth Picks**")
 
     # Load hybrid portfolio data
-    HYBRID_DB = str(_root / 'mock_portfolio.db')
+    HYBRID_DB = str(Path(__file__).parent / 'mock_portfolio.db')
 
     if Path(HYBRID_DB).exists():
         h_conn = sqlite3.connect(HYBRID_DB)
