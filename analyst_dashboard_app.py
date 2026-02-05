@@ -1271,12 +1271,29 @@ with tab4:
         ).fetchall()
 
         if tables:
-            positions = pd.read_sql_query('''
-                SELECT symbol, position_type, entry_date, cost_basis, current_price,
-                       current_value, pnl, pnl_pct, status, notes, updated_at
+            # Check which columns exist
+            cols_info = pd.read_sql_query("PRAGMA table_info(hybrid_positions)", h_conn)
+            existing_cols = cols_info['name'].values if not cols_info.empty else []
+            has_strike = 'strike_price' in existing_cols
+            has_expiration = 'expiration_date' in existing_cols
+
+            # Build SELECT based on available columns
+            base_cols = "symbol, position_type, entry_date, entry_price, cost_basis, current_price, current_value, pnl, pnl_pct, status, notes, updated_at"
+            if has_strike:
+                base_cols = base_cols.replace("entry_price,", "entry_price, strike_price,")
+            if has_expiration:
+                base_cols = base_cols.replace("cost_basis,", "expiration_date, cost_basis,")
+
+            positions = pd.read_sql_query(f'''
+                SELECT {base_cols}
                 FROM hybrid_positions WHERE status = 'open'
                 ORDER BY position_type, symbol
             ''', h_conn)
+
+            if not has_strike:
+                positions['strike_price'] = None
+            if not has_expiration:
+                positions['expiration_date'] = None
 
             # Load metrics from backtest.db or movers parquet for transparency
             metrics_df = pd.DataFrame()
@@ -1330,9 +1347,10 @@ with tab4:
                 if live_prices:
                     # Recalculate values with live prices
                     for idx, row in positions.iterrows():
-                        if row['symbol'] in live_prices and row['entry_price']:
+                        entry_price = row.get('entry_price') if 'entry_price' in row.index else None
+                        if row['symbol'] in live_prices and entry_price and pd.notna(entry_price) and entry_price > 0:
                             new_price = live_prices[row['symbol']]
-                            shares = row['cost_basis'] / row['entry_price']
+                            shares = row['cost_basis'] / entry_price
                             positions.at[idx, 'current_price'] = new_price
                             positions.at[idx, 'current_value'] = shares * new_price
                             positions.at[idx, 'pnl'] = (shares * new_price) - row['cost_basis']
@@ -1452,7 +1470,13 @@ with tab4:
                             display_df.columns = ['Symbol', 'Weight', 'Cost', 'Price', 'P&L', 'P&L %']
                         else:
                             # Options and Growth - show why they were selected
-                            display_df = type_pos[['symbol', 'cost_basis', 'current_price', 'pnl', 'pnl_pct']].copy()
+                            base_cols = ['symbol', 'cost_basis', 'current_price', 'pnl', 'pnl_pct']
+                            if pos_type == 'options':
+                                if 'strike_price' in type_pos.columns:
+                                    base_cols.insert(2, 'strike_price')  # Add strike after symbol
+                                if 'expiration_date' in type_pos.columns:
+                                    base_cols.insert(3 if 'strike_price' in type_pos.columns else 2, 'expiration_date')
+                            display_df = type_pos[base_cols].copy()
 
                             # Merge metrics if available
                             if not metrics_df.empty:
@@ -1463,8 +1487,18 @@ with tab4:
                                 display_df['Bucket'] = display_df.apply(get_bucket_reason, axis=1)
 
                                 if pos_type == 'options':
-                                    display_df = display_df[['symbol', 'Bucket', 'eps_growth', 'ebitda_growth', 'ev_ebitda', 'rsi', 'cost_basis', 'pnl_pct']]
-                                    display_df.columns = ['Symbol', 'Bucket', 'EPS Gr%', 'EBITDA Gr%', 'EV/EBITDA', 'RSI', 'Cost', 'P&L %']
+                                    # Include strike price and expiration for options
+                                    has_strike = 'strike_price' in display_df.columns
+                                    has_exp = 'expiration_date' in display_df.columns
+                                    if has_strike and has_exp:
+                                        display_df = display_df[['symbol', 'current_price', 'strike_price', 'expiration_date', 'Bucket', 'eps_growth', 'cost_basis', 'pnl_pct']]
+                                        display_df.columns = ['Symbol', 'Stock $', 'Strike $', 'Expires', 'Bucket', 'EPS Gr%', 'Cost', 'P&L %']
+                                    elif has_strike:
+                                        display_df = display_df[['symbol', 'current_price', 'strike_price', 'Bucket', 'eps_growth', 'cost_basis', 'pnl_pct']]
+                                        display_df.columns = ['Symbol', 'Stock $', 'Strike $', 'Bucket', 'EPS Gr%', 'Cost', 'P&L %']
+                                    else:
+                                        display_df = display_df[['symbol', 'Bucket', 'eps_growth', 'ebitda_growth', 'ev_ebitda', 'rsi', 'cost_basis', 'pnl_pct']]
+                                        display_df.columns = ['Symbol', 'Bucket', 'EPS Gr%', 'EBITDA Gr%', 'EV/EBITDA', 'RSI', 'Cost', 'P&L %']
                                 else:  # growth
                                     display_df = display_df[['symbol', 'Bucket', 'value_score_v2', 'fundamentals_score', 'rev_growth', 'ev_ebitda', 'cost_basis', 'pnl_pct']]
                                     display_df.columns = ['Symbol', 'Bucket', 'V2 Score', 'Fund Score', 'Rev Gr%', 'EV/EBITDA', 'Cost', 'P&L %']
@@ -1491,6 +1525,10 @@ with tab4:
                             fmt['Cost'] = '${:,.0f}'
                         if 'Price' in display_df.columns:
                             fmt['Price'] = lambda x: f'${x:.2f}' if pd.notna(x) else 'N/A'
+                        if 'Stock $' in display_df.columns:
+                            fmt['Stock $'] = lambda x: f'${x:.2f}' if pd.notna(x) else 'N/A'
+                        if 'Strike $' in display_df.columns:
+                            fmt['Strike $'] = lambda x: f'${x:.2f}' if pd.notna(x) else 'N/A'
                         if 'P&L' in display_df.columns:
                             fmt['P&L'] = lambda x: f'${x:+,.0f}' if pd.notna(x) else '-'
                         if 'P&L %' in display_df.columns:

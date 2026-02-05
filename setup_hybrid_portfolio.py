@@ -25,6 +25,37 @@ except ImportError:
 PROJECT_ROOT = Path(__file__).parent
 BACKTEST_DB = str(PROJECT_ROOT / 'backtest.db')
 PORTFOLIO_DB = str(PROJECT_ROOT / 'mock_portfolio.db')
+MAIN_DB = str(PROJECT_ROOT / 'nasdaq_stocks.db')
+
+
+def get_monthly_expiration(from_date: datetime, months_out: int = 1) -> str:
+    """Get the third Friday of the month (standard options expiration).
+
+    Args:
+        from_date: Starting date
+        months_out: Number of months ahead (1 = next month's expiration)
+
+    Returns:
+        Expiration date as YYYY-MM-DD string
+    """
+    # Move to target month
+    target_month = from_date.month + months_out
+    target_year = from_date.year
+    while target_month > 12:
+        target_month -= 12
+        target_year += 1
+
+    # Find first day of target month
+    first_of_month = datetime(target_year, target_month, 1)
+
+    # Find first Friday (weekday 4 = Friday)
+    days_until_friday = (4 - first_of_month.weekday()) % 7
+    first_friday = first_of_month + timedelta(days=days_until_friday)
+
+    # Third Friday is 14 days after first Friday
+    third_friday = first_friday + timedelta(days=14)
+
+    return third_friday.strftime('%Y-%m-%d')
 
 
 def fetch_prices(symbols: list) -> dict:
@@ -79,6 +110,8 @@ def setup_database():
             position_type TEXT NOT NULL,  -- 'mega_cap', 'options', 'growth'
             entry_date TEXT NOT NULL,
             entry_price REAL,
+            strike_price REAL,  -- For options: 5% OTM strike
+            expiration_date TEXT,  -- For options: expiration date
             shares REAL,
             cost_basis REAL,
             current_price REAL,
@@ -92,6 +125,16 @@ def setup_database():
             updated_at TEXT
         )
     ''')
+
+    # Add new columns if they don't exist (migrations)
+    try:
+        conn.execute("ALTER TABLE hybrid_positions ADD COLUMN expiration_date TEXT")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    try:
+        conn.execute("ALTER TABLE hybrid_positions ADD COLUMN strike_price REAL")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
     conn.execute('''
         CREATE TABLE IF NOT EXISTS hybrid_daily_snapshot (
             date TEXT PRIMARY KEY,
@@ -149,6 +192,20 @@ def get_current_signals():
     signals['analyst_count'] = signals['symbol'].map(acov).fillna(0)
 
     conn.close()
+
+    # Supplement missing market_cap from nasdaq_stocks.db (enriched data)
+    if Path(MAIN_DB).exists():
+        conn_main = sqlite3.connect(MAIN_DB)
+        main_caps = pd.read_sql_query('''
+            SELECT symbol, market_cap FROM stock_consensus
+            WHERE market_cap IS NOT NULL AND market_cap > 0
+        ''', conn_main).set_index('symbol')['market_cap']
+        conn_main.close()
+
+        # Fill missing market_cap values
+        missing_cap = signals['market_cap'].isna()
+        signals.loc[missing_cap, 'market_cap'] = signals.loc[missing_cap, 'symbol'].map(main_caps)
+
     return signals, latest
 
 
@@ -175,8 +232,12 @@ def filter_bucket_signals(signals):
     b3['bucket'] = 'B3'
 
     # Options: Bucket 1/3 with earnings beat (eps_growth > 15)
+    # Filter to market cap > $1B for options availability (small caps often have no options)
     options = pd.concat([b1, b3]).drop_duplicates(subset=['symbol'])
-    options = options[options['eps_growth'] > 15]
+    options = options[
+        (options['eps_growth'] > 15) &
+        (options['market_cap'] > 1e9)  # Options typically available for $1B+ market cap
+    ]
     options = options.sort_values('fundamentals_score', ascending=False)
 
     # Growth: All Bucket 1/3 picks
@@ -244,29 +305,44 @@ def setup_portfolio():
     print(f"\n🎯 OPTIONS ALPHA: ${options_capital:,.0f}")
     print("-" * 50)
 
+    # Filter options to stocks with price >= $5 (options not available for lower-priced stocks)
+    options_picks['current_price'] = options_picks['symbol'].map(prices)
+    options_picks = options_picks[options_picks['current_price'] >= 5.0]
+
     # Take top 10 options candidates
     top_options = options_picks.head(10)
     options_per_position = options_capital / len(top_options) if len(top_options) > 0 else 0
 
+    # Calculate expiration date (3rd Friday of next month)
+    expiration_date = get_monthly_expiration(datetime.now(), months_out=1)
+
+    print(f"Expiration: {expiration_date} (3rd Friday)")
+    print(f"{'Symbol':<8} {'Amount':>10} {'Stock':>10} {'Strike':>10} {'Expires':>12}")
+    print("-" * 60)
+
     for _, row in top_options.iterrows():
         symbol = row['symbol']
         entry_price = prices.get(symbol)
+        # Calculate 5% OTM strike price (rounded to nearest $0.50 for realism)
+        strike_price = round((entry_price * 1.05) * 2) / 2 if entry_price else None
+        market_cap = row.get('market_cap', 0)
 
         conn.execute('''
             INSERT INTO hybrid_positions
-            (symbol, position_type, entry_date, entry_price, cost_basis, current_price, current_value, status, notes, updated_at)
-            VALUES (?, 'options', ?, ?, ?, ?, ?, 'open', ?, ?)
-        ''', (symbol, entry_date, entry_price, options_per_position, entry_price, options_per_position,
-              f'OTM5 Call - Fund:{row["fundamentals_score"]:.0f} EPS_G:{row["eps_growth"]:.0f}', now))
+            (symbol, position_type, entry_date, entry_price, strike_price, expiration_date, cost_basis, current_price, current_value, status, notes, updated_at)
+            VALUES (?, 'options', ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)
+        ''', (symbol, entry_date, entry_price, strike_price, expiration_date, options_per_position, entry_price, options_per_position,
+              f'OTM5 Call ${strike_price:.2f} exp {expiration_date} - Fund:{row["fundamentals_score"]:.0f} EPS_G:{row["eps_growth"]:.0f}' if strike_price else f'OTM5 Call - Fund:{row["fundamentals_score"]:.0f}', now))
 
         conn.execute('''
             INSERT INTO hybrid_trades
             (symbol, position_type, trade_type, trade_date, price, amount, notes)
             VALUES (?, 'options', 'buy', ?, ?, ?, ?)
-        ''', (symbol, entry_date, entry_price, options_per_position, f'OTM5 Call entry'))
+        ''', (symbol, entry_date, entry_price, options_per_position, f'OTM5 Call ${strike_price:.2f} exp {expiration_date}' if strike_price else 'OTM5 Call entry'))
 
-        price_str = f"@ ${entry_price:.2f}" if entry_price else ""
-        print(f"  {symbol:<6} ${options_per_position:>8,.0f}  Fund:{row['fundamentals_score']:.0f} EPS_G:{row['eps_growth']:.0f} {price_str}")
+        price_str = f"${entry_price:.2f}" if entry_price else "N/A"
+        strike_str = f"${strike_price:.2f}" if strike_price else "N/A"
+        print(f"  {symbol:<6} ${options_per_position:>8,.0f} {price_str:>10} {strike_str:>10} {expiration_date:>12}")
 
     # 3. GROWTH PICKS
     growth_capital = TOTAL_CAPITAL * ALLOCATION['growth']
