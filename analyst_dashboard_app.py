@@ -508,7 +508,7 @@ with tab1:
     with st.expander("Research Filters", expanded=False):
         fc1, fc2, fc3, fc4 = st.columns(4)
         with fc1:
-            r_min_analysts = st.slider("Min Analysts", 1, int(df['num_analysts'].max()), 1, key="r_analysts")
+            r_min_analysts = st.slider("Min Analysts", 0, int(df['num_analysts'].max()), 0, key="r_analysts")
             r_min_upside = st.slider("Min Upside %", -50, 300, -50, step=5, key="r_upside")
         with fc2:
             rec_options = ['All'] + sorted(df['recommendation'].dropna().unique().tolist())
@@ -1213,6 +1213,26 @@ with tab4:
     st.title("Hybrid Portfolio Tracker")
     st.markdown("**55% Mega-Cap Core | 25% Options Alpha | 20% Growth Picks**")
 
+    # Live refresh function
+    @st.cache_data(ttl=60)  # Cache for 60 seconds
+    def fetch_live_prices(symbols: list) -> dict:
+        """Fetch live prices from FMP API."""
+        import os
+        api_key = os.environ.get('FMP_API_KEY', '')
+        if not api_key:
+            return {}
+        try:
+            symbols_str = ','.join(symbols)
+            url = f"https://financialmodelingprep.com/stable/batch-quote?symbols={symbols_str}&apikey={api_key}"
+            resp = requests.get(url, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                if isinstance(data, list):
+                    return {item['symbol']: item['price'] for item in data if 'price' in item}
+        except Exception:
+            pass
+        return {}
+
     # Selection criteria explanation
     with st.expander("📋 Selection Criteria (click to expand)", expanded=False):
         col_a, col_b = st.columns(2)
@@ -1292,19 +1312,82 @@ with tab4:
                 total_pnl = total_value - total_cost
                 total_pnl_pct = (total_pnl / total_cost * 100) if total_cost else 0
 
+                # Live refresh button
+                refresh_col1, refresh_col2 = st.columns([1, 4])
+                with refresh_col1:
+                    if st.button("🔄 Refresh Prices", help="Fetch live prices (requires FMP API key)"):
+                        symbols = positions['symbol'].unique().tolist() + ['SPY']
+                        live_prices = fetch_live_prices(symbols)
+                        if live_prices:
+                            st.session_state['live_prices'] = live_prices
+                            st.session_state['live_refresh_time'] = pd.Timestamp.now()
+                            st.rerun()
+                        else:
+                            st.warning("Could not fetch live prices. API key may not be set.")
+
+                # Use live prices if available, otherwise use stored prices
+                live_prices = st.session_state.get('live_prices', {})
+                if live_prices:
+                    # Recalculate values with live prices
+                    for idx, row in positions.iterrows():
+                        if row['symbol'] in live_prices and row['entry_price']:
+                            new_price = live_prices[row['symbol']]
+                            shares = row['cost_basis'] / row['entry_price']
+                            positions.at[idx, 'current_price'] = new_price
+                            positions.at[idx, 'current_value'] = shares * new_price
+                            positions.at[idx, 'pnl'] = (shares * new_price) - row['cost_basis']
+                            positions.at[idx, 'pnl_pct'] = (positions.at[idx, 'pnl'] / row['cost_basis']) * 100
+                    total_value = positions['current_value'].sum()
+                    total_pnl = total_value - total_cost
+                    total_pnl_pct = (total_pnl / total_cost * 100) if total_cost else 0
+
                 # Show summary cards
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
                     st.metric("Total Value", f"${total_value:,.0f}", f"{total_pnl_pct:+.1f}%")
                 with col2:
-                    mega_cost = positions[positions['position_type'] == 'mega_cap']['cost_basis'].sum()
-                    st.metric("Mega-Cap (55%)", f"${mega_cost:,.0f}")
+                    mega_val = positions[positions['position_type'] == 'mega_cap']['current_value'].sum()
+                    mega_pnl_pct = ((mega_val / (total_cost * 0.55)) - 1) * 100 if total_cost else 0
+                    st.metric("Mega-Cap (55%)", f"${mega_val:,.0f}", f"{mega_pnl_pct:+.1f}%")
                 with col3:
-                    opt_cost = positions[positions['position_type'] == 'options']['cost_basis'].sum()
-                    st.metric("Options (25%)", f"${opt_cost:,.0f}")
+                    opt_val = positions[positions['position_type'] == 'options']['current_value'].sum()
+                    opt_pnl_pct = ((opt_val / (total_cost * 0.25)) - 1) * 100 if total_cost else 0
+                    st.metric("Options (25%)", f"${opt_val:,.0f}", f"{opt_pnl_pct:+.1f}%")
                 with col4:
-                    growth_cost = positions[positions['position_type'] == 'growth']['cost_basis'].sum()
-                    st.metric("Growth (20%)", f"${growth_cost:,.0f}")
+                    growth_val = positions[positions['position_type'] == 'growth']['current_value'].sum()
+                    growth_pnl_pct = ((growth_val / (total_cost * 0.20)) - 1) * 100 if total_cost else 0
+                    st.metric("Growth (20%)", f"${growth_val:,.0f}", f"{growth_pnl_pct:+.1f}%")
+
+                # S&P 500 Benchmark Comparison
+                spy_snapshot = pd.read_sql_query('''
+                    SELECT spy_entry_price, spy_value FROM hybrid_daily_snapshot
+                    WHERE spy_entry_price IS NOT NULL
+                    ORDER BY date DESC LIMIT 1
+                ''', h_conn)
+
+                spy_entry = spy_snapshot['spy_entry_price'].iloc[0] if not spy_snapshot.empty and spy_snapshot['spy_entry_price'].iloc[0] else None
+                spy_current = live_prices.get('SPY') or (spy_snapshot['spy_value'].iloc[0] if not spy_snapshot.empty else None)
+
+                if spy_entry and spy_current:
+                    spy_return_pct = ((spy_current - spy_entry) / spy_entry) * 100
+                    spy_equiv_value = total_cost * (1 + spy_return_pct / 100)
+                    alpha = total_pnl_pct - spy_return_pct
+
+                    st.markdown("---")
+                    st.subheader("📈 S&P 500 Benchmark Comparison")
+                    bcol1, bcol2, bcol3, bcol4 = st.columns(4)
+                    with bcol1:
+                        st.metric("SPY Entry", f"${spy_entry:,.2f}")
+                    with bcol2:
+                        st.metric("SPY Current", f"${spy_current:,.2f}", f"{spy_return_pct:+.2f}%")
+                    with bcol3:
+                        st.metric("$100K in SPY", f"${spy_equiv_value:,.0f}")
+                    with bcol4:
+                        alpha_color = "normal" if alpha >= 0 else "inverse"
+                        st.metric("Alpha", f"{alpha:+.2f}%", delta_color=alpha_color)
+
+                    if 'live_refresh_time' in st.session_state:
+                        st.caption(f"Live prices as of: {st.session_state['live_refresh_time'].strftime('%Y-%m-%d %H:%M:%S')}")
 
                 st.markdown("---")
 
@@ -1416,15 +1499,26 @@ with tab4:
 
                         st.dataframe(styled, use_container_width=True, hide_index=True)
 
-                # Daily snapshot chart
+                # Daily snapshot chart with SPY comparison
                 snapshots = pd.read_sql_query('''
-                    SELECT date, total_value, cumulative_pnl FROM hybrid_daily_snapshot
+                    SELECT date, total_value, spy_value, spy_entry_price, cumulative_pnl
+                    FROM hybrid_daily_snapshot
                     ORDER BY date
                 ''', h_conn)
 
-                if len(snapshots) > 1:
-                    st.subheader("Portfolio Value Over Time")
-                    st.line_chart(snapshots.set_index('date')['total_value'])
+                if len(snapshots) >= 1:
+                    st.subheader("📊 Performance Over Time")
+
+                    # Calculate portfolio and SPY returns as percentages
+                    if snapshots['spy_entry_price'].notna().any():
+                        spy_entry_val = snapshots['spy_entry_price'].dropna().iloc[0]
+                        snapshots['Portfolio %'] = ((snapshots['total_value'] / total_cost) - 1) * 100
+                        snapshots['SPY %'] = ((snapshots['spy_value'] / spy_entry_val) - 1) * 100
+
+                        chart_data = snapshots.set_index('date')[['Portfolio %', 'SPY %']]
+                        st.line_chart(chart_data)
+                    else:
+                        st.line_chart(snapshots.set_index('date')['total_value'])
 
                 # Last update time
                 last_update = positions['updated_at'].max()
@@ -1446,6 +1540,11 @@ with tab4:
 
         **Daily Updates:**
         2. Run `python update_hybrid_portfolio.py` to fetch prices and track P&L
+        3. Or click **🔄 Refresh Prices** above for live updates in the dashboard
+
+        **Live Refresh Requirements:**
+        - Set `FMP_API_KEY` environment variable for live price updates
+        - On Streamlit Cloud, add it to your app secrets
 
         **Portfolio Structure:**
         - **Mega-Cap Core (55%)**: AAPL, MSFT, NVDA, GOOG, AMZN, META, TSLA, BRK-B, AVGO, LLY
@@ -1459,6 +1558,6 @@ with tab4:
 
 # ── Footer ───────────────────────────────────────────────────────────────────
 st.markdown("---")
-st.caption("Data from Financial Modeling Prep | Stocks with >= 1 analyst | "
+st.caption("Data from Financial Modeling Prep | 6,600+ NYSE/NASDAQ/AMEX stocks | "
            "Pipeline runs daily via GitHub Actions | "
            "Live prices during market hours")

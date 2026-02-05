@@ -57,9 +57,10 @@ def update_portfolio():
         conn.close()
         return
 
-    # Fetch current prices
+    # Fetch current prices (include SPY for benchmark)
     symbols = positions['symbol'].unique().tolist()
-    prices = fetch_prices(symbols)
+    symbols_with_spy = list(set(symbols + ['SPY']))
+    prices = fetch_prices(symbols_with_spy)
 
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     today = datetime.now().strftime('%Y-%m-%d')
@@ -130,6 +131,30 @@ def update_portfolio():
     total_pnl = total_value - total_cost
     total_pnl_pct = (total_pnl / total_cost * 100) if total_cost else 0
 
+    # Get SPY benchmark data
+    spy_price = prices.get('SPY', 0)
+
+    # Get or initialize SPY entry price from first snapshot
+    spy_entry = conn.execute('''
+        SELECT spy_entry_price FROM hybrid_daily_snapshot
+        WHERE spy_entry_price IS NOT NULL
+        ORDER BY date ASC LIMIT 1
+    ''').fetchone()
+
+    if spy_entry and spy_entry[0]:
+        spy_entry_price = spy_entry[0]
+    else:
+        # First time - set entry price to current price
+        spy_entry_price = spy_price
+
+    # Calculate what $100k in SPY would be worth now
+    if spy_entry_price and spy_price:
+        spy_return_pct = ((spy_price - spy_entry_price) / spy_entry_price) * 100
+        spy_equiv_value = total_cost * (1 + spy_return_pct / 100)
+    else:
+        spy_return_pct = 0
+        spy_equiv_value = total_cost
+
     print("\n" + "=" * 70)
     print("PORTFOLIO SUMMARY")
     print("=" * 70)
@@ -137,15 +162,26 @@ def update_portfolio():
     print(f"Current Value:     ${total_value:>12,.0f}")
     print(f"P&L:               ${total_pnl:>+12,.0f} ({total_pnl_pct:+.1f}%)")
 
-    # Save daily snapshot
-    # Get SPY price for comparison
-    spy_price = prices.get('SPY', 0)
+    print("\n📈 S&P 500 BENCHMARK (SPY)")
+    print("-" * 50)
+    if spy_entry_price and spy_price:
+        print(f"SPY Entry Price:   ${spy_entry_price:>12,.2f}")
+        print(f"SPY Current:       ${spy_price:>12,.2f}")
+        print(f"SPY Return:        {spy_return_pct:>+12.2f}%")
+        print(f"$100K in SPY:      ${spy_equiv_value:>12,.0f}")
+        alpha = total_pnl_pct - spy_return_pct
+        print(f"Alpha (vs SPY):    {alpha:>+12.2f}%")
+    else:
+        print("SPY data not available")
+
+    # Save daily snapshot with SPY entry price
     conn.execute('''
         INSERT OR REPLACE INTO hybrid_daily_snapshot
-        (date, mega_cap_value, options_value, growth_value, total_value, spy_value, daily_pnl, cumulative_pnl)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (date, mega_cap_value, options_value, growth_value, total_value,
+         spy_value, spy_entry_price, daily_pnl, cumulative_pnl)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (today, totals['mega_cap'], totals['options'], totals['growth'],
-          total_value, spy_price, total_pnl, total_pnl))
+          total_value, spy_price, spy_entry_price, total_pnl, total_pnl))
 
     conn.commit()
     conn.close()
