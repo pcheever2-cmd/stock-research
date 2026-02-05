@@ -523,7 +523,7 @@ with tab1:
 
     # Apply research filters
     r_filtered = base.copy()
-    mask = (r_filtered['num_analysts'] >= r_min_analysts)
+    mask = (r_filtered['num_analysts'].fillna(0) >= r_min_analysts)
     if r_min_upside > -50:
         mask = mask & (r_filtered['upside_percent'].fillna(-999) >= r_min_upside)
     if r_rec != 'All':
@@ -1276,6 +1276,8 @@ with tab4:
             existing_cols = cols_info['name'].values if not cols_info.empty else []
             has_strike = 'strike_price' in existing_cols
             has_expiration = 'expiration_date' in existing_cols
+            has_contracts = 'contracts' in existing_cols
+            has_premium = 'premium' in existing_cols
 
             # Build SELECT based on available columns
             base_cols = "symbol, position_type, entry_date, entry_price, cost_basis, current_price, current_value, pnl, pnl_pct, status, notes, updated_at"
@@ -1283,6 +1285,10 @@ with tab4:
                 base_cols = base_cols.replace("entry_price,", "entry_price, strike_price,")
             if has_expiration:
                 base_cols = base_cols.replace("cost_basis,", "expiration_date, cost_basis,")
+            if has_contracts:
+                base_cols = base_cols.replace("cost_basis,", "contracts, cost_basis,")
+            if has_premium:
+                base_cols = base_cols.replace("contracts,", "contracts, premium,")
 
             positions = pd.read_sql_query(f'''
                 SELECT {base_cols}
@@ -1294,6 +1300,10 @@ with tab4:
                 positions['strike_price'] = None
             if not has_expiration:
                 positions['expiration_date'] = None
+            if not has_contracts:
+                positions['contracts'] = None
+            if not has_premium:
+                positions['premium'] = None
 
             # Load metrics from backtest.db or movers parquet for transparency
             metrics_df = pd.DataFrame()
@@ -1487,10 +1497,17 @@ with tab4:
                                 display_df['Bucket'] = display_df.apply(get_bucket_reason, axis=1)
 
                                 if pos_type == 'options':
-                                    # Include strike price and expiration for options
+                                    # Include contracts, strike price and expiration for options
                                     has_strike = 'strike_price' in display_df.columns
                                     has_exp = 'expiration_date' in display_df.columns
-                                    if has_strike and has_exp:
+                                    has_contracts = 'contracts' in type_pos.columns and type_pos['contracts'].notna().any()
+
+                                    if has_contracts and has_strike and has_exp:
+                                        # Add contracts from type_pos
+                                        display_df = display_df.merge(type_pos[['symbol', 'contracts']], on='symbol', how='left')
+                                        display_df = display_df[['symbol', 'contracts', 'strike_price', 'expiration_date', 'Bucket', 'cost_basis', 'pnl_pct']]
+                                        display_df.columns = ['Symbol', 'Contracts', 'Strike $', 'Expires', 'Bucket', 'Cost', 'P&L %']
+                                    elif has_strike and has_exp:
                                         display_df = display_df[['symbol', 'current_price', 'strike_price', 'expiration_date', 'Bucket', 'eps_growth', 'cost_basis', 'pnl_pct']]
                                         display_df.columns = ['Symbol', 'Stock $', 'Strike $', 'Expires', 'Bucket', 'EPS Gr%', 'Cost', 'P&L %']
                                     elif has_strike:
