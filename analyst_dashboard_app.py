@@ -1257,8 +1257,12 @@ with tab4:
             **Options requirement:** EPS Growth > 15%
             """)
 
-    # Try to download hybrid portfolio database from GitHub release if not present locally
-    if not Path(HYBRID_DB).exists():
+    # Always download hybrid portfolio database from GitHub release on Streamlit Cloud
+    # to ensure we have the latest data (it's small and changes frequently)
+    if _data_source == 'GitHub Release':
+        with st.spinner("Downloading portfolio data from GitHub..."):
+            download_db_from_release("mock_portfolio.db", HYBRID_DB)
+    elif not Path(HYBRID_DB).exists():
         with st.spinner("Downloading portfolio data from GitHub..."):
             download_db_from_release("mock_portfolio.db", HYBRID_DB)
 
