@@ -112,6 +112,8 @@ def setup_database():
             entry_price REAL,
             strike_price REAL,  -- For options: 5% OTM strike
             expiration_date TEXT,  -- For options: expiration date
+            contracts INTEGER,  -- For options: number of contracts (each = 100 shares)
+            premium REAL,  -- For options: premium per share paid
             shares REAL,
             cost_basis REAL,
             current_price REAL,
@@ -127,14 +129,12 @@ def setup_database():
     ''')
 
     # Add new columns if they don't exist (migrations)
-    try:
-        conn.execute("ALTER TABLE hybrid_positions ADD COLUMN expiration_date TEXT")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
-    try:
-        conn.execute("ALTER TABLE hybrid_positions ADD COLUMN strike_price REAL")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
+    for col, col_type in [('expiration_date', 'TEXT'), ('strike_price', 'REAL'),
+                          ('contracts', 'INTEGER'), ('premium', 'REAL')]:
+        try:
+            conn.execute(f"ALTER TABLE hybrid_positions ADD COLUMN {col} {col_type}")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
     conn.execute('''
         CREATE TABLE IF NOT EXISTS hybrid_daily_snapshot (
             date TEXT PRIMARY KEY,
@@ -311,38 +311,62 @@ def setup_portfolio():
 
     # Take top 10 options candidates
     top_options = options_picks.head(10)
-    options_per_position = options_capital / len(top_options) if len(top_options) > 0 else 0
+    target_per_position = options_capital / len(top_options) if len(top_options) > 0 else 0
 
     # Calculate expiration date (3rd Friday of next month)
     expiration_date = get_monthly_expiration(datetime.now(), months_out=1)
 
     print(f"Expiration: {expiration_date} (3rd Friday)")
-    print(f"{'Symbol':<8} {'Amount':>10} {'Stock':>10} {'Strike':>10} {'Expires':>12}")
+    print(f"{'Symbol':<8} {'Contracts':>10} {'Premium':>10} {'Cost':>10} {'Strike':>10}")
     print("-" * 60)
 
+    total_options_spent = 0
     for _, row in top_options.iterrows():
         symbol = row['symbol']
         entry_price = prices.get(symbol)
         # Calculate 5% OTM strike price (rounded to nearest $0.50 for realism)
         strike_price = round((entry_price * 1.05) * 2) / 2 if entry_price else None
-        market_cap = row.get('market_cap', 0)
+
+        # Estimate option premium: ~4% of stock price for 5% OTM calls ~45 days out
+        # This is simplified - real premiums depend on IV, time, etc.
+        premium_per_share = entry_price * 0.04 if entry_price else None
+        # Round premium to nearest $0.05 for realism
+        premium_per_share = round(premium_per_share * 20) / 20 if premium_per_share else None
+
+        # Calculate whole contracts (each contract = 100 shares)
+        if premium_per_share and premium_per_share > 0:
+            cost_per_contract = premium_per_share * 100
+            num_contracts = int(target_per_position / cost_per_contract)
+            num_contracts = max(1, num_contracts)  # At least 1 contract
+            actual_cost = num_contracts * cost_per_contract
+        else:
+            num_contracts = 1
+            actual_cost = target_per_position
+
+        total_options_spent += actual_cost
 
         conn.execute('''
             INSERT INTO hybrid_positions
-            (symbol, position_type, entry_date, entry_price, strike_price, expiration_date, cost_basis, current_price, current_value, status, notes, updated_at)
-            VALUES (?, 'options', ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)
-        ''', (symbol, entry_date, entry_price, strike_price, expiration_date, options_per_position, entry_price, options_per_position,
-              f'OTM5 Call ${strike_price:.2f} exp {expiration_date} - Fund:{row["fundamentals_score"]:.0f} EPS_G:{row["eps_growth"]:.0f}' if strike_price else f'OTM5 Call - Fund:{row["fundamentals_score"]:.0f}', now))
+            (symbol, position_type, entry_date, entry_price, strike_price, expiration_date,
+             contracts, premium, cost_basis, current_price, current_value, status, notes, updated_at)
+            VALUES (?, 'options', ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)
+        ''', (symbol, entry_date, entry_price, strike_price, expiration_date,
+              num_contracts, premium_per_share, actual_cost, entry_price, actual_cost,
+              f'{num_contracts}x {symbol} ${strike_price:.2f}C exp {expiration_date} @ ${premium_per_share:.2f}' if strike_price else f'OTM5 Call', now))
 
         conn.execute('''
             INSERT INTO hybrid_trades
             (symbol, position_type, trade_type, trade_date, price, amount, notes)
             VALUES (?, 'options', 'buy', ?, ?, ?, ?)
-        ''', (symbol, entry_date, entry_price, options_per_position, f'OTM5 Call ${strike_price:.2f} exp {expiration_date}' if strike_price else 'OTM5 Call entry'))
+        ''', (symbol, entry_date, premium_per_share, actual_cost,
+              f'Buy {num_contracts} contracts @ ${premium_per_share:.2f}/share' if premium_per_share else 'OTM5 Call entry'))
 
-        price_str = f"${entry_price:.2f}" if entry_price else "N/A"
+        premium_str = f"${premium_per_share:.2f}" if premium_per_share else "N/A"
         strike_str = f"${strike_price:.2f}" if strike_price else "N/A"
-        print(f"  {symbol:<6} ${options_per_position:>8,.0f} {price_str:>10} {strike_str:>10} {expiration_date:>12}")
+        print(f"  {symbol:<8} {num_contracts:>10} {premium_str:>10} ${actual_cost:>8,.0f} {strike_str:>10}")
+
+    # Show actual vs target allocation
+    print(f"  {'TOTAL':<8} {'':>10} {'':>10} ${total_options_spent:>8,.0f} (target: ${options_capital:,.0f})")
 
     # 3. GROWTH PICKS
     growth_capital = TOTAL_CAPITAL * ALLOCATION['growth']

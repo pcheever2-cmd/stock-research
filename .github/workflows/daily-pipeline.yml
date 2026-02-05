@@ -6,6 +6,9 @@ on:
     - cron: '0 6 * * 1-5'
   workflow_dispatch: # Allow manual trigger from GitHub UI
 
+permissions:
+  contents: write  # Required to upload to releases and push commits
+
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
