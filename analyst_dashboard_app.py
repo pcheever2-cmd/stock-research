@@ -1359,14 +1359,35 @@ with tab4:
                     st.metric("Growth (20%)", f"${growth_val:,.0f}", f"{growth_pnl_pct:+.1f}%")
 
                 # S&P 500 Benchmark Comparison
-                spy_snapshot = pd.read_sql_query('''
-                    SELECT spy_entry_price, spy_value FROM hybrid_daily_snapshot
-                    WHERE spy_entry_price IS NOT NULL
-                    ORDER BY date DESC LIMIT 1
-                ''', h_conn)
+                spy_entry = None
+                spy_current = live_prices.get('SPY')
 
-                spy_entry = spy_snapshot['spy_entry_price'].iloc[0] if not spy_snapshot.empty and spy_snapshot['spy_entry_price'].iloc[0] else None
-                spy_current = live_prices.get('SPY') or (spy_snapshot['spy_value'].iloc[0] if not spy_snapshot.empty else None)
+                try:
+                    # Check if spy_entry_price column exists
+                    cols = pd.read_sql_query("PRAGMA table_info(hybrid_daily_snapshot)", h_conn)
+                    has_spy_entry = 'spy_entry_price' in cols['name'].values if not cols.empty else False
+
+                    if has_spy_entry:
+                        spy_snapshot = pd.read_sql_query('''
+                            SELECT spy_entry_price, spy_value FROM hybrid_daily_snapshot
+                            WHERE spy_entry_price IS NOT NULL
+                            ORDER BY date DESC LIMIT 1
+                        ''', h_conn)
+                        if not spy_snapshot.empty:
+                            spy_entry = spy_snapshot['spy_entry_price'].iloc[0]
+                            if not spy_current:
+                                spy_current = spy_snapshot['spy_value'].iloc[0]
+                    else:
+                        # Fallback: try to get just spy_value
+                        spy_snapshot = pd.read_sql_query('''
+                            SELECT spy_value FROM hybrid_daily_snapshot
+                            WHERE spy_value IS NOT NULL
+                            ORDER BY date DESC LIMIT 1
+                        ''', h_conn)
+                        if not spy_snapshot.empty and not spy_current:
+                            spy_current = spy_snapshot['spy_value'].iloc[0]
+                except Exception:
+                    pass  # SPY data not available
 
                 if spy_entry and spy_current:
                     spy_return_pct = ((spy_current - spy_entry) / spy_entry) * 100
@@ -1500,17 +1521,34 @@ with tab4:
                         st.dataframe(styled, use_container_width=True, hide_index=True)
 
                 # Daily snapshot chart with SPY comparison
-                snapshots = pd.read_sql_query('''
-                    SELECT date, total_value, spy_value, spy_entry_price, cumulative_pnl
-                    FROM hybrid_daily_snapshot
-                    ORDER BY date
-                ''', h_conn)
+                try:
+                    # Check which columns exist
+                    cols = pd.read_sql_query("PRAGMA table_info(hybrid_daily_snapshot)", h_conn)
+                    available_cols = cols['name'].tolist() if not cols.empty else []
+
+                    # Build query based on available columns
+                    select_cols = ['date', 'total_value', 'cumulative_pnl']
+                    if 'spy_value' in available_cols:
+                        select_cols.append('spy_value')
+                    if 'spy_entry_price' in available_cols:
+                        select_cols.append('spy_entry_price')
+
+                    snapshots = pd.read_sql_query(f'''
+                        SELECT {', '.join(select_cols)}
+                        FROM hybrid_daily_snapshot
+                        ORDER BY date
+                    ''', h_conn)
+                except Exception:
+                    snapshots = pd.DataFrame()
 
                 if len(snapshots) >= 1:
                     st.subheader("📊 Performance Over Time")
 
                     # Calculate portfolio and SPY returns as percentages
-                    if snapshots['spy_entry_price'].notna().any():
+                    has_spy_entry = 'spy_entry_price' in snapshots.columns and snapshots['spy_entry_price'].notna().any()
+                    has_spy_value = 'spy_value' in snapshots.columns and snapshots['spy_value'].notna().any()
+
+                    if has_spy_entry and has_spy_value:
                         spy_entry_val = snapshots['spy_entry_price'].dropna().iloc[0]
                         snapshots['Portfolio %'] = ((snapshots['total_value'] / total_cost) - 1) * 100
                         snapshots['SPY %'] = ((snapshots['spy_value'] / spy_entry_val) - 1) * 100
