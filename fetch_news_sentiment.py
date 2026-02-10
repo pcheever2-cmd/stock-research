@@ -209,6 +209,52 @@ def update_sentiment_data(sentiments: list):
     return updated
 
 
+def save_sentiment_history(sentiments: list):
+    """Save sentiment to historical table for future backtesting."""
+    import sqlite3
+    backtest_db = str(PROJECT_ROOT / 'backtest.db')
+    conn = sqlite3.connect(backtest_db)
+
+    # Create table if not exists
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS historical_sentiment (
+            symbol TEXT NOT NULL,
+            snapshot_date TEXT NOT NULL,
+            sentiment_score INTEGER,
+            article_count INTEGER,
+            positive_pct REAL,
+            negative_pct REAL,
+            avg_compound REAL,
+            collected_at TEXT,
+            PRIMARY KEY (symbol, snapshot_date)
+        )
+    ''')
+
+    today = datetime.now().strftime('%Y-%m-%d')
+    now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    saved = 0
+    for s in sentiments:
+        try:
+            conn.execute('''
+                INSERT OR REPLACE INTO historical_sentiment
+                (symbol, snapshot_date, sentiment_score, article_count,
+                 positive_pct, negative_pct, avg_compound, collected_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                s['symbol'], today, s['news_sentiment_score'],
+                s['news_article_count'], s['news_positive_pct'],
+                s['news_negative_pct'], s.get('avg_compound', 0), now
+            ))
+            saved += 1
+        except Exception:
+            pass
+
+    conn.commit()
+    conn.close()
+    return saved
+
+
 def main():
     print("=" * 60)
     print("NEWS SENTIMENT ANALYSIS")
@@ -242,6 +288,10 @@ def main():
     # Update database
     updated = update_sentiment_data(sentiments)
     print(f"Updated {updated} stocks with sentiment scores")
+
+    # Save to historical table for future backtesting
+    saved = save_sentiment_history(sentiments)
+    print(f"Saved {saved} records to historical sentiment table")
 
     # Print summary
     if sentiments:

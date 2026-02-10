@@ -495,7 +495,7 @@ if selected_industry != 'All':
 # ══════════════════════════════════════════════════════════════════════════════
 # TABS
 # ══════════════════════════════════════════════════════════════════════════════
-tab1, tab2, tab3, tab4 = st.tabs(["Research", "Analysis", "Movers", "Hybrid Portfolio"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Research", "Analysis", "Movers", "Hybrid Portfolio", "My Portfolios"])
 
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB 1: RESEARCH
@@ -1652,6 +1652,197 @@ with tab4:
         - +370% cumulative return vs SPY +83% (2021-2025)
         - 36.3% CAGR vs SPY 12.8%
         """)
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TAB 5: MY PORTFOLIOS
+# ══════════════════════════════════════════════════════════════════════════════
+with tab5:
+    st.title("My Portfolios")
+    st.markdown("**Create and track your own custom portfolios**")
+
+    # Import custom portfolio functions
+    try:
+        from custom_portfolio import (
+            get_portfolios, create_portfolio, delete_portfolio,
+            get_positions, add_position, remove_position,
+            get_portfolio_summary, fetch_current_prices
+        )
+        portfolio_module_available = True
+    except ImportError:
+        portfolio_module_available = False
+        st.error("Custom portfolio module not found. Please ensure custom_portfolio.py exists.")
+
+    if portfolio_module_available:
+        # ── Portfolio Selection ──────────────────────────────────────────────────
+        portfolios_df = get_portfolios()
+
+        col_left, col_right = st.columns([2, 1])
+
+        with col_left:
+            if not portfolios_df.empty:
+                portfolio_options = portfolios_df['name'].tolist()
+                selected_portfolio_name = st.selectbox(
+                    "Select Portfolio",
+                    portfolio_options,
+                    key="my_portfolio_select"
+                )
+                selected_portfolio_id = int(portfolios_df[portfolios_df['name'] == selected_portfolio_name]['id'].iloc[0])
+            else:
+                st.info("No portfolios yet. Create one to get started!")
+                selected_portfolio_name = None
+                selected_portfolio_id = None
+
+        with col_right:
+            # Create new portfolio
+            with st.expander("➕ Create New Portfolio"):
+                new_name = st.text_input("Portfolio Name", key="new_portfolio_name")
+                new_desc = st.text_input("Description (optional)", key="new_portfolio_desc")
+                if st.button("Create Portfolio", key="create_portfolio_btn"):
+                    if new_name:
+                        create_portfolio(new_name, new_desc)
+                        st.success(f"Created portfolio: {new_name}")
+                        st.rerun()
+                    else:
+                        st.warning("Please enter a portfolio name")
+
+        if selected_portfolio_id:
+            st.markdown("---")
+
+            # ── Add Position ─────────────────────────────────────────────────────
+            with st.expander("➕ Add Stock to Portfolio"):
+                add_cols = st.columns([2, 1, 1, 1, 2])
+                with add_cols[0]:
+                    add_symbol = st.text_input("Symbol", key="add_symbol").upper()
+                with add_cols[1]:
+                    add_shares = st.number_input("Shares", min_value=0.01, value=1.0, key="add_shares")
+                with add_cols[2]:
+                    add_price = st.number_input("Entry Price", min_value=0.01, value=100.0, key="add_price")
+                with add_cols[3]:
+                    add_date = st.date_input("Entry Date", key="add_date")
+                with add_cols[4]:
+                    add_notes = st.text_input("Notes", key="add_notes")
+
+                if st.button("Add Position", key="add_position_btn"):
+                    if add_symbol:
+                        success = add_position(
+                            selected_portfolio_id,
+                            add_symbol,
+                            add_shares,
+                            add_price,
+                            add_date.strftime('%Y-%m-%d'),
+                            add_notes
+                        )
+                        if success:
+                            st.success(f"Added {add_shares} shares of {add_symbol} at ${add_price:.2f}")
+                            st.rerun()
+                        else:
+                            st.error("Failed to add position")
+                    else:
+                        st.warning("Please enter a symbol")
+
+            # ── Portfolio Summary ────────────────────────────────────────────────
+            summary = get_portfolio_summary(selected_portfolio_id)
+
+            if summary['total_cost'] > 0:
+                # Summary metrics
+                m1, m2, m3, m4 = st.columns(4)
+                with m1:
+                    st.metric("Total Cost", f"${summary['total_cost']:,.2f}")
+                with m2:
+                    st.metric("Current Value", f"${summary['total_value']:,.2f}")
+                with m3:
+                    pnl_delta = f"{summary['pnl_pct']:+.2f}%"
+                    st.metric("Total P&L", f"${summary['pnl']:+,.2f}", delta=pnl_delta)
+                with m4:
+                    num_positions = len(summary['positions'])
+                    st.metric("Positions", num_positions)
+
+                st.markdown("---")
+
+                # Positions table
+                st.subheader("Positions")
+                positions_df = summary['positions'].copy()
+
+                if not positions_df.empty and 'current_price' in positions_df.columns:
+                    # Format for display
+                    display_df = positions_df[['symbol', 'shares', 'entry_price', 'current_price',
+                                               'cost_basis', 'current_value', 'pnl', 'pnl_pct']].copy()
+                    display_df.columns = ['Symbol', 'Shares', 'Entry $', 'Current $',
+                                          'Cost', 'Value', 'P&L $', 'P&L %']
+
+                    # Color P&L
+                    def color_pnl(val):
+                        if pd.isna(val):
+                            return ''
+                        color = 'green' if val > 0 else 'red' if val < 0 else ''
+                        return f'color: {color}'
+
+                    styled = display_df.style.applymap(
+                        color_pnl, subset=['P&L $', 'P&L %']
+                    ).format({
+                        'Shares': '{:.2f}',
+                        'Entry $': '${:.2f}',
+                        'Current $': '${:.2f}',
+                        'Cost': '${:,.2f}',
+                        'Value': '${:,.2f}',
+                        'P&L $': '${:+,.2f}',
+                        'P&L %': '{:+.2f}%'
+                    })
+
+                    st.dataframe(styled, use_container_width=True, hide_index=True)
+
+                    # Remove position
+                    st.markdown("---")
+                    remove_col1, remove_col2 = st.columns([3, 1])
+                    with remove_col1:
+                        symbol_to_remove = st.selectbox(
+                            "Remove Position",
+                            positions_df['symbol'].tolist(),
+                            key="remove_symbol"
+                        )
+                    with remove_col2:
+                        st.write("")  # Spacing
+                        st.write("")
+                        if st.button("🗑️ Remove", key="remove_position_btn"):
+                            remove_position(selected_portfolio_id, symbol_to_remove)
+                            st.success(f"Removed {symbol_to_remove}")
+                            st.rerun()
+                else:
+                    st.info("Add positions to start tracking your portfolio")
+            else:
+                st.info("Portfolio is empty. Add some positions to get started!")
+
+            # ── Delete Portfolio ─────────────────────────────────────────────────
+            st.markdown("---")
+            with st.expander("⚠️ Danger Zone"):
+                st.warning(f"Delete portfolio '{selected_portfolio_name}' and all its positions?")
+                if st.button("🗑️ Delete Portfolio", key="delete_portfolio_btn"):
+                    delete_portfolio(selected_portfolio_id)
+                    st.success(f"Deleted portfolio: {selected_portfolio_name}")
+                    st.rerun()
+
+        # ── Quick Add from Research ──────────────────────────────────────────────
+        st.markdown("---")
+        st.subheader("Quick Add from Stock List")
+        st.markdown("Search for a stock from our database and add it to your portfolio:")
+
+        quick_symbol = st.text_input("Search Symbol", key="quick_search").upper()
+        if quick_symbol and len(quick_symbol) >= 1:
+            # Search in our database
+            matches = df[df['symbol'].str.contains(quick_symbol, case=False, na=False)].head(10)
+            if not matches.empty:
+                st.dataframe(
+                    matches[['symbol', 'company_name', 'sector', 'current_price', 'upside_percent', 'value_score_v2']].rename(columns={
+                        'symbol': 'Symbol',
+                        'company_name': 'Company',
+                        'sector': 'Sector',
+                        'current_price': 'Price',
+                        'upside_percent': 'Upside %',
+                        'value_score_v2': 'V2 Score'
+                    }),
+                    use_container_width=True,
+                    hide_index=True
+                )
 
 # ── Footer ───────────────────────────────────────────────────────────────────
 st.markdown("---")
