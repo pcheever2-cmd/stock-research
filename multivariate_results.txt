@@ -1,0 +1,205 @@
+======================================================================
+MULTIVARIATE FACTOR ANALYSIS & REGIME-ADAPTIVE SCORING
+======================================================================
+Started: 2026-02-13 22:41:29
+======================================================================
+LOADING DATA FOR MULTIVARIATE ANALYSIS
+======================================================================
+
+Loading price data...
+  Loaded 23,005,369 price records
+
+Loading fundamental data...
+
+Loading SPY for regime detection...
+
+Computing derived factors...
+
+Computing price-based factors...
+  Processing 0/6554 symbols...
+  Processing 500/6554 symbols...
+  Processing 1000/6554 symbols...
+  Processing 1500/6554 symbols...
+  Processing 2000/6554 symbols...
+  Processing 2500/6554 symbols...
+  Processing 3000/6554 symbols...
+  Processing 3500/6554 symbols...
+  Processing 4000/6554 symbols...
+  Processing 4500/6554 symbols...
+  Processing 5000/6554 symbols...
+  Processing 5500/6554 symbols...
+  Processing 6000/6554 symbols...
+  Processing 6500/6554 symbols...
+  Generated 1,005,259 price-factor observations
+
+Merging with fundamentals...
+
+Final dataset: 1,004,396 observations
+
+======================================================================
+DETECTING MARKET REGIMES
+======================================================================
+
+Regime Distribution:
+  Bull        :  5,244 days (67.0%)
+  Bear        :    957 days (12.2%)
+  High_Vol    :    940 days (12.0%)
+  Transition  :    439 days (5.6%)
+  Unknown     :    199 days (2.5%)
+  Recovery    :     53 days (0.7%)
+
+======================================================================
+MULTIVARIATE FACTOR REGRESSION
+======================================================================
+
+Observations with all factors: 238,827
+
+R² = nan, Adjusted R² = nan
+
+Factor                Coefficient    Std Error     T-Stat    Sig
+-----------------------------------------------------------------
+(Intercept)                 +nan         nan      +nan
+roa                         +nan         nan      +nan       
+ocf_assets                  +nan         nan      +nan       
+fcf_assets                  +nan         nan      +nan       
+fcf_yield                   +nan         nan      +nan       
+gp_assets                   +nan         nan      +nan       
+asset_growth                +nan         nan      +nan       
+vol_60d                     +nan         nan      +nan       
+mom_12_1                    +nan         nan      +nan       
+mom_6m                      +nan         nan      +nan       
+ev_to_ebitda                +nan         nan      +nan       
+price_vs_sma200             +nan         nan      +nan       
+accruals                    +nan         nan      +nan       
+
+-----------------------------------------------------------------
+
+Significant factors (|t| > 1.96): 
+
+======================================================================
+FACTOR PERFORMANCE BY REGIME
+======================================================================
+
+=== Bull Regime (701,478 observations) ===
+Factor              Correlation   Q5-Q1 Spread     T-Stat
+----------------------------------------------------------
+roa                       +nan         +6.23%      +0.0 
+ocf_assets                +nan         +6.67%      +0.0 
+fcf_assets                +nan         +6.33%      +0.0 
+fcf_yield                 +nan         +3.81%      +0.0 
+gp_assets                 +nan         +2.90%      +0.0 
+vol_60d                +0.0044        -43.04%      +3.7 ***
+mom_12_1               +0.0000       -106.34%      +0.0 
+mom_6m                 +0.0001         +2.09%      +0.0 
+asset_growth              +nan         -0.67%      +0.0 
+ev_to_ebitda           -0.0010         +3.22%      -0.5 
+
+=== Bear Regime (108,219 observations) ===
+Factor              Correlation   Q5-Q1 Spread     T-Stat
+----------------------------------------------------------
+roa                       +nan        +10.46%      +0.0 
+ocf_assets                +nan        +10.56%      +0.0 
+fcf_assets                +nan        +10.39%      +0.0 
+fcf_yield                 +nan         +6.55%      +0.0 
+gp_assets                 +nan         +4.54%      +0.0 
+vol_60d                -0.0000      +1616.17%      -0.0 
+mom_12_1               -0.0001      -1611.34%      -0.0 
+mom_6m                 -0.0000      -1616.41%      -0.0 
+asset_growth              +nan         -2.68%      +0.0 
+ev_to_ebitda           +0.0167         +5.84%      +2.8 ***
+
+=== High_Vol Regime (118,617 observations) ===
+Factor              Correlation   Q5-Q1 Spread     T-Stat
+----------------------------------------------------------
+roa                       +nan       -488.68%      +0.0 
+ocf_assets                +nan       -492.61%      +0.0 
+fcf_assets                +nan       -492.41%      +0.0 
+fcf_yield                 +nan       -494.55%      +0.0 
+gp_assets                 +nan       -486.65%      +0.0 
+vol_60d                +0.6888       +204.21%    +327.2 ***
+mom_12_1               -0.0001       -116.58%      -0.0 
+mom_6m                 -0.0006       -140.18%      -0.2 
+asset_growth              +nan       +484.83%      +0.0 
+ev_to_ebitda           +0.0001         -0.27%      +0.0 
+
+=== Recovery Regime (8,817 observations) ===
+Factor              Correlation   Q5-Q1 Spread     T-Stat
+----------------------------------------------------------
+roa                       +nan         +5.62%      +0.0 
+ocf_assets                +nan         +6.45%      +0.0 
+fcf_assets                +nan         +6.16%      +0.0 
+fcf_yield                 +nan         +1.63%      +0.0 
+gp_assets                 +nan         +6.45%      +0.0 
+vol_60d                -0.0004         +1.56%      -0.0 
+mom_12_1               -0.0114         -1.72%      -1.1 
+mom_6m                 +0.0091         +0.07%      +0.9 
+asset_growth              +nan         -2.61%      +0.0 
+ev_to_ebitda           +0.0534         +0.10%      +3.8 ***
+
+======================================================================
+OPTIMAL FACTOR WEIGHTS BY REGIME
+======================================================================
+
+=== Bull Regime ===
+  mom_6m            :  81.5 pts
+  mom_12_1          :  18.5 pts
+
+=== Bear Regime ===
+  vol_60d           : 100.0 pts
+
+=== High_Vol Regime ===
+
+=== Recovery Regime ===
+  mom_6m            :  95.8 pts
+  vol_60d           :   4.2 pts
+
+======================================================================
+PROPOSED V4 ADAPTIVE WEIGHTS
+======================================================================
+
+Factor                        Default        Bull        Bear    High_Vol    Recovery
+-------------------------------------------------------------------------------------
+cash_flow_composite               30pt         25pt         35pt         30pt         25pt
+fcf_yield                         15pt         10pt         15pt         15pt         10pt
+gross_profitability               10pt         10pt         10pt         15pt         10pt
+inverse_asset_growth              10pt          5pt         15pt         10pt          5pt
+inverse_volatility                10pt          5pt         15pt         20pt         10pt
+momentum_12_1                      5pt         15pt           —           —         10pt
+momentum_6m                         —          5pt           —           —          5pt
+trend                             10pt         15pt          5pt          5pt         15pt
+valuation                         10pt         10pt          5pt          5pt         10pt
+-------------------------------------------------------------------------------------
+TOTAL                            100pt        100pt        100pt        100pt        100pt
+
+======================================================================
+BACKTESTING: ADAPTIVE VS STATIC STRATEGY
+======================================================================
+
+Backtest observations: 0
+
+=== Overall Performance ===
+Strategy              Correlation   Q5-Q1 Spread     Q5 Ret     Q1 Ret
+----------------------------------------------------------------------
+Static V4                   +nan          +nan%      +nan%      +nan%
+Adaptive V4                 +nan          +nan%      +nan%      +nan%
+
+=== Performance by Regime ===
+
+======================================================================
+SUMMARY & RECOMMENDATIONS
+======================================================================
+
+1. MULTIVARIATE SURVIVING FACTORS:
+
+2. REGIME-SPECIFIC INSIGHTS:
+   - Bull markets: Momentum adds value (+15pt weight)
+   - Bear markets: Low volatility critical (+15pt weight), zero momentum
+   - High vol: Maximum defensive posture, low vol +20pt
+   - Recovery: Balance quality with momentum
+
+3. ADAPTIVE STRATEGY BENEFIT:
+   Static V4 spread:   +nan%
+   Adaptive V4 spread: +nan%
+   Improvement:        +nan%
+
+Completed: 2026-02-13 23:40:50

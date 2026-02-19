@@ -32,6 +32,11 @@ log = logging.getLogger(__name__)
 
 BATCH_SIZE = 100  # Stocks per batch
 
+# Trading cost configuration (realistic estimates for retail investors)
+COMMISSION_PCT = 0.001      # 0.1% commission per trade ($10 on $10k)
+SLIPPAGE_PCT = 0.001        # 0.1% slippage (market impact)
+TOTAL_TRADE_COST = COMMISSION_PCT + SLIPPAGE_PCT  # 0.2% round-trip per side
+
 
 # ==================== TECHNICAL INDICATORS ====================
 
@@ -355,6 +360,115 @@ def score_dataframe_v2(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def score_dataframe_v3(df: pd.DataFrame, gp_lookup: dict = None) -> pd.DataFrame:
+    """
+    Apply V3 scoring with momentum factors and gross profitability.
+
+    V3 formula (max 100):
+    - Momentum 12-1:        25 points (+0.066 correlation - STRONGEST)
+    - 52-Week High:         10 points (+0.075 correlation - second strongest)
+    - Gross Profitability:  15 points (+0.035 correlation - Novy-Marx 2013)
+    - Trend:                15 points (price above SMAs)
+    - Fundamentals:         15 points (revenue/EPS growth)
+    - Valuation:             5 points (reduced - has NEGATIVE correlation!)
+    - Quality:               5 points
+    - Analyst Signal:       Skipped in backtest (requires real-time data)
+    """
+    # First apply V2 scoring to get base components
+    df = score_dataframe_v2(df)
+
+    # Calculate 12-1 momentum (price 21 days ago / price 252 days ago - 1)
+    # Skip last month (21 trading days) to avoid short-term mean reversion
+    price_1m_ago = df['adjusted_close'].shift(21)
+    price_12m_ago = df['adjusted_close'].shift(252)
+
+    df['momentum_12_1'] = np.where(
+        (price_12m_ago > 0) & (price_1m_ago > 0),
+        ((price_1m_ago / price_12m_ago) - 1) * 100,
+        np.nan
+    )
+
+    # Cap extremes
+    df['momentum_12_1'] = df['momentum_12_1'].clip(-80, 200)
+
+    # Convert momentum to score (0-25 points) based on backtest quintiles
+    df['momentum_12_1_score'] = np.where(
+        df['momentum_12_1'].isna(), 10,  # Default neutral
+        np.where(df['momentum_12_1'] > 40, 25,   # Strong winners
+        np.where(df['momentum_12_1'] > 10, 18,   # Moderate winners
+        np.where(df['momentum_12_1'] > -10, 10,  # Neutral
+        np.where(df['momentum_12_1'] > -30, 5,   # Moderate losers
+        0))))                                     # Strong losers
+    )
+
+    # Calculate 52-week high proximity (0-10 points) - second strongest factor
+    high_52w = df['adjusted_close'].rolling(window=252, min_periods=126).max()
+    df['pct_from_high'] = ((df['adjusted_close'] / high_52w) - 1) * 100
+
+    df['high52w_score'] = np.where(
+        df['pct_from_high'].isna(), 5,  # Default neutral
+        np.where(df['pct_from_high'] > -5, 10,   # Near 52-week high
+        np.where(df['pct_from_high'] > -15, 7,   # Within 15%
+        np.where(df['pct_from_high'] > -30, 4,   # Within 30%
+        0)))                                      # Far from high
+    )
+
+    # Scale components for V3 (reduced to make room for GP)
+    v3_trend = (df['trend_score'] * 15 / 25).astype(int)           # max 15
+    v3_fundamentals = (df['fundamentals_score'] * 15 / 25).astype(int)  # max 15
+
+    # V3 Valuation (max 5) - UPDATED based on deep dive:
+    # - Extreme cheapness (<8x) = VALUE TRAP (distress signal)
+    # - Sweet spot is 10-25x (D2/D3 had best returns: +3.9%)
+    # - Very expensive (>40x) slightly underperforms
+    v3_valuation = np.where(df['ev_ebitda'] < 8, 0,      # Value trap!
+                   np.where(df['ev_ebitda'] < 25, 5,     # Sweet spot
+                   np.where(df['ev_ebitda'] < 40, 3, 0)))  # Fair/Expensive
+
+    # Quality (max 5) - reduced to make room for GP
+    v3_quality = np.where(df['ebitda_growth'] > 10, 3, 0)
+    v3_quality = v3_quality + np.where((df['ev_ebitda'] > 0) & (df['ev_ebitda'] <= 25), 2, 0)
+
+    # Gross Profitability Score (max 15) - Novy-Marx 2013
+    # If gp_lookup provided, use it; otherwise default to neutral
+    if gp_lookup is not None and 'symbol' in df.columns:
+        # Get unique symbol for this dataframe (should be single symbol in backtest context)
+        symbol = df['symbol'].iloc[0] if 'symbol' in df.columns else None
+        if symbol and symbol in gp_lookup:
+            gp = gp_lookup[symbol]
+            if gp > 0.12:
+                gp_score = 15
+            elif gp > 0.07:
+                gp_score = 12
+            elif gp > 0.03:
+                gp_score = 8
+            elif gp > 0.01:
+                gp_score = 4
+            else:
+                gp_score = 0
+        else:
+            gp_score = 7  # Default neutral
+        df['gross_profitability_score'] = gp_score
+    else:
+        df['gross_profitability_score'] = 7  # Default neutral if no lookup
+
+    # V3 Total (max 90 without analyst signal, scaled to 100)
+    # Since we can't include analyst signal in backtest, scale up remaining components
+    # Weights: Mom(25) + 52wH(10) + GP(15) + Trend(15) + Fund(15) + Val(5) + Quality(5) = 90
+    v3_raw = (df['momentum_12_1_score'] +      # max 25
+              df['high52w_score'] +             # max 10
+              df['gross_profitability_score'] + # max 15
+              v3_trend +                        # max 15
+              v3_fundamentals +                 # max 15
+              v3_valuation +                    # max 5
+              v3_quality)                       # max 5 = 90 total
+
+    # Scale to 100 (90 * 100/90 = 100)
+    df['value_score_v3'] = (v3_raw * 100 / 90).clip(0, 100).astype(int)
+
+    return df
+
+
 # ==================== SIGNAL DETECTION ====================
 
 def detect_signals(df: pd.DataFrame) -> pd.DataFrame:
@@ -638,14 +752,25 @@ def detect_signals_v2(df: pd.DataFrame) -> pd.DataFrame:
 
 # ==================== FORWARD RETURNS ====================
 
-def compute_forward_returns(signals_df: pd.DataFrame, prices_df: pd.DataFrame) -> pd.DataFrame:
-    """Calculate forward returns for each signal date"""
+def compute_forward_returns(signals_df: pd.DataFrame, prices_df: pd.DataFrame,
+                            include_costs: bool = True) -> pd.DataFrame:
+    """
+    Calculate forward returns for each signal date.
+
+    Args:
+        signals_df: DataFrame with signal dates
+        prices_df: DataFrame with price history
+        include_costs: If True, subtract trading costs (buy + sell = 2 * TOTAL_TRADE_COST)
+    """
     if signals_df.empty:
         return signals_df
 
     prices_sorted = prices_df[['date', 'adjusted_close']].sort_values('date').reset_index(drop=True)
     date_to_idx = dict(zip(prices_sorted['date'], range(len(prices_sorted))))
     closes = prices_sorted['adjusted_close'].values
+
+    # Round-trip trading cost (buy and sell)
+    round_trip_cost = 2 * TOTAL_TRADE_COST * 100 if include_costs else 0  # Convert to percentage
 
     periods = {'return_1w': 5, 'return_1m': 21, 'return_3m': 63,
                'return_6m': 126, 'return_1y': 252}
@@ -657,7 +782,13 @@ def compute_forward_returns(signals_df: pd.DataFrame, prices_df: pd.DataFrame) -
             if idx is not None and idx + offset < len(closes):
                 entry = closes[idx]
                 exit_price = closes[idx + offset]
-                returns.append(((exit_price / entry) - 1) * 100 if entry > 0 else None)
+                gross_return = ((exit_price / entry) - 1) * 100 if entry > 0 else None
+                if gross_return is not None:
+                    # Subtract round-trip trading costs
+                    net_return = gross_return - round_trip_cost
+                    returns.append(net_return)
+                else:
+                    returns.append(None)
             else:
                 returns.append(None)
         signals_df[col] = returns
@@ -819,6 +950,7 @@ def show_summary():
 
     # Average forward returns by signal type
     print("\n--- Average Forward Returns by Signal Type ---")
+    print(f"  (Returns are NET of {TOTAL_TRADE_COST*2*100:.1f}% round-trip trading costs)")
     print(f"  {'Signal':<25s} {'1W':>8s} {'1M':>8s} {'3M':>8s} {'6M':>8s} {'1Y':>8s}  {'Win% 3M':>8s}")
     print("  " + "-" * 78)
 

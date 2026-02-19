@@ -13,7 +13,7 @@ import aiohttp
 import sqlite3
 import pandas as pd
 import logging
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 import json
 from pathlib import Path
@@ -453,17 +453,17 @@ async def main():
     log.info("=" * 60)
     
     # 1. Get tickers needing update
-    today = date.today().isoformat()
+    # Use proper date comparison - update stocks not updated today (using DATE() for reliable comparison)
     conn = sqlite3.connect(DATABASE_NAME)
     query = """
-        SELECT symbol 
-        FROM stock_consensus 
-        WHERE last_updated < ? 
-           OR last_updated IS NULL 
+        SELECT symbol
+        FROM stock_consensus
+        WHERE DATE(last_updated) < DATE('now')
+           OR last_updated IS NULL
            OR avg_price_target IS NULL
         ORDER BY last_updated ASC NULLS LAST
     """
-    df = pd.read_sql_query(query, conn, params=[today])
+    df = pd.read_sql_query(query, conn)
     conn.close()
     
     tickers = df['symbol'].dropna().tolist()

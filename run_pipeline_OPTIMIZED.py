@@ -171,6 +171,73 @@ def generate_stats_report():
 
 # ==================== COVERAGE ANALYZER ====================
 
+def validate_data_freshness():
+    """Validate that data was actually updated during this pipeline run"""
+    log.info("\n" + "="*60)
+    log.info("Data Freshness Validation")
+    log.info("="*60)
+
+    conn = sqlite3.connect(DATABASE_NAME)
+
+    # Check how many stocks were updated today
+    updated_today = conn.execute("""
+        SELECT COUNT(*) FROM stock_consensus
+        WHERE DATE(last_updated) = DATE('now')
+    """).fetchone()[0]
+
+    # Check how many have stale data (not updated today)
+    stale_count = conn.execute("""
+        SELECT COUNT(*) FROM stock_consensus
+        WHERE DATE(last_updated) < DATE('now') OR last_updated IS NULL
+    """).fetchone()[0]
+
+    # Total stocks
+    total = conn.execute("SELECT COUNT(*) FROM stock_consensus").fetchone()[0]
+
+    # Get oldest last_updated
+    oldest = conn.execute("""
+        SELECT MIN(last_updated) FROM stock_consensus
+        WHERE last_updated IS NOT NULL
+    """).fetchone()[0]
+
+    # Get sample of stale stocks
+    stale_sample = conn.execute("""
+        SELECT symbol, last_updated, num_analysts
+        FROM stock_consensus
+        WHERE DATE(last_updated) < DATE('now') OR last_updated IS NULL
+        ORDER BY num_analysts DESC NULLS LAST
+        LIMIT 5
+    """).fetchall()
+
+    conn.close()
+
+    # Report
+    freshness_pct = (updated_today / total * 100) if total > 0 else 0
+    log.info(f"\n📊 Data Freshness Report:")
+    log.info(f"  Updated today: {updated_today:,} / {total:,} ({freshness_pct:.1f}%)")
+    log.info(f"  Stale (not updated today): {stale_count:,}")
+    log.info(f"  Oldest timestamp: {oldest}")
+
+    if stale_count > 0 and stale_sample:
+        log.warning(f"\n⚠️  Sample of stale stocks:")
+        for symbol, last_updated, analysts in stale_sample:
+            analysts_str = str(analysts) if analysts else "N/A"
+            log.warning(f"    {symbol}: last_updated={last_updated}, analysts={analysts_str}")
+
+    # Validation threshold - warn if less than 50% updated
+    if freshness_pct < 50:
+        log.error(f"\n❌ CRITICAL: Only {freshness_pct:.1f}% of stocks updated today!")
+        log.error("   Check API key, rate limits, or network connectivity.")
+    elif stale_count > 0:
+        log.warning(f"\n⚠️  {stale_count} stocks have stale data. This may be normal if:")
+        log.warning("   - Some stocks have no analyst coverage")
+        log.warning("   - API returned errors for some symbols")
+    else:
+        log.info(f"\n✅ All stocks have fresh data!")
+
+    return updated_today, stale_count, total
+
+
 def analyze_coverage_gaps():
     """Identify which stocks should have coverage but don't"""
     log.info("\n" + "="*60)
@@ -271,9 +338,13 @@ async def main():
         # Run pipeline
         run_batch_price_update()
         await run_analyst_update()
+
+        # Validate data freshness after analyst update
+        validate_data_freshness()
+
         await run_scoring()
         generate_stats_report()
-        
+
         # Export parquet for Streamlit Cloud
         export_dashboard_parquet()
 

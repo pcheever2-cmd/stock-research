@@ -1,0 +1,499 @@
+symbol,company_name,sector,current_price,num_analysts,long_term_score,value_score_v2,forward_pe,peg_ratio,sentiment_score,article_count,positive_pct,past_30d_return,sentiment_quintile
+NVDA,NVIDIA Corporation,Technology,180.34,48,43.0,19.0,23.3,0.36,70.0,20.0,75.0,1.6000425260471989,Q2
+GOOGL,Alphabet Inc.,Technology,341.1958,47,61.0,28.0,26.13,1.66,67.0,20.0,65.0,6.779553926833884,Q1 (Low)
+AMZN,"Amazon.com, Inc.",Consumer Cyclical,238.62,46,64.0,41.0,24.6,1.1,69.0,20.0,75.0,2.677422123058444,Q2
+INFY,Infosys Limited,Technology,17.785,45,46.0,21.0,21.08,2.6,71.0,20.0,75.0,-0.5656108597285149,Q2
+UBER,"Uber Technologies, Inc.",Technology,81.38,41,43.0,48.0,18.23,0.65,61.0,20.0,65.0,0.2972504334902268,Q1 (Low)
+AMD,"Advanced Micro Devices, Inc.",Technology,247.75,41,70.0,46.0,23.74,0.43,62.0,20.0,60.0,7.078885471322588,Q1 (Low)
+SNOW,Snowflake Inc.,Technology,194.39,40,60.0,10.0,118.2,3.36,66.0,20.0,85.0,-14.46113389195936,Q1 (Low)
+CRM,"Salesforce, Inc.",Technology,214.06,38,34.0,26.0,16.27,1.37,41.0,20.0,30.0,-17.158354795910405,Q1 (Low)
+BABA,Alibaba Group Holding Limited,Consumer Cyclical,168.89,36,54.0,22.0,2.76,0.06,65.0,20.0,75.0,8.511455266862928,Q1 (Low)
+SNAP,Snap Inc.,Communication Services,6.8212,35,28.0,0.0,,,64.0,20.0,65.0,-18.3030303030303,Q1 (Low)
+JD,"JD.com, Inc.",Consumer Cyclical,28.645,34,35.0,53.0,0.96,0.02,74.0,20.0,80.0,-3.9460370994940916,Q3
+DDOG,"Datadog, Inc.",Technology,129.91,34,38.0,7.0,46.07,2.11,70.0,20.0,70.0,-3.232565100269376,Q2
+PYPL,"PayPal Holdings, Inc.",Financial Services,52.93,34,43.0,58.0,8.25,0.71,51.0,20.0,45.0,-11.131725417439705,Q1 (Low)
+MRVL,"Marvell Technology, Inc.",Technology,78.4431,34,61.0,57.0,21.89,0.84,74.0,20.0,85.0,-12.534633713842405,Q3
+SHOP,Shopify Inc.,Technology,134.21,33,40.0,19.0,54.17,1.81,69.0,20.0,65.0,-21.00655796883462,Q2
+ORCL,Oracle Corporation,Technology,168.03,33,43.0,58.0,21.22,2.93,45.0,20.0,50.0,-15.19289682745729,Q1 (Low)
+CRWD,"CrowdStrike Holdings, Inc.",Technology,443.42,33,60.0,18.0,92.32,3.15,73.0,20.0,80.0,-3.3161756653159533,Q2
+AVGO,Broadcom Inc.,Technology,331.045,32,35.0,0.0,23.16,0.59,75.0,20.0,85.0,-3.5292062197891805,Q3
+ONC,BeOne Medicines Ltd.,Healthcare,339.37,32,58.0,17.0,33.45,0.6,75.0,20.0,75.0,6.269122697471116,Q3
+LYFT,"Lyft, Inc.",Technology,17.195,32,23.0,16.0,17.6,0.43,75.0,20.0,80.0,-11.906005221932103,Q3
+XYZ,"Block, Inc.",Technology,60.48,31,41.0,64.0,14.57,0.48,61.0,20.0,50.0,-11.548575602629658,Q1 (Low)
+INTC,Intel Corporation,Technology,48.9032,31,73.0,45.0,51.21,0.6,66.0,20.0,70.0,18.03403606807214,Q1 (Low)
+BIDU,"Baidu, Inc.",Communication Services,150.185,31,56.0,47.0,2.25,0.14,67.0,20.0,65.0,2.3383217530732225,Q1 (Low)
+LI,Li Auto Inc.,Consumer Cyclical,16.655,31,21.0,22.0,2.01,0.03,58.0,20.0,55.0,-4.205069124423966,Q1 (Low)
+WDAY,"Workday, Inc.",Technology,175.2236,30,28.0,23.0,16.35,0.91,73.0,20.0,75.0,-16.85495452369555,Q2
+TCOM,Trip.com Group Limited,Consumer Cyclical,61.76,30,60.0,73.0,1.81,0.13,51.0,20.0,45.0,-17.7245508982036,Q1 (Low)
+FSLR,"First Solar, Inc.",Energy,225.4401,30,45.0,43.0,7.91,0.3,73.0,20.0,80.0,-17.08823529411764,Q2
+BILI,Bilibili Inc.,Technology,33.47,30,45.0,10.0,3.25,0.11,80.0,20.0,85.0,24.551774606659354,Q4
+PDD,PDD Holdings Inc.,Consumer Cyclical,102.86,30,40.0,63.0,1.0,0.05,57.0,20.0,70.0,-15.169576897246479,Q1 (Low)
+MSFT,Microsoft Corporation,Technology,411.21,30,46.0,49.0,21.72,1.37,56.0,20.0,55.0,-9.000740192450037,Q1 (Low)
+XPEV,XPeng Inc.,Consumer Cyclical,16.58,29,45.0,18.0,5.51,0.04,62.0,20.0,70.0,-17.79156327543423,Q1 (Low)
+DASH,"DoorDash, Inc.",Communication Services,207.815,29,40.0,25.0,41.49,0.73,72.0,20.0,70.0,-9.747706422018346,Q2
+SPOT,Spotify Technology S.A.,Communication Services,509.11,28,23.0,15.0,32.57,1.09,71.0,20.0,70.0,-14.265491498002996,Q2
+PINS,"Pinterest, Inc.",Communication Services,22.18,28,15.0,0.0,10.36,0.76,61.0,20.0,60.0,-16.77358490566038,Q1 (Low)
+HUBS,"HubSpot, Inc.",Technology,279.06,28,33.0,16.0,19.81,0.88,60.0,20.0,60.0,-26.242031505189402,Q1 (Low)
+EW,Edwards Lifesciences Corporation,Healthcare,82.429,28,46.0,10.0,25.38,2.22,79.0,20.0,85.0,-3.3384816442913174,Q4
+BSX,Boston Scientific Corporation,Healthcare,92.89,28,31.0,21.0,23.54,1.73,60.0,20.0,65.0,-2.0423125261834967,Q1 (Low)
+ABNB,"Airbnb, Inc.",Consumer Cyclical,131.7575,28,66.0,14.0,23.04,1.3,71.0,20.0,65.0,-4.783984691248988,Q2
+NTES,"NetEase, Inc.",Technology,129.915,28,26.0,28.0,1.81,0.18,73.0,20.0,70.0,-11.188473735006198,Q2
+META,"Meta Platforms, Inc.",Technology,691.7,28,54.0,41.0,20.11,1.32,64.0,20.0,65.0,8.759999392826249,Q1 (Low)
+YUMC,"Yum China Holdings, Inc.",Consumer Cyclical,50.12,27,45.0,39.0,15.78,1.41,77.0,20.0,85.0,7.150480256136609,Q3
+RDDT,"Reddit, Inc.",Communication Services,181.0,27,50.0,33.0,33.28,0.85,71.0,20.0,75.0,-26.197500512190125,Q2
+DKNG,DraftKings Inc.,Consumer Cyclical,27.985,27,40.0,27.0,19.31,0.15,68.0,20.0,75.0,-24.089403973509935,Q2
+CHKP,Check Point Software Technologies Ltd.,Technology,180.88,27,21.0,19.0,15.56,1.41,66.0,20.0,65.0,-3.0199891950297157,Q1 (Low)
+BIIB,Biogen Inc.,Healthcare,179.0801,27,45.0,36.0,11.46,2.85,69.0,20.0,80.0,3.012082689114122,Q2
+OKTA,"Okta, Inc.",Technology,88.24,27,23.0,8.0,24.12,3.86,71.0,20.0,75.0,-3.6825903545775738,Q2
+MDB,"MongoDB, Inc.",Technology,375.64,27,70.0,8.0,66.24,3.63,71.0,20.0,75.0,-11.760372605864742,Q2
+TTD,"The Trade Desk, Inc.",Technology,30.4589,26,43.0,33.0,21.33,0.7,62.0,20.0,65.0,-25.107205185739218,Q1 (Low)
+TME,Tencent Music Entertainment Group,Communication Services,16.6,26,41.0,46.0,2.2,0.12,88.0,20.0,95.0,-11.120129870129869,Q5 (High)
+VEEV,Veeva Systems Inc.,Healthcare,203.46,26,40.0,27.0,23.69,2.9,77.0,20.0,75.0,-8.489969275257542,Q3
+HD,"The Home Depot, Inc.",Consumer Cyclical,373.6,26,31.0,19.0,24.74,5.95,67.0,20.0,70.0,8.86396001046238,Q1 (Low)
+ON,ON Semiconductor Corporation,Technology,61.1887,26,66.0,36.0,14.89,0.36,66.0,20.0,70.0,2.0446413358323445,Q1 (Low)
+ZG,"Zillow Group, Inc. Class A",Communication Services,62.77,25,28.0,28.0,21.38,0.66,68.0,20.0,75.0,-5.1690762441028655,Q2
+W,Wayfair Inc.,Consumer Cyclical,102.875,25,50.0,13.0,26.84,0.91,79.0,20.0,90.0,-0.037954265110547725,Q4
+ZS,"Zscaler, Inc.",Technology,202.11,25,40.0,18.0,45.14,2.59,76.0,20.0,75.0,-10.154426288382117,Q3
+TGT,Target Corporation,Consumer Defensive,108.455,25,55.0,52.0,14.2,2.92,69.0,20.0,75.0,7.335945151811958,Q2
+GOOG,Alphabet Inc.,Technology,340.7,25,61.0,28.0,26.11,1.66,70.0,20.0,70.0,6.684104374133361,Q2
+DXCM,"DexCom, Inc.",Healthcare,73.1865,25,41.0,30.0,24.52,1.17,83.0,20.0,95.0,7.967479674796748,Q5 (High)
+CMG,"Chipotle Mexican Grill, Inc.",Consumer Cyclical,38.16,25,41.0,16.0,26.64,1.47,66.0,20.0,70.0,1.6209150326797321,Q1 (Low)
+CART,Instacart (Maplebear Inc.),Consumer Cyclical,37.98,25,26.0,33.0,14.52,0.88,73.0,20.0,80.0,-15.468607825295733,Q2
+BKNG,Booking Holdings Inc.,Consumer Cyclical,5103.4644,25,21.0,26.0,16.63,1.11,71.0,20.0,65.0,-6.810225492187044,Q2
+AMGN,Amgen Inc.,Healthcare,343.77,25,41.0,28.0,14.92,3.67,67.0,20.0,65.0,6.597655275629823,Q1 (Low)
+ADI,"Analog Devices, Inc.",Technology,316.3992,25,58.0,24.0,27.57,1.87,83.0,20.0,100.0,12.113671607342484,Q5 (High)
+NFLX,"Netflix, Inc.",Communication Services,84.0836,25,38.0,46.0,22.11,1.04,71.0,20.0,80.0,-8.714191996501203,Q2
+LOW,"Lowe's Companies, Inc.",Consumer Cyclical,266.31,25,51.0,26.0,20.62,3.8,78.0,20.0,90.0,9.115423901940757,Q4
+KT,,,20.72,25,,,0.01,0.0,81.0,9.0,100.0,9.586170770036679,Q4
+NET,"Cloudflare, Inc.",Technology,183.805,24,50.0,27.0,119.94,4.04,77.0,20.0,85.0,-7.469897804310426,Q3
+MDLN,Medline Inc.,Healthcare,45.1202,24,,,35.07,,66.0,20.0,60.0,15.500000000000005,Q1 (Low)
+FISV,"Fiserv, Inc.",Technology,63.08,24,35.0,61.0,6.89,0.58,76.0,20.0,85.0,-4.866397969846243,Q3
+EXPE,"Expedia Group, Inc.",Consumer Cyclical,275.615,24,55.0,43.0,12.76,0.69,76.0,20.0,75.0,-7.872125787038666,Q3
+ETSY,"Etsy, Inc.",Consumer Cyclical,53.125,24,31.0,34.0,15.86,0.68,71.0,20.0,80.0,-9.562841530054648,Q2
+EDU,New Oriental Education & Technology Group Inc.,Consumer Defensive,62.25,24,54.0,36.0,15.69,0.95,80.0,20.0,90.0,5.744308231173382,Q4
+EBAY,eBay Inc.,Consumer Cyclical,92.964,24,61.0,35.0,14.39,1.42,85.0,20.0,90.0,0.8290040897535095,Q5 (High)
+CYBR,CyberArk Software Ltd.,Technology,431.9098,24,45.0,18.0,68.06,2.35,75.0,20.0,90.0,-2.4079191772754034,Q3
+BEKE,KE Holdings Inc.,Real Estate,18.555,24,33.0,10.0,2.53,0.13,77.0,14.0,85.7,9.409701928696666,Q3
+QCOM,QUALCOMM Incorporated,Technology,152.99,24,40.0,41.0,12.38,5.77,44.0,20.0,35.0,-14.020758890590438,Q1 (Low)
+NXPI,NXP Semiconductors N.V.,Technology,230.73,24,56.0,26.0,13.8,0.66,70.0,20.0,80.0,1.0094693585849521,Q2
+LRCX,Lam Research Corporation,Technology,238.22,24,40.0,3.0,34.45,1.13,74.0,20.0,75.0,19.87060998151572,Q3
+LLY,Eli Lilly and Company,Healthcare,1051.325,24,48.0,10.0,25.78,1.09,58.0,20.0,60.0,-0.41862296089330875,Q1 (Low)
+WCN,"Waste Connections, Inc.",Industrials,168.52,23,36.0,37.0,26.12,2.16,60.0,20.0,55.0,-3.67080602506611,Q1 (Low)
+TOST,"Toast, Inc.",Technology,32.03,23,40.0,34.0,21.29,0.93,71.0,20.0,75.0,-8.028985507246375,Q2
+RSG,"Republic Services, Inc.",Industrials,215.415,23,26.0,20.0,26.51,2.33,78.0,20.0,95.0,0.8363089644803614,Q4
+NKE,"NIKE, Inc.",Consumer Cyclical,62.16,23,28.0,23.0,26.63,0.53,68.0,20.0,75.0,-3.4092670075933715,Q2
+INTU,Intuit Inc.,Technology,495.575,23,43.0,32.0,18.79,1.37,61.0,20.0,60.0,-21.28612899154361,Q1 (Low)
+ENPH,"Enphase Energy, Inc.",Energy,35.91,23,41.0,28.0,14.71,0.8,75.0,20.0,85.0,8.764705882352931,Q3
+AZN,AstraZeneca PLC,Healthcare,191.54,23,51.0,34.0,33.07,2.65,66.0,20.0,65.0,1.6991887743915777,Q1 (Low)
+ARGX,argenx SE,Healthcare,842.0825,23,58.0,15.0,21.6,0.78,78.0,20.0,85.0,4.947058235940466,Q4
+ADSK,"Autodesk, Inc.",Technology,258.4813,23,28.0,21.0,22.34,1.71,71.0,20.0,75.0,-12.398669715235924,Q2
+ABBV,AbbVie Inc.,Healthcare,225.645,23,35.0,6.0,14.16,1.21,79.0,20.0,85.0,1.285312017440269,Q4
+PANW,"Palo Alto Networks, Inc.",Technology,177.295,23,18.0,11.0,40.82,3.26,75.0,20.0,85.0,-2.8278058423017822,Q3
+MCD,McDonald's Corporation,Consumer Cyclical,317.635,23,46.0,22.0,22.07,2.6,80.0,20.0,90.0,5.049022877342755,Q4
+U,Unity Software Inc.,Technology,29.855,22,33.0,1.0,23.29,0.72,54.0,20.0,50.0,-37.29840993247658,Q1 (Low)
+TDOC,"Teladoc Health, Inc.",Healthcare,5.545,22,25.0,0.0,,,64.0,20.0,65.0,-24.51923076923077,Q1 (Low)
+SBUX,Starbucks Corporation,Consumer Cyclical,91.9771,22,58.0,11.0,31.16,1.11,78.0,20.0,95.0,6.1634704251386285,Q4
+S,"SentinelOne, Inc.",Technology,14.185,22,43.0,14.0,47.15,0.81,72.0,20.0,75.0,-3.8149898717083137,Q2
+SE,Sea Limited,Consumer Cyclical,114.45,22,28.0,13.0,19.54,0.64,73.0,20.0,75.0,-19.544999284590077,Q2
+GILD,"Gilead Sciences, Inc.",Healthcare,142.02,22,51.0,31.0,15.05,2.04,80.0,20.0,90.0,19.991546914623832,Q4
+CRWV,"CoreWeave, Inc. Class A Common Stock",Technology,90.685,22,53.0,35.0,43.87,,60.0,20.0,65.0,21.246422066094194,Q1 (Low)
+CFLT,"Confluent, Inc.",Technology,30.56,22,68.0,8.0,47.33,1.37,74.0,20.0,85.0,1.2935323383084598,Q3
+BMY,Bristol-Myers Squibb Company,Healthcare,55.45,22,55.0,30.0,9.51,,62.0,20.0,55.0,3.750471164719176,Q1 (Low)
+BE,Bloom Energy Corporation,Industrials,150.27,22,65.0,40.0,51.36,0.32,82.0,20.0,95.0,45.73023972273033,Q5 (High)
+AMAT,"Applied Materials, Inc.",Technology,328.3871,22,43.0,0.0,27.34,1.13,79.0,20.0,85.0,13.365222284749578,Q4
+PODD,Insulet Corporation,Healthcare,258.51,22,40.0,27.0,32.65,1.2,79.0,20.0,80.0,-9.770378469895238,Q4
+NXT,Nextpower Inc.,Technology,116.5192,22,56.0,39.0,24.73,3.03,77.0,20.0,90.0,30.680803571428584,Q3
+ZBH,"Zimmer Biomet Holdings, Inc.",Healthcare,86.93,21,35.0,42.0,9.62,1.42,61.0,20.0,60.0,-6.470588235294122,Q1 (Low)
+WING,Wingstop Inc.,Consumer Cyclical,270.48,21,41.0,25.0,45.0,1.62,69.0,20.0,70.0,3.422581646109684,Q2
+VRTX,Vertex Pharmaceuticals Incorporated,Healthcare,473.0788,21,51.0,9.0,20.56,1.3,82.0,20.0,95.0,5.355347593582879,Q5 (High)
+V,Visa Inc.,Financial Services,332.75,21,23.0,8.0,22.91,1.74,80.0,20.0,90.0,-5.593555681175811,Q4
+TWLO,Twilio Inc.,Communication Services,121.895,21,35.0,0.0,19.42,1.28,72.0,20.0,80.0,-12.125660598943048,Q2
+RMD,ResMed Inc.,Healthcare,251.84,21,44.0,36.0,20.56,1.88,72.0,20.0,80.0,2.645092924682092,Q2
+PKX,POSCO Holdings Inc.,Basic Materials,60.48,21,50.0,30.0,0.01,0.0,76.0,16.0,81.2,14.001132930513593,Q3
+PFE,Pfizer Inc.,Healthcare,26.5399,21,50.0,30.0,9.32,,69.0,20.0,70.0,5.4231227651966565,Q2
+GTLB,GitLab Inc.,Technology,36.2659,21,55.0,9.0,34.83,2.09,77.0,20.0,90.0,-6.74486803519062,Q3
+ETN,Eaton Corporation plc,Industrials,356.565,21,38.0,13.0,23.23,1.69,77.0,20.0,85.0,9.048594302736928,Q3
+DPZ,"Domino's Pizza, Inc.",Consumer Cyclical,406.0,21,26.0,23.0,19.07,2.15,75.0,20.0,80.0,-0.2697841726618738,Q3
+DG,Dollar General Corporation,Consumer Defensive,143.13,21,51.0,17.0,19.98,1.99,76.0,20.0,80.0,3.2390412437918377,Q3
+CVS,CVS Health Corporation,Healthcare,75.145,21,41.0,30.0,9.13,0.62,73.0,20.0,80.0,-7.336483461825423,Q2
+CTSH,Cognizant Technology Solutions Corporation,Technology,83.3297,21,50.0,39.0,13.62,1.54,86.0,20.0,100.0,0.5267671199314061,Q5 (High)
+CRH,CRH plc,Basic Materials,123.655,21,51.0,42.0,18.17,1.57,81.0,20.0,80.0,-4.598238640791837,Q4
+COIN,"Coinbase Global, Inc.",Financial Services,188.97,21,21.0,20.0,25.13,1.23,48.0,20.0,40.0,-23.60740624509649,Q1 (Low)
+ANET,"Arista Networks, Inc.",Technology,141.425,21,65.0,31.0,34.74,1.66,75.0,20.0,90.0,3.3165682629929383,Q3
+AMRZ,Amrize Ltd,Basic Materials,53.22,21,,,18.15,1.77,85.0,20.0,90.0,-6.536412078152754,Q5 (High)
+ALNY,"Alnylam Pharmaceuticals, Inc.",Healthcare,340.6166,21,43.0,15.0,27.78,0.39,80.0,20.0,90.0,-15.02400522836387,Q4
+AFRM,"Affirm Holdings, Inc.",Technology,61.4851,21,53.0,36.0,38.46,0.63,65.0,20.0,70.0,-25.371287128712872,Q1 (Low)
+ORLY,"O'Reilly Automotive, Inc.",Consumer Cyclical,97.6,21,33.0,7.0,26.65,2.53,75.0,20.0,80.0,8.644292338264515,Q3
+MELI,"MercadoLibre, Inc.",Consumer Cyclical,2168.495,21,45.0,34.0,25.87,0.61,75.0,20.0,80.0,-0.038629445876885035,Q3
+LIN,Linde plc,Basic Materials,459.6945,21,41.0,22.0,23.5,2.46,70.0,20.0,70.0,5.511429231124453,Q2
+KVYO,"Klaviyo, Inc.",Technology,23.19,21,50.0,7.0,23.47,1.03,81.0,20.0,85.0,-23.650739085596424,Q4
+ZM,"Zoom Communications, Inc.",Technology,93.3408,20,43.0,19.0,15.39,9.42,73.0,20.0,80.0,7.24604183520166,Q2
+YUM,"Yum! Brands, Inc.",Consumer Cyclical,156.94,20,43.0,26.0,21.02,1.83,72.0,20.0,85.0,3.95235877303879,Q2
+VRT,Vertiv Holdings Co,Industrials,190.55,20,55.0,22.0,28.27,1.08,83.0,20.0,95.0,10.175337740730106,Q5 (High)
+TXRH,"Texas Roadhouse, Inc.",Consumer Cyclical,182.3779,20,49.0,23.0,22.48,0.99,82.0,20.0,90.0,5.09981642955485,Q5 (High)
+TNDM,"Tandem Diabetes Care, Inc.",Healthcare,20.8194,20,55.0,13.0,,,93.0,20.0,100.0,-12.250971922246213,Q5 (High)
+TEAM,Atlassian Corporation,Technology,117.65,20,23.0,0.0,20.89,1.33,65.0,20.0,75.0,-25.68228489732258,Q1 (Low)
+SEDG,"SolarEdge Technologies, Inc.",Energy,30.14,20,68.0,15.0,17.6,,71.0,20.0,75.0,-2.1113243761996165,Q2
+RACE,Ferrari N.V.,Consumer Cyclical,337.85,20,26.0,22.0,27.02,2.92,79.0,20.0,90.0,-11.089724998022518,Q4
+HUM,Humana Inc.,Healthcare,190.565,20,35.0,49.0,9.94,0.17,67.0,20.0,70.0,-29.224075416968827,Q1 (Low)
+ESTC,Elastic N.V.,Technology,66.23,20,28.0,15.0,23.91,1.8,82.0,20.0,95.0,-11.277082492262139,Q5 (High)
+DT,"Dynatrace, Inc.",Technology,38.585,20,28.0,21.0,20.97,1.68,80.0,20.0,85.0,-10.649777152240205,Q4
+BZ,Kanzhun Limited,Industrials,18.6464,20,43.0,47.0,1.83,0.12,69.0,17.0,70.6,-13.173933427097978,Q2
+APP,AppLovin Corporation,Technology,485.7,20,50.0,36.0,25.22,0.85,63.0,20.0,70.0,-25.248455546602194,Q1 (Low)
+ALC,Alcon Inc.,Healthcare,79.54,20,33.0,16.0,19.54,1.32,81.0,20.0,90.0,0.4091754494730294,Q4
+AAP,"Advance Auto Parts, Inc.",Consumer Cyclical,48.49,20,35.0,0.0,11.74,0.22,62.0,20.0,60.0,23.89677419354838,Q1 (Low)
+ROKU,"Roku, Inc.",Communication Services,97.0,20,43.0,17.0,39.43,0.45,71.0,20.0,70.0,-16.986396930589468,Q2
+RIVN,"Rivian Automotive, Inc.",Consumer Cyclical,14.55,20,60.0,10.0,,,64.0,20.0,75.0,-24.70648289943849,Q1 (Low)
+MNDY,monday.com Ltd.,Technology,116.16,20,40.0,18.0,18.86,0.71,68.0,20.0,65.0,-19.62597184282413,Q2
+LNW,"Light & Wonder, Inc.",Consumer Cyclical,99.75,20,60.0,52.0,12.99,0.53,85.0,9.0,100.0,1.0091302258529526,Q5 (High)
+ZTO,ZTO Express (Cayman) Inc.,Industrials,22.14,19,45.0,37.0,1.57,0.15,83.0,20.0,85.0,1.8885306310456016,Q5 (High)
+WBD,"Warner Bros. Discovery, Inc.",Communication Services,27.6279,19,55.0,40.0,,,49.0,20.0,30.0,-3.207150368033658,Q1 (Low)
+WAY,Waystar Holding Corp.,Technology,26.45,19,26.0,35.0,14.2,1.01,72.0,20.0,65.0,-17.117684078036504,Q2
+ULTA,"Ulta Beauty, Inc.",Consumer Cyclical,661.2912,19,51.0,23.0,23.26,2.06,92.0,20.0,100.0,5.0669412976313115,Q5 (High)
+TSM,Taiwan Semiconductor Manufacturing Company Limited,Technology,343.42,19,46.0,19.0,0.63,0.03,67.0,20.0,80.0,6.179984484096205,Q1 (Low)
+TSLA,"Tesla, Inc.",Consumer Cyclical,421.96,19,65.0,45.0,156.1,4.57,63.0,20.0,65.0,-6.12172603892223,Q1 (Low)
+TRU,TransUnion,Industrials,78.005,19,34.0,40.0,13.77,0.84,77.0,20.0,85.0,-10.667050028752163,Q3
+PWR,"Quanta Services, Inc.",Industrials,472.28,19,56.0,23.0,32.67,2.0,76.0,20.0,75.0,9.373135698224043,Q3
+KLAC,KLA Corporation,Technology,1409.37,19,45.0,1.0,30.66,1.18,73.0,20.0,85.0,5.581722059965249,Q2
+ISRG,"Intuitive Surgical, Inc.",Healthcare,499.43,19,38.0,10.0,43.53,3.03,77.0,20.0,85.0,-10.974963805219105,Q3
+HWM,Howmet Aerospace Inc.,Industrials,208.22501,19,53.0,9.0,39.51,2.2,77.0,20.0,80.0,-2.2731542363328834,Q3
+GLOB,Globant S.A.,Technology,66.74,19,38.0,50.0,9.85,1.29,79.0,20.0,90.0,0.28490028490028146,Q4
+EQIX,"Equinix, Inc.",Real Estate,818.145,19,41.0,10.0,50.51,5.92,73.0,20.0,85.0,6.335328100308278,Q2
+DLR,"Digital Realty Trust, Inc.",Real Estate,165.97,19,31.0,20.0,85.78,3.77,84.0,20.0,95.0,6.5352763690055715,Q5 (High)
+ARRY,"Array Technologies, Inc.",Energy,10.8781,19,40.0,2.0,10.6,0.66,73.0,20.0,80.0,25.470653377630132,Q2
+PLTR,Palantir Technologies Inc.,Technology,149.14,19,50.0,44.0,109.37,2.85,67.0,20.0,75.0,-15.7722362675247,Q1 (Low)
+ODFL,"Old Dominion Freight Line, Inc.",Industrials,182.305,19,61.0,40.0,30.94,1.76,69.0,20.0,75.0,5.783912538936053,Q2
+NBIX,"Neurocrine Biosciences, Inc.",Healthcare,136.79,19,48.0,22.0,16.19,0.93,71.0,20.0,60.0,0.05147437311566525,Q2
+MCHP,Microchip Technology Incorporated,Technology,77.75,19,40.0,5.0,29.65,0.41,74.0,20.0,90.0,13.212048911422606,Q3
+KYMR,"Kymera Therapeutics, Inc.",Healthcare,74.5044,19,53.0,0.0,,,71.0,20.0,65.0,0.38668692169589997,Q2
+SWKS,"Skyworks Solutions, Inc.",Technology,56.5417,18,43.0,63.0,11.24,0.82,81.0,20.0,95.0,-13.190607734806628,Q4
+SI,"SHOULDER INNOVATIONS, INC.",Healthcare,14.01,18,,,,,81.0,18.0,94.4,-1.1830201809324978,Q4
+SHAK,Shake Shack Inc.,Consumer Cyclical,93.86,18,36.0,32.0,54.55,2.1,61.0,20.0,60.0,11.68722308705543,Q1 (Low)
+QSR,Restaurant Brands International Inc.,Consumer Cyclical,66.87,18,31.0,33.0,15.32,1.76,78.0,20.0,80.0,0.08990110878034505,Q4
+PEN,"Penumbra, Inc.",Healthcare,358.57,18,58.0,22.0,55.64,2.02,73.0,20.0,90.0,13.409523809523813,Q2
+NOW,"ServiceNow, Inc.",Technology,120.44,18,30.0,18.0,23.9,1.16,45.0,20.0,50.0,-19.735772357723576,Q1 (Low)
+NCLH,Norwegian Cruise Line Holdings Ltd.,Consumer Cyclical,23.145,18,50.0,45.0,7.76,0.53,78.0,20.0,80.0,4.495128432240924,Q4
+UA,"Under Armour, Inc.",Consumer Cyclical,5.965,18,33.0,0.0,27.62,0.08,58.0,20.0,50.0,17.926356589147282,Q1 (Low)
+AAPL,Apple Inc.,Technology,269.48,18,48.0,8.0,29.19,3.04,63.0,20.0,70.0,-2.9110229738831,Q1 (Low)
+HOOD,"Robinhood Markets, Inc.",Financial Services,90.81,18,25.0,0.0,30.73,1.99,64.0,20.0,70.0,-19.27945472249269,Q1 (Low)
+GSK,GSK plc,Healthcare,52.455,18,45.0,37.0,9.85,1.12,79.0,20.0,85.0,5.263157894736838,Q4
+GFL,GFL Environmental Inc.,Industrials,42.92,18,51.0,53.0,31.32,0.83,77.0,20.0,90.0,0.679793717768416,Q3
+CSCO,"Cisco Systems, Inc.",Technology,80.92,18,43.0,20.0,18.06,2.09,80.0,20.0,90.0,3.625297697803645,Q4
+CP,Canadian Pacific Kansas City Ltd.,Industrials,74.045,18,26.0,34.0,16.91,1.21,75.0,20.0,85.0,2.2417824233255534,Q3
+CDNS,"Cadence Design Systems, Inc.",Technology,294.144,18,10.0,0.0,31.88,2.17,71.0,20.0,65.0,-1.613438682690397,Q2
+BILL,"Bill.com Holdings, Inc.",Technology,42.9975,18,50.0,31.0,16.75,1.13,81.0,20.0,90.0,-19.56400223588597,Q4
+BHP,BHP Group Limited,Basic Materials,69.6,18,50.0,30.0,14.62,,74.0,20.0,85.0,8.853341780171053,Q3
+ASML,ASML Holding N.V.,Technology,1445.09,18,58.0,24.0,32.67,1.18,75.0,20.0,75.0,15.861552365676316,Q3
+RPD,"Rapid7, Inc.",Technology,12.18,18,21.0,16.0,5.87,1.04,63.0,12.0,75.0,-15.160142348754455,Q1 (Low)
+PEP,"PepsiCo, Inc.",Consumer Defensive,155.085,18,41.0,12.0,17.13,2.9,69.0,20.0,75.0,9.79845626072042,Q2
+MU,"Micron Technology, Inc.",Technology,437.83,18,51.0,14.0,10.06,0.31,69.0,20.0,70.0,32.91045971488067,Q2
+MCO,Moody's Corporation,Financial Services,519.11,18,43.0,3.0,28.06,2.31,80.0,20.0,90.0,-2.1484968114181693,Q4
+VIPS,Vipshop Holdings Limited,Consumer Cyclical,17.355,17,45.0,47.0,0.9,0.17,74.0,19.0,78.9,-3.8073908174692037,Q3
+VFC,V.F. Corporation,Consumer Cyclical,20.435,17,51.0,31.0,19.98,0.77,71.0,20.0,80.0,10.111464968152873,Q2
+TYL,"Tyler Technologies, Inc.",Technology,365.235,17,23.0,8.0,25.5,1.81,81.0,20.0,85.0,-17.6728632963047,Q4
+TENB,"Tenable Holdings, Inc.",Technology,22.24,17,33.0,13.0,11.14,0.86,75.0,20.0,80.0,-4.974837310195223,Q3
+TAL,TAL Education Group,Consumer Defensive,12.315,17,56.0,21.0,17.58,0.73,76.0,14.0,78.6,6.881533101045288,Q3
+SRAD,Sportradar Group AG,Technology,18.6342,17,30.0,43.0,24.14,0.45,89.0,12.0,100.0,-20.455531453362255,Q5 (High)
+SPGI,S&P Global Inc.,Financial Services,527.66,17,48.0,13.0,23.59,2.0,77.0,20.0,95.0,-0.8256708575717728,Q3
+SO,The Southern Company,Utilities,88.57,17,30.0,41.0,18.08,2.4,81.0,20.0,85.0,1.5022447335098337,Q4
+SNPS,"Synopsys, Inc.",Technology,463.4806,17,23.0,11.0,27.42,1.56,74.0,20.0,70.0,-6.5632651409376965,Q3
+PH,Parker-Hannifin Corporation,Industrials,950.235,17,56.0,27.0,28.06,2.85,82.0,20.0,95.0,4.8374113729338735,Q5 (High)
+NEM,Newmont Corporation,Basic Materials,112.04,17,55.0,30.0,11.25,1.08,66.0,20.0,65.0,8.562735439003182,Q1 (Low)
+MOS,The Mosaic Company,Basic Materials,27.26,17,35.0,40.0,10.35,0.67,73.0,20.0,70.0,9.63007639726578,Q2
+MNSO,MINISO Group Holding Limited,Consumer Cyclical,18.45,17,28.0,12.0,1.44,0.06,73.0,20.0,75.0,-5.572597137014315,Q2
+GENC,"Gencor Industries, Inc.",Industrials,14.505,17,43.0,34.0,17.06,,65.0,6.0,66.7,9.139375476009134,Q1 (Low)
+KTOS,"Kratos Defense & Security Solutions, Inc.",Industrials,95.4,17,70.0,28.0,89.89,2.49,74.0,20.0,85.0,14.544645835649947,Q3
+IQV,IQVIA Holdings Inc.,Healthcare,229.98,17,51.0,34.0,16.07,1.51,84.0,20.0,90.0,-1.8926637964107582,Q5 (High)
+INCY,Incyte Corporation,Healthcare,101.8,17,45.0,30.0,10.95,0.53,82.0,20.0,90.0,-1.6897534138913577,Q5 (High)
+GTM,ZoomInfo Technologies Inc.,Technology,8.0,17,46.0,51.0,6.71,0.89,73.0,19.0,68.4,-21.386718749999993,Q2
+GFS,GLOBALFOUNDRIES Inc.,Technology,42.42,17,73.0,50.0,18.15,0.71,75.0,20.0,70.0,13.65472663614328,Q3
+GENI,Genius Sports Limited,Communication Services,8.635,17,30.0,13.0,27.1,0.11,78.0,20.0,90.0,-22.73534635879219,Q4
+GDS,GDS Holdings Limited,Technology,44.715,17,46.0,27.0,140.03,,73.0,12.0,66.7,19.078070876632015,Q2
+FTI,TechnipFMC plc,Energy,55.99,17,46.0,28.0,16.87,0.91,78.0,20.0,80.0,15.386208324704908,Q4
+FLUT,Flutter Entertainment plc,Consumer Cyclical,165.39,17,36.0,41.0,12.27,0.29,77.0,20.0,85.0,-25.413241802908495,Q3
+FIVE,"Five Below, Inc.",Consumer Cyclical,196.3417,17,61.0,25.0,28.43,3.01,71.0,20.0,70.0,-2.542717656631408,Q2
+EFX,Equifax Inc.,Industrials,200.345,17,34.0,52.0,19.04,0.91,76.0,20.0,85.0,-8.782100638615873,Q3
+DOCU,"DocuSign, Inc.",Technology,52.5701,17,26.0,23.0,12.75,1.43,67.0,20.0,65.0,-18.340068386695684,Q1 (Low)
+CVNA,Carvana Co.,Consumer Cyclical,410.875,17,50.0,15.0,38.43,0.85,57.0,20.0,50.0,-6.731618843882246,Q1 (Low)
+CTVA,"Corteva, Inc.",Basic Materials,73.27,17,36.0,21.0,17.79,1.43,79.0,20.0,85.0,7.295504789977897,Q4
+CRCL,Circle Internet Group,Financial Services,60.83,17,,,34.78,0.35,59.0,20.0,60.0,-24.61084905660377,Q1 (Low)
+CHWY,"Chewy, Inc.",Consumer Cyclical,28.945,17,10.0,2.0,35.72,0.65,77.0,20.0,85.0,-9.455676516329703,Q3
+BBY,"Best Buy Co., Inc.",Consumer Cyclical,65.185,17,25.0,42.0,9.69,1.48,84.0,20.0,85.0,-7.066381156316921,Q5 (High)
+APLS,"Apellis Pharmaceuticals, Inc.",Healthcare,22.539,17,65.0,27.0,,,75.0,20.0,70.0,-9.20788098110174,Q3
+RUN,Sunrun Inc.,Energy,18.15,17,65.0,0.0,57.55,,78.0,20.0,85.0,3.7117903930130987,Q4
+QLYS,"Qualys, Inc.",Technology,136.145,17,54.0,39.0,17.2,2.59,76.0,20.0,85.0,0.6716531827201918,Q3
+NTRA,"Natera, Inc.",Healthcare,230.595,17,63.0,16.0,,,78.0,20.0,85.0,-2.645101507876338,Q4
+MRNA,"Moderna, Inc.",Healthcare,43.5829,17,65.0,2.0,,,60.0,20.0,60.0,36.99098539011501,Q1 (Low)
+MNST,Monster Beverage Corporation,Consumer Defensive,80.2609,17,48.0,0.0,31.5,2.49,79.0,20.0,90.0,6.726575921765566,Q4
+LYV,"Live Nation Entertainment, Inc.",Communication Services,145.74,17,39.0,24.0,48.07,1.09,73.0,20.0,85.0,0.0963457435826759,Q2
+LULU,Lululemon Athletica Inc.,Consumer Cyclical,178.7499,17,35.0,66.0,14.23,,49.0,20.0,45.0,-17.843691148775896,Q1 (Low)
+ZTS,Zoetis Inc.,Healthcare,124.2596,16,31.0,34.0,16.74,1.92,80.0,20.0,95.0,-4.050398083017708,Q4
+XYL,Xylem Inc.,Industrials,140.175,16,46.0,18.0,22.82,2.19,83.0,20.0,100.0,0.9280575539568289,Q5 (High)
+WMT,Walmart Inc.,Consumer Defensive,123.3,16,43.0,7.0,41.52,3.28,69.0,20.0,70.0,9.888208677136022,Q2
+VRNS,"Varonis Systems, Inc.",Technology,29.8618,16,33.0,0.0,54.21,0.92,55.0,20.0,65.0,-9.936396835057822,Q1 (Low)
+TXN,Texas Instruments Incorporated,Technology,221.8,16,33.0,0.0,29.09,1.53,73.0,20.0,80.0,26.691877857425084,Q2
+TREX,"Trex Company, Inc.",Industrials,41.52,16,44.0,50.0,22.39,1.68,76.0,20.0,95.0,15.599116510215346,Q3
+TMUS,"T-Mobile US, Inc.",Communication Services,196.0508,16,35.0,42.0,13.74,0.55,77.0,20.0,90.0,-3.0780145374888,Q3
+THC,Tenet Healthcare Corporation,Healthcare,188.915,16,50.0,56.0,10.48,0.97,82.0,20.0,95.0,-8.704893483406591,Q5 (High)
+SRPT,"Sarepta Therapeutics, Inc.",Healthcare,20.78,16,35.0,8.0,8.0,0.23,75.0,20.0,80.0,-1.0441385856668195,Q3
+SHW,The Sherwin-Williams Company,Basic Materials,360.85,16,33.0,10.0,26.5,2.1,83.0,20.0,90.0,8.419626730885017,Q5 (High)
+SHLS,"Shoals Technologies Group, Inc.",Energy,9.305,16,63.0,28.0,15.6,0.73,68.0,8.0,62.5,5.343082114735654,Q2
+SAN,"Banco Santander, S.A.",Financial Services,13.06,16,55.0,43.0,8.29,0.54,71.0,20.0,75.0,7.899090157154674,Q2
+SAIA,"Saia, Inc.",Industrials,360.9982,16,46.0,34.0,26.61,0.96,79.0,20.0,95.0,4.685419676496423,Q4
+RBLX,Roblox Corporation,Technology,68.22,16,40.0,0.0,,,71.0,20.0,70.0,-15.807008884501483,Q2
+PPG,"PPG Industries, Inc.",Basic Materials,117.675,16,40.0,34.0,13.56,1.57,60.0,20.0,60.0,11.168139910654881,Q1 (Low)
+PAYC,"Paycom Software, Inc.",Technology,134.26,16,30.0,44.0,12.03,1.05,80.0,20.0,95.0,-12.986928104575165,Q4
+NP,Neptune Insurance Holdings Inc.,Technology,25.81,16,,,51.62,,81.0,7.0,100.0,-12.747778537252222,Q4
+RXO,"RXO, Inc.",Industrials,15.26,16,38.0,13.0,33.51,0.08,58.0,20.0,50.0,16.679245283018872,Q1 (Low)
+IOT,Samsara Inc.,Technology,27.1,16,30.0,5.0,45.9,2.79,77.0,20.0,85.0,-18.173862310385065,Q3
+INSM,Insmed Incorporated,Healthcare,153.945,16,70.0,28.0,220.49,,76.0,20.0,75.0,-10.462328767123278,Q3
+IDYA,"IDEAYA Biosciences, Inc.",Healthcare,34.0782,16,55.0,2.0,,,72.0,19.0,68.4,-7.870635374928449,Q2
+HSAI,Hesai Group,Consumer Cyclical,22.994,16,70.0,19.0,3.39,0.06,75.0,20.0,95.0,-1.5670103092783463,Q3
+GNRC,Generac Holdings Inc.,Industrials,168.85,16,41.0,22.0,17.39,0.84,74.0,20.0,75.0,13.02125369921979,Q3
+GEHC,GE HealthCare Technologies Inc.,Healthcare,79.47,16,55.0,42.0,14.37,1.21,81.0,20.0,90.0,-7.137817497648173,Q4
+FROG,JFrog Ltd.,Technology,56.14,16,70.0,11.0,50.34,1.93,69.0,20.0,65.0,-6.913538304739257,Q2
+EXEL,"Exelixis, Inc.",Healthcare,42.04,16,36.0,29.0,12.74,1.03,83.0,20.0,95.0,-2.4528301886792434,Q5 (High)
+EXAS,Exact Sciences Corporation,Healthcare,102.47,16,58.0,0.0,75.95,0.29,67.0,20.0,70.0,0.7184332250762759,Q1 (Low)
+ETR,Entergy Corporation,Utilities,96.04,16,46.0,33.0,19.57,1.63,81.0,20.0,90.0,3.6088600756347953,Q4
+EMR,Emerson Electric Co.,Industrials,148.88,16,51.0,24.0,20.86,2.08,79.0,20.0,90.0,2.8771438571928694,Q4
+DRI,"Darden Restaurants, Inc.",Consumer Cyclical,199.48,16,41.0,26.0,17.5,2.27,81.0,20.0,90.0,3.4724384926814067,Q4
+CYTK,"Cytokinetics, Incorporated",Healthcare,64.84,16,60.0,2.0,,,82.0,20.0,85.0,3.1505060398302316,Q5 (High)
+CSGP,"CoStar Group, Inc.",Real Estate,62.43,16,25.0,8.0,34.34,0.94,66.0,20.0,70.0,-7.40740740740741,Q1 (Low)
+CGNX,Cognex Corporation,Technology,39.41,16,45.0,4.0,29.02,1.41,71.0,20.0,80.0,3.6660422799036785,Q2
+CAVA,"CAVA Group, Inc.",Consumer Cyclical,59.35,16,43.0,31.0,78.33,2.43,66.0,20.0,65.0,-4.505356017643352,Q1 (Low)
+BROS,Dutch Bros Inc.,Consumer Cyclical,53.61,16,28.0,25.0,46.4,1.48,77.0,20.0,80.0,-9.53093812375249,Q3
+BBIO,"BridgeBio Pharma, Inc.",Healthcare,78.49,16,75.0,25.0,85.11,,78.0,20.0,85.0,5.243802778534452,Q4
+BA,The Boeing Company,Industrials,234.58,16,70.0,24.0,42.74,0.22,68.0,20.0,75.0,2.4503572524437836,Q2
+AXSM,"Axsome Therapeutics, Inc.",Healthcare,186.1547,16,75.0,25.0,25.07,0.02,77.0,20.0,80.0,7.440667094291206,Q3
+ALAB,"Astera Labs, Inc. Common Stock",Technology,152.485,16,35.0,3.0,45.48,1.14,76.0,20.0,90.0,-9.867751780264502,Q3
+ACN,Accenture plc,Technology,266.84,16,34.0,42.0,17.87,2.28,87.0,20.0,95.0,-0.1287976361845715,Q5 (High)
+ACAD,ACADIA Pharmaceuticals Inc.,Healthcare,25.885,16,48.0,18.0,23.34,0.45,73.0,20.0,70.0,-3.9005736137667286,Q2
+ABT,Abbott Laboratories,Healthcare,110.04,16,26.0,23.0,17.61,1.75,82.0,20.0,90.0,-13.56267299327798,Q5 (High)
+PCTY,Paylocity Holding Corporation,Technology,136.06,16,39.0,37.0,16.53,1.68,77.0,18.0,77.8,-10.127172248485257,Q3
+NTLA,"Intellia Therapeutics, Inc.",Healthcare,12.95,16,55.0,2.0,,,64.0,20.0,60.0,40.34151547491997,Q1 (Low)
+MDLZ,"Mondelez International, Inc.",Consumer Defensive,58.7182,16,26.0,16.0,17.1,1.77,74.0,20.0,80.0,8.801637513956079,Q3
+MAS,Masco Corporation,Industrials,66.64,16,31.0,32.0,14.47,1.41,85.0,20.0,90.0,3.6055808120395114,Q5 (High)
+MAR,"Marriott International, Inc.",Consumer Cyclical,318.7548,16,53.0,27.0,25.17,2.22,84.0,20.0,95.0,1.37285792367297,Q5 (High)
+XRAY,DENTSPLY SIRONA Inc.,Healthcare,12.3,15,35.0,0.0,7.34,0.77,79.0,20.0,85.0,5.813953488372099,Q4
+XPO,"XPO Logistics, Inc.",Industrials,157.755,15,51.0,34.0,28.82,1.03,73.0,20.0,85.0,10.392697209782987,Q2
+XENE,Xenon Pharmaceuticals Inc.,Healthcare,41.69,15,60.0,2.0,,,73.0,20.0,75.0,-0.7896625987078209,Q2
+WIX,Wix.com Ltd.,Technology,84.7325,15,36.0,17.0,11.33,0.62,74.0,20.0,75.0,-17.133556914578804,Q3
+VST,Vistra Corp.,Utilities,155.97,15,26.0,30.0,14.21,0.57,75.0,20.0,80.0,-4.848708034125088,Q3
+VMC,Vulcan Materials Company,Basic Materials,305.87,15,41.0,21.0,27.1,1.78,82.0,20.0,80.0,3.424680621566039,Q5 (High)
+TAP,Molson Coors Beverage Company,Consumer Defensive,48.2,15,35.0,0.0,8.46,2.48,73.0,20.0,70.0,4.426689699848838,Q2
+RTX,RTX Corporation,Industrials,198.34,15,43.0,21.0,26.2,2.38,77.0,20.0,85.0,6.748645490279408,Q3
+PCOR,"Procore Technologies, Inc.",Technology,56.51,15,50.0,9.0,25.82,1.05,82.0,19.0,84.2,-23.168724279835402,Q5 (High)
+PATH,UiPath Inc.,Technology,12.8176,15,38.0,8.0,16.85,1.27,73.0,20.0,85.0,-21.83406113537119,Q2
+MTZ,"MasTec, Inc.",Industrials,244.4,15,43.0,23.0,24.74,1.14,84.0,20.0,100.0,5.722516015305904,Q5 (High)
+MRK,"Merck & Co., Inc.",Healthcare,112.53,15,50.0,33.0,11.49,0.13,58.0,20.0,70.0,4.723566641846615,Q1 (Low)
+WEN,The Wendy's Company,Consumer Cyclical,7.835,15,25.0,41.0,8.53,1.43,73.0,20.0,80.0,-5.681874229346474,Q2
+CSXXY,carsales.com Ltd,Communication Services,38.96,15,24.0,25.0,,,97.0,1.0,100.0,-2.599999999999998,Q5 (High)
+KR,The Kroger Co.,Consumer Defensive,62.03,15,30.0,35.0,11.78,1.2,79.0,20.0,85.0,1.715487943032857,Q4
+JAZZ,Jazz Pharmaceuticals plc,Healthcare,166.824,15,53.0,14.0,6.61,0.48,69.0,20.0,65.0,-5.676931016686724,Q2
+IONS,"Ionis Pharmaceuticals, Inc.",Healthcare,82.9,15,70.0,28.0,,,89.0,20.0,95.0,5.271870622691965,Q5 (High)
+INSP,"Inspire Medical Systems, Inc.",Healthcare,74.775,15,28.0,13.0,29.2,0.64,89.0,20.0,90.0,-20.029548332629805,Q5 (High)
+HTHT,H World Group Limited,Consumer Cyclical,47.592,15,46.0,24.0,2.49,0.2,78.0,20.0,80.0,-2.162273476112035,Q4
+HSY,The Hershey Company,Consumer Defensive,195.34,15,51.0,29.0,23.71,1.41,69.0,20.0,70.0,8.200455580865599,Q2
+HLN,Haleon plc,Healthcare,10.495,15,46.0,35.0,23.65,2.55,77.0,17.0,76.5,3.5608308605341366,Q3
+GS,"The Goldman Sachs Group, Inc.",Financial Services,943.23999,15,45.0,2.0,14.51,1.26,75.0,20.0,85.0,-1.373834928935946,Q3
+GKOS,Glaukos Corporation,Healthcare,119.06,15,75.0,22.0,199.51,,82.0,20.0,85.0,6.10612390009776,Q5 (High)
+GH,"Guardant Health, Inc.",Healthcare,115.23,15,60.0,0.0,,,75.0,20.0,80.0,11.946598606066557,Q3
+GD,General Dynamics Corporation,Industrials,346.42,15,46.0,17.0,18.88,1.75,83.0,20.0,95.0,-1.2571717853526907,Q5 (High)
+FND,"Floor & Decor Holdings, Inc.",Consumer Cyclical,64.66,15,44.0,26.0,25.48,1.27,81.0,20.0,90.0,3.2884434700908147,Q4
+FMC,FMC Corporation,Basic Materials,15.56,15,23.0,9.0,5.46,0.28,61.0,20.0,60.0,12.136266855926195,Q1 (Low)
+EPAM,"EPAM Systems, Inc.",Technology,211.39,15,51.0,32.0,15.09,1.29,85.0,20.0,95.0,0.9631673200716231,Q5 (High)
+DUOL,"Duolingo, Inc.",Technology,133.23,15,40.0,15.0,24.97,1.07,70.0,20.0,75.0,-27.593842830137728,Q2
+DOCS,"Doximity, Inc.",Healthcare,38.005,15,43.0,37.0,22.03,2.41,75.0,20.0,85.0,-17.990807616546288,Q3
+DLTR,"Dollar Tree, Inc.",Consumer Defensive,117.46,15,41.0,26.0,17.61,1.09,84.0,20.0,90.0,-8.540094889943214,Q5 (High)
+DELL,Dell Technologies Inc.,Technology,117.13,15,30.0,44.0,10.21,0.66,70.0,20.0,65.0,-7.7171195871300755,Q2
+CZR,"Caesars Entertainment, Inc.",Consumer Cyclical,21.033,15,35.0,68.0,40.95,,80.0,20.0,80.0,-13.243922883487008,Q4
+CRSP,CRISPR Therapeutics AG,Healthcare,50.6749,15,45.0,2.0,,,68.0,20.0,75.0,-9.410698096101537,Q2
+CPT,Camden Property Trust,Real Estate,108.64,15,26.0,21.0,82.45,4.58,79.0,20.0,90.0,-0.0458295142071468,Q4
+COHR,"Coherent, Inc.",Technology,226.36,15,58.0,19.0,35.31,1.37,71.0,20.0,75.0,13.854904485941185,Q2
+CMI,Cummins Inc.,Industrials,584.585,15,46.0,19.0,18.54,0.92,77.0,20.0,85.0,8.862140304683091,Q3
+CHYM,"Chime Financial, Inc. Class A Common Stock",Financial Services,25.06,15,,,55.87,,74.0,20.0,80.0,-8.626887131560023,Q3
+CF,"CF Industries Holdings, Inc.",Basic Materials,89.5,15,40.0,40.0,14.17,,75.0,20.0,75.0,16.15998006478943,Q3
+CELH,"Celsius Holdings, Inc.",Consumer Defensive,50.995,15,40.0,6.0,27.81,1.28,73.0,20.0,80.0,9.128716988978985,Q2
+CAKE,The Cheesecake Factory Incorporated,Consumer Cyclical,58.3037,15,41.0,24.0,13.09,1.21,77.0,16.0,75.0,6.017925736235593,Q3
+BRZE,"Braze, Inc.",Technology,21.86,15,43.0,0.0,34.56,0.69,77.0,20.0,85.0,-34.65160075329566,Q3
+BLDR,"Builders FirstSource, Inc.",Industrials,113.3135,15,45.0,47.0,13.62,0.46,72.0,20.0,70.0,5.496126890446337,Q2
+BIRK,Birkenstock Holding plc,Consumer Cyclical,37.19,15,38.0,59.0,15.01,0.79,66.0,20.0,70.0,-9.578544061302683,Q1 (Low)
+ATAT,Atour Lifestyle Holdings Limited,Consumer Cyclical,36.31,15,51.0,47.0,1.98,0.09,77.0,18.0,83.3,-10.939446797906802,Q3
+APTV,Aptiv PLC,Consumer Cyclical,78.75,15,63.0,63.0,8.53,0.82,68.0,20.0,70.0,-5.923994038748132,Q2
+AMCR,Amcor plc,Consumer Cyclical,43.375,15,36.0,13.0,9.8,0.91,75.0,20.0,80.0,4.609929078014192,Q3
+ALB,Albemarle Corporation,Basic Materials,166.36,15,70.0,38.0,21.02,0.27,64.0,20.0,70.0,16.76589338260453,Q1 (Low)
+ROP,"Roper Technologies, Inc.",Industrials,371.93,15,34.0,34.0,15.97,1.9,66.0,20.0,75.0,-13.999444006857251,Q1 (Low)
+REGN,"Regeneron Pharmaceuticals, Inc.",Healthcare,753.18,15,41.0,31.0,14.43,0.9,76.0,20.0,75.0,-2.8536614126803155,Q3
+PSKY,Paramount Skydance Corporation Class B Common Stock,Communication Services,11.175,15,21.0,20.0,9.27,1.24,51.0,20.0,40.0,-13.636363636363633,Q1 (Low)
+OS,"OneStream, Inc. Class A Common Stock",Technology,23.6354,15,65.0,19.0,55.28,1.0,74.0,20.0,90.0,28.38499184339314,Q3
+NUVL,"Nuvalent, Inc.",Healthcare,105.11,15,60.0,2.0,,,68.0,20.0,55.0,5.054114764141314,Q2
+NTSK,"Netskope, Inc. Class A Common Stock",Technology,14.75,15,,,,,86.0,20.0,95.0,-13.41107871720116,Q5 (High)
+NTNX,"Nutanix, Inc.",Technology,40.41,15,33.0,14.0,18.79,0.95,62.0,20.0,75.0,-22.211234177215196,Q1 (Low)
+NTAP,"NetApp, Inc.",Technology,97.23,15,35.0,41.0,11.38,1.42,78.0,20.0,80.0,-8.307955843167115,Q4
+LSPD,Lightspeed Commerce Inc.,Technology,10.88,15,40.0,12.0,15.67,0.41,74.0,20.0,75.0,-10.44776119402985,Q3
+ZLAB,Zai Lab Limited,Healthcare,16.21,14,45.0,28.0,57.33,,73.0,14.0,78.6,-10.503040353786615,Q2
+Z,"Zillow Group, Inc. Class C",Communication Services,63.58,14,28.0,28.0,21.79,0.67,63.0,20.0,70.0,-4.354081478116008,Q1 (Low)
+WYNN,"Wynn Resorts, Limited",Consumer Cyclical,109.51,14,60.0,65.0,17.91,2.25,72.0,20.0,65.0,-8.982286096256683,Q2
+WSM,"Williams-Sonoma, Inc.",Consumer Cyclical,210.48,14,51.0,33.0,23.02,4.52,76.0,20.0,75.0,11.081560283687944,Q3
+WM,"Waste Management, Inc.",Industrials,222.315,14,26.0,20.0,23.67,1.65,66.0,20.0,70.0,1.048122493620129,Q1 (Low)
+WB,Weibo Corporation,Communication Services,10.57,14,50.0,42.0,5.76,1.23,86.0,10.0,100.0,-2.3221912720519944,Q5 (High)
+VRSK,"Verisk Analytics, Inc.",Industrials,214.665,14,26.0,24.0,24.99,2.17,73.0,20.0,80.0,-2.852288173991839,Q2
+VKTX,"Viking Therapeutics, Inc.",Healthcare,29.5814,14,45.0,2.0,,,76.0,20.0,80.0,-6.517112632233976,Q3
+UHS,"Universal Health Services, Inc.",Healthcare,201.74,14,50.0,51.0,7.76,0.71,86.0,20.0,95.0,-9.71867007672634,Q5 (High)
+TTWO,"Take-Two Interactive Software, Inc.",Technology,226.165,14,35.0,0.0,28.92,0.21,71.0,20.0,70.0,-13.361315145155647,Q2
+TT,Trane Technologies plc,Industrials,426.17999,14,38.0,13.0,25.42,1.91,80.0,20.0,85.0,9.617106171829032,Q4
+TPR,"Tapestry, Inc.",Consumer Cyclical,128.14,14,50.0,9.0,20.21,1.71,78.0,20.0,85.0,0.6340932078114041,Q4
+TKO,"TKO Group Holdings, Inc.",Communication Services,202.57,14,41.0,20.0,31.75,2.31,83.0,20.0,90.0,-1.4731156395777067,Q5 (High)
+STZ,"Constellation Brands, Inc.",Consumer Defensive,154.96,14,36.0,32.0,12.52,1.88,77.0,20.0,80.0,8.73622903655885,Q3
+STX,Seagate Technology Holdings plc,Technology,429.7,14,40.0,1.0,22.63,0.48,83.0,20.0,90.0,48.36283338508782,Q5 (High)
+RL,Ralph Lauren Corporation,Consumer Cyclical,354.545,14,46.0,22.0,20.74,2.07,72.0,20.0,80.0,-0.48253932834987207,Q2
+RH,Rh,Consumer Cyclical,195.45,14,59.0,60.0,19.58,0.45,69.0,20.0,65.0,-0.15719284011967055,Q2
+RELX,RELX Plc,Communication Services,35.707,14,39.0,48.0,23.29,2.71,71.0,18.0,72.2,-15.590121111374966,Q2
+PNR,Pentair plc,Industrials,105.93,14,43.0,18.0,18.05,1.95,79.0,20.0,90.0,3.038862374598232,Q4
+PLNT,"Planet Fitness, Inc.",Consumer Cyclical,92.305,14,36.0,24.0,21.67,1.09,88.0,20.0,100.0,-12.711140633896372,Q5 (High)
+PG,The Procter & Gamble Company,Consumer Defensive,153.11,14,26.0,19.0,20.88,3.9,85.0,20.0,90.0,9.011897129016175,Q5 (High)
+PEG,Public Service Enterprise Group Incorporated,Utilities,81.34,14,26.0,28.0,17.22,2.34,77.0,20.0,85.0,1.3990420973027469,Q3
+OC,Owens Corning,Industrials,122.79,14,31.0,33.0,9.82,0.51,75.0,20.0,85.0,8.507830371282775,Q3
+MGM,MGM Resorts International,Consumer Cyclical,33.7,14,28.0,12.0,13.11,0.86,72.0,20.0,70.0,-6.521134593993323,Q2
+TER,"Teradyne, Inc.",Technology,250.3435,14,40.0,0.0,33.4,0.94,75.0,20.0,80.0,13.956719817767649,Q3
+SQM,Sociedad Química y Minera de Chile S.A.,Basic Materials,76.305,14,48.0,2.0,13.74,0.84,79.0,20.0,90.0,7.670373538637006,Q4
+ONON,On Holding AG,Consumer Cyclical,45.26,14,40.0,35.0,27.1,0.99,66.0,20.0,55.0,-6.3367346938775455,Q1 (Low)
+BF-A,Brown-Forman Corporation,Consumer Defensive,27.345,14,21.0,28.0,15.74,3.31,71.0,12.0,83.3,5.65384615384615,Q2
+KO,The Coca-Cola Company,Consumer Defensive,74.83,14,54.0,14.0,21.67,2.9,73.0,20.0,75.0,10.111863408890203,Q2
+KNX,Knight-Swift Transportation Holdings Inc.,Industrials,57.3,14,73.0,56.0,19.29,0.36,64.0,20.0,55.0,1.94264569842739,Q1 (Low)
+KMX,"CarMax, Inc.",Consumer Cyclical,44.63,14,38.0,38.0,17.96,,74.0,20.0,85.0,10.466269841269838,Q3
+KHC,The Kraft Heinz Company,Consumer Defensive,23.285,14,30.0,0.0,9.22,4.15,62.0,20.0,60.0,-0.12620950778292445,Q1 (Low)
+ICLR,ICON Public Limited Company,Healthcare,177.1721,14,46.0,30.0,12.22,1.18,78.0,20.0,85.0,-8.771130681243045,Q4
+HUBG,"Hub Group, Inc.",Industrials,48.44,14,68.0,48.0,17.86,0.62,53.0,20.0,55.0,7.793384685092882,Q1 (Low)
+HON,Honeywell International Inc.,Industrials,226.767,14,41.0,22.0,19.72,1.96,79.0,20.0,80.0,13.14336864090706,Q4
+HNGE,"Hinge Health, Inc.",Healthcare,34.76,14,,,50.56,,71.0,11.0,72.7,-25.554607508532428,Q2
+HEI,HEICO Corporation,Industrials,330.39,14,45.0,3.0,53.45,4.3,80.0,20.0,90.0,-3.135062349979503,Q4
+GWW,"W.W. Grainger, Inc.",Industrials,1088.61,14,36.0,21.0,22.48,2.12,80.0,20.0,90.0,6.391740389730667,Q4
+GEV,GE Vernova Inc.,Utilities,755.6735,14,48.0,22.0,35.31,0.64,69.0,20.0,75.0,6.68419351996005,Q2
+FRSH,Freshworks Inc.,Technology,10.9258,14,38.0,7.0,13.2,0.66,79.0,12.0,91.7,-7.228915662650602,Q4
+FOUR,"Shift4 Payments, Inc.",Technology,59.165,14,31.0,47.0,7.45,0.3,74.0,20.0,70.0,-7.692307692307695,Q3
+ED,"Consolidated Edison, Inc.",Utilities,105.275,14,40.0,39.0,16.41,2.58,87.0,20.0,100.0,8.25380710659898,Q5 (High)
+EA,Electronic Arts Inc.,Technology,203.7602,14,63.0,24.0,21.87,2.5,77.0,20.0,85.0,-0.21530632217656395,Q3
+DUK,Duke Energy Corporation,Utilities,120.03,14,35.0,39.0,16.75,2.42,88.0,20.0,100.0,3.8866535399366424,Q5 (High)
+DNLI,Denali Therapeutics Inc.,Healthcare,22.4068,14,65.0,0.0,,,74.0,20.0,75.0,35.705368289637946,Q3
+DKS,"DICK'S Sporting Goods, Inc.",Consumer Cyclical,202.0,14,41.0,34.0,13.65,0.87,79.0,20.0,90.0,-2.4437361151357107,Q4
+DHI,"D.R. Horton, Inc.",Consumer Cyclical,149.55,14,55.0,47.0,12.24,0.76,63.0,20.0,60.0,1.611141452758065,Q1 (Low)
+DECK,Deckers Outdoor Corporation,Consumer Cyclical,114.36,14,46.0,36.0,15.64,2.37,74.0,20.0,75.0,10.39777983348752,Q3
+CARR,Carrier Global Corporation,Industrials,60.11,14,46.0,53.0,18.36,1.33,73.0,20.0,80.0,10.764082543223646,Q2
+BTSG,"BrightSpring Health Services, Inc. Common Stock",Healthcare,40.19,14,68.0,53.0,24.36,1.03,84.0,20.0,85.0,0.02547121752421069,Q5 (High)
+BNTX,BioNTech SE,Healthcare,110.278,14,40.0,0.0,,,60.0,20.0,50.0,17.44966442953021,Q1 (Low)
+BJ,"BJ's Wholesale Club Holdings, Inc.",Consumer Defensive,92.44,14,39.0,34.0,19.91,3.02,80.0,20.0,85.0,-0.7835140066545068,Q4
+BC,Brunswick Corporation,Consumer Cyclical,80.78,14,63.0,18.0,15.07,0.56,79.0,20.0,80.0,6.012950971322845,Q4
+AZO,"AutoZone, Inc.",Consumer Cyclical,3702.401,14,31.0,25.0,21.14,1.19,78.0,20.0,80.0,13.339962671725356,Q4
+AXTA,Axalta Coating Systems Ltd.,Basic Materials,33.675,14,55.0,39.0,11.55,1.25,78.0,20.0,90.0,1.54218324765648,Q4
+AXON,"Axon Enterprise, Inc.",Industrials,477.78,14,40.0,37.0,49.46,1.81,73.0,20.0,75.0,-18.19811895256783,Q2
+ALGN,"Align Technology, Inc.",Healthcare,162.3298,14,46.0,33.0,13.57,1.59,74.0,20.0,85.0,1.8110285393118128,Q3
+AKAM,"Akamai Technologies, Inc.",Technology,97.26,14,51.0,33.0,12.18,1.25,75.0,20.0,80.0,13.083459434291711,Q3
+ADBE,Adobe Inc.,Technology,296.21,14,29.0,33.0,11.23,0.89,61.0,20.0,65.0,-11.55446977922548,Q1 (Low)
+RVMD,"Revolution Medicines, Inc.",Healthcare,95.565,14,70.0,2.0,,,59.0,20.0,60.0,23.771224307417345,Q1 (Low)
+RARE,Ultragenyx Pharmaceutical Inc.,Healthcare,24.54,14,55.0,27.0,,,51.0,20.0,55.0,4.154045867589792,Q1 (Low)
+QRVO,"Qorvo, Inc.",Technology,78.93,14,48.0,44.0,11.8,4.29,74.0,20.0,85.0,-10.28026648288537,Q3
+PTC,PTC Inc.,Technology,157.845,14,31.0,26.0,18.27,1.74,79.0,20.0,85.0,-9.808792097510263,Q4
+PENN,"PENN Entertainment, Inc.",Consumer Cyclical,12.795,14,30.0,1.0,7.19,0.13,88.0,20.0,95.0,-15.191545574636727,Q5 (High)
+MTCH,"Match Group, Inc.",Technology,31.815,14,33.0,41.0,9.91,0.57,72.0,20.0,75.0,-4.035736290819477,Q2
+MDT,Medtronic plc,Healthcare,102.65,14,41.0,20.0,16.76,1.97,81.0,20.0,85.0,5.751848808545598,Q4
+MAA,"Mid-America Apartment Communities, Inc.",Real Estate,133.15,14,21.0,20.0,36.16,4.03,65.0,20.0,60.0,-2.2206042955951824,Q1 (Low)
+LII,Lennox International Inc.,Industrials,494.98,14,21.0,13.0,18.78,2.15,78.0,19.0,89.5,-1.7503472911291909,Q4
+LHX,"L3Harris Technologies, Inc.",Industrials,338.29,14,53.0,26.0,24.08,1.55,60.0,8.0,50.0,10.106622133727287,Q1 (Low)
+LH,Labcorp Holdings Inc.,Healthcare,267.01001,14,46.0,24.0,13.98,1.55,78.0,20.0,85.0,7.243858124654386,Q4
+ZION,"Zions Bancorporation, National Association",Financial Services,61.2345,13,45.0,38.0,9.31,1.72,82.0,20.0,95.0,1.2767368595589388,Q5 (High)
+ZBRA,Zebra Technologies Corporation,Technology,245.22,13,36.0,40.0,12.4,1.05,90.0,20.0,100.0,-3.2971817606079736,Q5 (High)
+WEX,WEX Inc.,Technology,154.9,13,60.0,42.0,7.88,0.69,79.0,20.0,90.0,0.965834428383705,Q4
+VLTO,Veralto Corporation,Industrials,100.69,13,26.0,15.0,22.12,2.57,85.0,20.0,95.0,1.9558423228147974,Q5 (High)
+VERX,"Vertex, Inc.",Technology,18.93,13,23.0,2.0,21.09,1.05,78.0,20.0,80.0,-3.9366053169734134,Q4
+URI,"United Rentals, Inc.",Industrials,789.0,13,53.0,47.0,14.79,1.12,86.0,20.0,90.0,-11.572022863327357,Q5 (High)
+UPST,"Upstart Holdings, Inc.",Financial Services,40.0355,13,35.0,32.0,13.74,0.59,69.0,20.0,70.0,-20.58875739644971,Q2
+TTE,TotalEnergies SE,Energy,71.84,13,55.0,50.0,9.54,0.7,74.0,20.0,80.0,8.324536269039355,Q3
+T,AT&T Inc.,Communication Services,26.545,13,35.0,52.0,10.55,1.0,79.0,20.0,95.0,7.264265479562922,Q4
+SMR,NuScale Power Corporation,Utilities,16.77,13,40.0,10.0,,,68.0,20.0,65.0,-10.543130990415337,Q2
+SLB,SLB N.V.,Energy,48.24,13,50.0,40.0,14.53,0.98,81.0,20.0,90.0,10.547945205479463,Q4
+SHEL,Shell plc,Energy,76.15,13,45.0,45.0,10.1,0.49,58.0,20.0,55.0,1.106224176995866,Q1 (Low)
+RBRK,"Rubrik, Inc.",Technology,55.9,13,50.0,14.0,703.74,,83.0,20.0,85.0,-25.591836734693878,Q5 (High)
+PRIM,Primoris Services Corporation,Industrials,153.27,13,46.0,20.0,22.33,1.32,91.0,20.0,100.0,16.631219141663486,Q5 (High)
+PHR,"Phreesia, Inc.",Healthcare,13.55,13,36.0,12.0,25.71,0.05,66.0,20.0,70.0,-22.021028037383182,Q1 (Low)
+NOV,NOV Inc.,Energy,18.465,13,55.0,42.0,13.8,0.69,78.0,20.0,85.0,5.8066361556064106,Q4
+NOC,Northrop Grumman Corporation,Industrials,680.48,13,51.0,21.0,22.32,2.71,76.0,20.0,85.0,11.799057776614537,Q3
+MRSH,"Marsh & McLennan Companies, Inc.",Financial Services,189.27,13,21.0,30.0,16.94,1.98,77.0,20.0,90.0,0.34696274153945006,Q3
+MOH,"Molina Healthcare, Inc.",Healthcare,179.205,13,45.0,56.0,10.87,0.53,59.0,20.0,50.0,-1.8052516411378616,Q1 (Low)
+WVE,Wave Life Sciences Ltd.,Healthcare,13.105,13,65.0,2.0,,,71.0,20.0,70.0,-9.859999999999996,Q2
+JANX,"Janux Therapeutics, Inc.",Healthcare,13.7637,13,40.0,2.0,,,60.0,20.0,70.0,-0.2909090909090847,Q1 (Low)
+IRTC,"iRhythm Technologies, Inc.",Healthcare,157.37,13,60.0,18.0,276.74,,79.0,20.0,75.0,-16.2047833396605,Q4
+ILMN,"Illumina, Inc.",Healthcare,140.9898,13,56.0,27.0,24.31,1.68,84.0,20.0,95.0,2.462322224580761,Q5 (High)
+IFF,International Flavors & Fragrances Inc.,Basic Materials,69.7,13,40.0,9.0,14.39,1.7,77.0,20.0,90.0,4.256272401433705,Q3
+HST,"Host Hotels & Resorts, Inc.",Real Estate,18.775,13,60.0,48.0,20.07,5.4,81.0,20.0,90.0,2.2626931567328925,Q4
+HSIC,"Henry Schein, Inc.",Healthcare,74.766,13,41.0,28.0,12.78,1.23,79.0,20.0,80.0,-3.8961038961038987,Q4
+HPE,Hewlett Packard Enterprise Company,Technology,21.835,13,54.0,22.0,7.95,0.48,80.0,20.0,85.0,-10.816411106506422,Q4
+HLT,Hilton Worldwide Holdings Inc.,Consumer Cyclical,299.32999,13,48.0,15.0,28.67,1.99,77.0,20.0,90.0,4.4581306645204215,Q3
+GMAB,Genmab A/S,Healthcare,33.065,13,46.0,15.0,16.65,0.45,66.0,20.0,65.0,2.610062893081767,Q1 (Low)
+GLPI,"Gaming and Leisure Properties, Inc.",Real Estate,44.5475,13,34.0,43.0,13.73,2.48,76.0,20.0,80.0,-0.6879715934309859,Q3
+FAST,Fastenal Company,Industrials,44.35,13,23.0,3.0,33.18,3.49,70.0,20.0,75.0,5.370595382746053,Q2
+EXC,Exelon Corporation,Utilities,44.1102,13,35.0,39.0,14.61,2.25,89.0,20.0,100.0,2.8479559026182866,Q5 (High)
+ESS,"Essex Property Trust, Inc.",Real Estate,250.35,13,21.0,20.0,39.02,5.44,82.0,20.0,80.0,-0.47024421085908386,Q5 (High)
+EQNR,Equinor ASA,Energy,26.035,13,45.0,50.0,9.11,0.84,67.0,20.0,70.0,11.22618061309031,Q1 (Low)
+EQR,Equity Residential,Real Estate,62.03,13,26.0,20.0,39.12,3.43,79.0,20.0,90.0,2.2980958634274433,Q4
+DV,"DoubleVerify Holdings, Inc.",Technology,10.855,13,39.0,54.0,19.53,1.65,84.0,20.0,85.0,-2.8725314183123904,Q5 (High)
+DGX,Quest Diagnostics Incorporated,Healthcare,182.965,13,41.0,25.0,16.26,2.03,84.0,20.0,95.0,7.8044844083232405,Q5 (High)
+DE,Deere & Company,Industrials,532.34,13,54.0,39.0,24.01,0.74,74.0,20.0,85.0,13.280411928770643,Q3
+D,"Dominion Energy, Inc.",Utilities,60.08,13,54.0,31.0,15.58,2.17,77.0,20.0,85.0,2.5217243141932255,Q3
+CPA,"Copa Holdings, S.A.",Industrials,140.49,13,55.0,54.0,7.1,0.77,77.0,20.0,80.0,4.898869491655775,Q3
+COST,Costco Wholesale Corporation,Consumer Defensive,958.8005,13,28.0,6.0,43.15,4.46,73.0,20.0,90.0,7.366341608239887,Q2
+COO,"The Cooper Companies, Inc.",Healthcare,79.7258,13,51.0,24.0,16.08,1.67,75.0,20.0,75.0,-1.6437031665458055,Q3
+COF,Capital One Financial Corporation,Financial Services,224.17,13,40.0,9.0,9.04,0.42,75.0,20.0,85.0,-12.606283182308086,Q3
+CNI,Canadian National Railway Company,Industrials,94.545,13,30.0,44.0,10.52,0.96,72.0,20.0,65.0,-3.1309775495822,Q2
+CMPX,"Compass Therapeutics, Inc.",Healthcare,6.525,13,75.0,37.0,,,67.0,18.0,61.1,28.256513026052104,Q1 (Low)
+CGON,"CG Oncology, Inc. Common stock",Healthcare,52.96,13,75.0,27.0,,,55.0,11.0,36.4,29.995004995004994,Q1 (Low)
+CCL,Carnival Corporation & plc,Consumer Cyclical,32.095,13,55.0,38.0,11.26,0.99,75.0,20.0,80.0,-4.668148618609079,Q3
+BAX,Baxter International Inc.,Healthcare,19.945,13,44.0,49.0,8.14,1.03,73.0,20.0,75.0,0.9049773755656094,Q2
+APD,"Air Products and Chemicals, Inc.",Basic Materials,272.83499,13,25.0,0.0,19.66,2.77,77.0,20.0,90.0,7.351087299086037,Q3
+AMT,American Tower Corporation,Real Estate,176.95,13,31.0,23.0,24.54,4.34,81.0,20.0,90.0,1.7191489361702135,Q4
+AME,"AMETEK, Inc.",Industrials,227.83,13,43.0,3.0,26.37,3.44,74.0,20.0,80.0,5.995930150016558,Q3
+AEP,"American Electric Power Company, Inc.",Utilities,118.7689,13,46.0,33.0,17.47,2.28,85.0,20.0,100.0,5.005698255457182,Q5 (High)
+ACLX,"Arcellx, Inc.",Healthcare,68.98,13,55.0,45.0,,,72.0,12.0,66.7,10.480349344978173,Q2
+PVLA,"Palvella Therapeutics, Inc.",Healthcare,81.19,13,60.0,12.0,,,75.0,11.0,90.9,-13.285843509724108,Q3
+PRVA,"Privia Health Group, Inc.",Healthcare,23.355,13,53.0,19.0,55.19,1.62,85.0,19.0,94.7,-3.81110190555096,Q5 (High)
+PAYX,"Paychex, Inc.",Industrials,102.6,13,21.0,31.0,17.37,2.28,79.0,20.0,90.0,-5.800146145414695,Q4
+NCNO,"nCino, Inc.",Technology,21.15,13,10.0,0.0,20.57,1.51,73.0,20.0,95.0,-12.85714285714285,Q2
+MCW,"Mister Car Wash, Inc.",Consumer Cyclical,5.6347,13,38.0,38.0,10.5,0.79,78.0,3.0,66.7,-4.310344827586207,Q4
+MCK,McKesson Corporation,Healthcare,839.85,13,51.0,26.0,19.16,1.44,82.0,20.0,95.0,0.7624981816418656,Q5 (High)
+MA,Mastercard Incorporated,Financial Services,548.685,13,36.0,27.0,24.33,1.52,85.0,20.0,90.0,-5.237701602265346,Q5 (High)
+LITE,Lumentum Holdings Inc.,Technology,442.885,13,35.0,0.0,47.52,0.84,79.0,20.0,95.0,9.743733370676365,Q4
+YETI,"YETI Holdings, Inc.",Consumer Cyclical,46.255,12,56.0,31.0,14.09,0.96,72.0,20.0,75.0,0.7461072664359836,Q2
+XEL,Xcel Energy Inc.,Utilities,75.156,12,46.0,32.0,16.58,1.66,86.0,20.0,95.0,0.7155393546645081,Q5 (High)
+WH,"Wyndham Hotels & Resorts, Inc.",Consumer Cyclical,72.51,12,39.0,61.0,12.9,1.07,84.0,20.0,85.0,-6.035265136782058,Q5 (High)
+WEC,"WEC Energy Group, Inc.",Utilities,110.21,12,36.0,32.0,18.36,2.52,89.0,20.0,100.0,4.012902001707622,Q5 (High)
+WDC,Western Digital Corporation,Technology,270.25,12,53.0,16.0,22.11,0.52,83.0,20.0,90.0,44.93293591654248,Q5 (High)
+VRDN,"Viridian Therapeutics, Inc.",Healthcare,33.3515,12,70.0,28.0,,,85.0,12.0,100.0,9.966887417218548,Q5 (High)
+VNET,"VNET Group, Inc.",Technology,11.2065,12,46.0,14.0,8.45,0.05,80.0,8.0,87.5,18.962526766595296,Q4
+VALE,Vale S.A.,Basic Materials,16.175,12,60.0,47.0,8.22,,69.0,20.0,80.0,18.76843657817109,Q2
+USFD,US Foods Holding Corp.,Consumer Defensive,84.02,12,64.0,38.0,15.22,0.88,81.0,20.0,85.0,10.680951754962535,Q4
+UNH,UnitedHealth Group Incorporated,Healthcare,287.61,12,36.0,33.0,14.44,1.22,71.0,20.0,75.0,-16.490263727267408,Q2
+UMC,United Microelectronics Corporation,Technology,10.085,12,73.0,58.0,14.15,0.79,80.0,20.0,80.0,29.021879021879034,Q4
+TTAN,"ServiceTitan, Inc.",Technology,79.17,12,43.0,13.0,72.33,4.17,78.0,20.0,85.0,-24.303950145743283,Q4
+TRIP,"Tripadvisor, Inc.",Consumer Cyclical,13.4327,12,43.0,67.0,5.65,0.18,83.0,20.0,85.0,-9.789295392953932,Q5 (High)
+TFII,TFI International Inc.,Industrials,109.82,12,68.0,64.0,22.68,0.73,86.0,11.0,100.0,0.5964214711729592,Q5 (High)
+TEL,TE Connectivity Ltd.,Technology,227.02,12,46.0,34.0,18.38,1.54,77.0,20.0,80.0,-1.8150388936905866,Q3
+SYY,Sysco Corporation,Consumer Defensive,83.1,12,46.0,34.0,16.35,1.53,83.0,20.0,85.0,13.817145212254417,Q5 (High)
+SYK,Stryker Corporation,Healthcare,369.53,12,23.0,8.0,22.03,1.87,82.0,20.0,90.0,5.804352188996245,Q5 (High)
+SYF,Synchrony Financial,Financial Services,73.565,12,50.0,54.0,7.08,0.57,71.0,20.0,70.0,-14.964261009914676,Q2
+SOFI,"SoFi Technologies, Inc.",Financial Services,22.665,12,39.0,46.0,28.16,0.74,77.0,20.0,80.0,-23.701844262295086,Q3
+SMCI,"Super Micro Computer, Inc.",Technology,30.4807,12,21.0,16.0,10.26,0.22,71.0,20.0,75.0,0.5819753907549076,Q2
+SBAC,SBA Communications Corporation,Real Estate,183.8942,12,16.0,18.0,20.87,20.21,81.0,20.0,95.0,-4.342365568767752,Q4
+SAM,"The Boston Beer Company, Inc.",Consumer Defensive,214.68,12,35.0,39.0,17.66,1.44,71.0,20.0,70.0,8.033052003840895,Q2
+RVLV,"Revolve Group, Inc.",Consumer Cyclical,28.005,12,53.0,20.0,26.26,1.19,86.0,20.0,85.0,-8.201581027667979,Q5 (High)
+RPM,RPM International Inc.,Basic Materials,108.745,12,31.0,32.0,18.15,1.33,67.0,20.0,60.0,2.459559171317764,Q1 (Low)
+ROK,"Rockwell Automation, Inc.",Industrials,425.49,12,48.0,9.0,31.1,2.3,76.0,20.0,75.0,5.467842759370443,Q3
+RCL,Royal Caribbean Cruises Ltd.,Consumer Cyclical,336.63,12,36.0,17.0,16.38,1.09,79.0,20.0,85.0,21.202170188463725,Q4
+QTWO,"Q2 Holdings, Inc.",Technology,61.97,12,33.0,13.0,19.25,1.23,81.0,20.0,95.0,-13.387668320340184,Q4
+PSTG,"Pure Storage, Inc.",Technology,71.11,12,53.0,26.0,31.22,1.81,59.0,20.0,50.0,1.909273614699969,Q1 (Low)
+PR,Permian Resources Corporation,Energy,15.81,12,50.0,40.0,11.37,0.37,90.0,20.0,95.0,14.580318379160639,Q5 (High)
+PII,Polaris Inc.,Consumer Cyclical,63.67,12,55.0,5.0,19.39,0.22,87.0,20.0,95.0,-4.042362768496432,Q5 (High)
+NVST,Envista Holdings Corp,Healthcare,23.27,12,51.0,30.0,16.46,1.5,77.0,20.0,70.0,2.9046563192904546,Q3
+NIQ,NIQ Global Intelligence Plc,Technology,16.27,12,,,69.57,,88.0,19.0,94.7,-0.8301404853129042,Q5 (High)
+MP,MP Materials Corp.,Basic Materials,61.13,12,80.0,21.0,47.75,0.45,55.0,20.0,50.0,3.2241555783009224,Q1 (Low)
+MICC,The Magnum Ice Cream Company N.V.,Consumer Defensive,17.6005,12,,,12.57,,68.0,20.0,70.0,16.733466933867742,Q2
+MHK,"Mohawk Industries, Inc.",Consumer Cyclical,119.38,12,50.0,60.0,10.52,0.69,85.0,18.0,94.4,8.206003954700696,Q5 (High)
