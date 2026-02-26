@@ -551,207 +551,158 @@ if selected_industry != 'All':
 # ══════════════════════════════════════════════════════════════════════════════
 # TABS
 # ══════════════════════════════════════════════════════════════════════════════
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Research", "Analysis", "Movers", "Hybrid Portfolio", "My Portfolios"])
+tab1, tab2, tab3 = st.tabs(["Compass", "Research", "Movers"])
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 1: RESEARCH
+# TAB 1: COMPASS
 # ══════════════════════════════════════════════════════════════════════════════
 with tab1:
-    st.title("Stock Research")
-    st.markdown("**Fundamentals, analyst projections, price targets & valuation metrics**")
+    st.title("Compass Score")
+    st.markdown("**Quality-focused stock scoring based on profitability, cash flows, and stability**")
+
+    # ── Grade Summary Cards ───────────────────────────────────────────────────
+    scored_stocks = base[base['compass_score'].notna()].copy()
+    a_count = (scored_stocks['compass_grade'] == 'A').sum()
+    b_count = (scored_stocks['compass_grade'] == 'B').sum()
+    c_count = (scored_stocks['compass_grade'] == 'C').sum()
+    d_count = (scored_stocks['compass_grade'] == 'D').sum()
+    f_count = (scored_stocks['compass_grade'] == 'F').sum()
+
+    gc1, gc2, gc3, gc4, gc5 = st.columns(5)
+    with gc1:
+        st.markdown(f"""
+        <div style="background-color: #c6f6d5; padding: 12px; border-radius: 8px; border-left: 4px solid #155724; text-align: center;">
+        <strong style="color: #155724; font-size: 24px;">A</strong><br>
+        <small style="color: #155724;">High Quality (85-100)</small><br>
+        <strong style="font-size: 20px;">{a_count:,}</strong>
+        </div>
+        """, unsafe_allow_html=True)
+    with gc2:
+        st.markdown(f"""
+        <div style="background-color: #d4edda; padding: 12px; border-radius: 8px; border-left: 4px solid #28a745; text-align: center;">
+        <strong style="color: #155724; font-size: 24px;">B</strong><br>
+        <small style="color: #155724;">Above Average (60-84)</small><br>
+        <strong style="font-size: 20px;">{b_count:,}</strong>
+        </div>
+        """, unsafe_allow_html=True)
+    with gc3:
+        st.markdown(f"""
+        <div style="background-color: #fff3cd; padding: 12px; border-radius: 8px; border-left: 4px solid #856404; text-align: center;">
+        <strong style="color: #856404; font-size: 24px;">C</strong><br>
+        <small style="color: #856404;">Neutral (40-59)</small><br>
+        <strong style="font-size: 20px;">{c_count:,}</strong>
+        </div>
+        """, unsafe_allow_html=True)
+    with gc4:
+        st.markdown(f"""
+        <div style="background-color: #ffe5d0; padding: 12px; border-radius: 8px; border-left: 4px solid #d35400; text-align: center;">
+        <strong style="color: #d35400; font-size: 24px;">D</strong><br>
+        <small style="color: #d35400;">Speculative (20-39)</small><br>
+        <strong style="font-size: 20px;">{d_count:,}</strong>
+        </div>
+        """, unsafe_allow_html=True)
+    with gc5:
+        st.markdown(f"""
+        <div style="background-color: #f8d7da; padding: 12px; border-radius: 8px; border-left: 4px solid #721c24; text-align: center;">
+        <strong style="color: #721c24; font-size: 24px;">F</strong><br>
+        <small style="color: #721c24;">High Risk (0-19)</small><br>
+        <strong style="font-size: 20px;">{f_count:,}</strong>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("")
 
     # ── Tab-specific filters ─────────────────────────────────────────────────
-    with st.expander("Research Filters", expanded=False):
-        fc1, fc2, fc3, fc4 = st.columns(4)
-        with fc1:
-            r_min_analysts = st.slider("Min Analysts", 0, int(df['num_analysts'].max()), 0, key="r_analysts")
-            r_min_upside = st.slider("Min Upside %", -50, 300, -50, step=5, key="r_upside")
-        with fc2:
-            rec_options = ['All'] + sorted(df['recommendation'].dropna().unique().tolist())
-            r_rec = st.selectbox("Recommendation", rec_options, key="r_rec")
-            r_min_rev = st.slider("Min Rev Growth %", -50, 100, -50, step=5, key="r_rev")
-        with fc3:
-            r_max_ev = st.slider("Max EV/EBITDA", 0.0, 100.0, 100.0, step=1.0, key="r_ev")
-            r_min_eps = st.slider("Min EPS Growth %", -50, 100, -50, step=5, key="r_eps")
-        with fc4:
-            r_max_debt = st.slider("Max Debt/EBITDA", 0.0, 20.0, 20.0, step=0.5, key="r_debt")
-            r_max_pe = st.slider("Max Forward P/E", 0.0, 200.0, 200.0, step=5.0, key="r_pe")
+    with st.expander("Compass Filters", expanded=True):
+        cf1, cf2, cf3, cf4 = st.columns(4)
+        with cf1:
+            c_grades = st.multiselect("Grade", ['A', 'B', 'C', 'D', 'F'],
+                                       default=['A', 'B'], key="c_grades")
+        with cf2:
+            c_min_score = st.slider("Min Score", 0, 100, 0, key="c_min_score")
+        with cf3:
+            c_sort = st.selectbox("Sort By", ["Compass Score", "Company Name", "Sector"],
+                                   key="c_sort")
+        with cf4:
+            c_show_unscored = st.checkbox("Show Unscored", value=False, key="c_show_unscored")
 
-    # Apply research filters
-    r_filtered = base.copy()
-    mask = (r_filtered['num_analysts'].fillna(0) >= r_min_analysts)
-    if r_min_upside > -50:
-        mask = mask & (r_filtered['upside_percent'].fillna(-999) >= r_min_upside)
-    if r_rec != 'All':
-        mask = mask & (r_filtered['recommendation'] == r_rec)
-    if r_min_rev > -50:
-        mask = mask & (r_filtered['projected_revenue_growth'].fillna(-999) >= r_min_rev)
-    if r_min_eps > -50:
-        mask = mask & (r_filtered['projected_eps_growth'].fillna(-999) >= r_min_eps)
-    if r_max_ev < 100.0:
-        mask = mask & ((r_filtered['ev_ebitda'].fillna(0) <= r_max_ev) | r_filtered['ev_ebitda'].isna())
-    if r_max_debt < 20.0:
-        mask = mask & ((r_filtered['debt_ebitda'].fillna(0) <= r_max_debt) | r_filtered['debt_ebitda'].isna())
-    if r_max_pe < 200.0:
-        mask = mask & ((r_filtered['forward_pe'].fillna(0) <= r_max_pe) | r_filtered['forward_pe'].isna())
-    r_filtered = r_filtered[mask].copy()
+    # Apply compass filters
+    if c_show_unscored:
+        c_filtered = base.copy()
+    else:
+        c_filtered = scored_stocks.copy()
+        grade_mask = c_filtered['compass_grade'].isin(c_grades)
+        c_filtered = c_filtered[grade_mask].copy()
+        c_filtered = c_filtered[c_filtered['compass_score'] >= c_min_score]
+
+    # Sort
+    if c_sort == "Compass Score":
+        c_filtered = c_filtered.sort_values('compass_score', ascending=False)
+    elif c_sort == "Company Name":
+        c_filtered = c_filtered.sort_values('company_name', ascending=True)
+    else:
+        c_filtered = c_filtered.sort_values(['sector', 'compass_score'], ascending=[True, False])
 
     # ── Key Metrics ──────────────────────────────────────────────────────────
-    m1, m2, m3, m4, m5 = st.columns(5)
-    m1.metric("Total Stocks", f"{len(base):,}")
-    m2.metric("After Filters", f"{len(r_filtered):,}")
-    med_upside = r_filtered['upside_percent'].median() if len(r_filtered) > 0 else 0
-    m3.metric("Median Upside", f"{med_upside:+.1f}%")
-    med_ev = r_filtered['ev_ebitda'].dropna().median() if len(r_filtered) > 0 else 0
-    m4.metric("Median EV/EBITDA", f"{med_ev:.1f}x" if pd.notna(med_ev) else "N/A")
-    avg_analysts = r_filtered['num_analysts'].mean() if len(r_filtered) > 0 else 0
-    m5.metric("Avg Analyst Coverage", f"{avg_analysts:.0f}")
+    cm1, cm2, cm3, cm4 = st.columns(4)
+    cm1.metric("Total Scored", f"{len(scored_stocks):,}")
+    cm2.metric("After Filters", f"{len(c_filtered):,}")
+    avg_score = c_filtered['compass_score'].mean() if len(c_filtered) > 0 else 0
+    cm3.metric("Avg Score", f"{avg_score:.0f}/100" if pd.notna(avg_score) else "N/A")
+    cm4.metric("A-Grade Stocks", f"{a_count:,}")
 
-    # ── Main Research Table ──────────────────────────────────────────────────
-    st.subheader(f"All Stocks ({len(r_filtered):,})")
+    # ── Main Compass Table ────────────────────────────────────────────────────
+    st.subheader(f"Stocks by Compass Score ({len(c_filtered):,})")
 
-    r_display = r_filtered[[
-        'symbol', 'company_name', 'sector', 'industry', 'cap_category',
-        'current_price',
-        'min_price_target_display', 'avg_price_target', 'median_price_target', 'max_price_target_display',
-        'upside_low_display', 'upside_percent', 'upside_high_display',
-        'num_analysts', 'recommendation',
-        'ev_ebitda', 'forward_pe', 'peg_ratio', 'debt_ebitda', 'ocf_ev',
-        'projected_revenue_growth', 'projected_eps_growth',
-        'projected_ebitda_growth', 'earnings_growth',
-        'rsi', 'sma_status',
+    c_display = c_filtered[[
+        'symbol', 'company_name', 'compass_score', 'compass_grade',
+        'sector', 'cap_category', 'current_price',
+        'ev_ebitda', 'debt_ebitda', 'projected_revenue_growth', 'projected_eps_growth',
     ]].copy()
 
-    r_display.rename(columns={
-        'symbol': 'Symbol', 'company_name': 'Company', 'sector': 'Sector',
-        'industry': 'Industry', 'cap_category': 'Cap',
+    c_display.rename(columns={
+        'symbol': 'Symbol', 'company_name': 'Company',
+        'compass_score': 'Score', 'compass_grade': 'Grade',
+        'sector': 'Sector', 'cap_category': 'Cap',
         'current_price': 'Price',
-        'min_price_target_display': 'Low Target', 'avg_price_target': 'Avg Target',
-        'median_price_target': 'Med Target', 'max_price_target_display': 'High Target',
-        'upside_low_display': 'Low Up%', 'upside_percent': 'Mean Up%',
-        'upside_high_display': 'High Up%',
-        'num_analysts': 'Analysts', 'recommendation': 'Rating',
-        'ev_ebitda': 'EV/EBITDA', 'forward_pe': 'Fwd P/E', 'peg_ratio': 'PEG',
-        'debt_ebitda': 'Debt/EBITDA', 'ocf_ev': 'OCF/EV',
+        'ev_ebitda': 'EV/EBITDA', 'debt_ebitda': 'Debt/EBITDA',
         'projected_revenue_growth': 'Rev Gr%', 'projected_eps_growth': 'EPS Gr%',
-        'projected_ebitda_growth': 'EBITDA Gr%', 'earnings_growth': 'Earn Gr%',
-        'rsi': 'RSI', 'sma_status': 'SMA 50v200',
     }, inplace=True)
 
-    r_format = {
-        'Price': '${:.2f}', 'Avg Target': '${:.2f}', 'Med Target': '${:.2f}',
-        'Analysts': '{:.0f}',
-        'EV/EBITDA': '{:.1f}x', 'Fwd P/E': '{:.1f}x', 'PEG': '{:.1f}',
-        'Debt/EBITDA': '{:.1f}x', 'OCF/EV': '{:.1%}',
+    c_format = {
+        'Score': '{:.0f}',
+        'Price': '${:.2f}',
+        'EV/EBITDA': '{:.1f}x', 'Debt/EBITDA': '{:.1f}x',
         'Rev Gr%': '{:+.1f}%', 'EPS Gr%': '{:+.1f}%',
-        'EBITDA Gr%': '{:+.1f}%', 'Earn Gr%': '{:+.1f}%',
-        'RSI': '{:.0f}',
     }
 
-    r_styled = r_display.style \
-        .format(r_format, na_rep='-') \
-        .map(color_upside, subset=['Low Up%', 'Mean Up%', 'High Up%']) \
-        .background_gradient(subset=['EV/EBITDA'], cmap='RdYlGn_r', vmin=0, vmax=30) \
-        .background_gradient(subset=['Debt/EBITDA'], cmap='RdYlGn_r', vmin=0, vmax=10) \
-        .background_gradient(subset=['OCF/EV'], cmap='YlGn', vmin=0, vmax=0.15) \
-        .background_gradient(subset=['Rev Gr%'], cmap='YlGn', vmin=0, vmax=50) \
-        .background_gradient(subset=['EPS Gr%'], cmap='YlGn', vmin=0, vmax=50) \
-        .bar(subset=['Analysts'], color='#5fba7d', vmin=0)
+    def color_grade(val):
+        if val == 'A':
+            return 'background-color: #c6f6d5; color: #155724; font-weight: bold;'
+        elif val == 'B':
+            return 'background-color: #d4edda; color: #155724;'
+        elif val == 'C':
+            return 'background-color: #fff3cd; color: #856404;'
+        elif val == 'D':
+            return 'background-color: #ffe5d0; color: #d35400;'
+        elif val == 'F':
+            return 'background-color: #f8d7da; color: #721c24;'
+        return ''
 
-    st.dataframe(r_styled, use_container_width=True, height=620)
+    c_styled = c_display.style \
+        .format(c_format, na_rep='-') \
+        .map(color_grade, subset=['Grade']) \
+        .background_gradient(subset=['Score'], cmap='RdYlGn', vmin=0, vmax=100)
 
-    # ── Expander Details (Top 20 by upside) ──────────────────────────────────
-    if len(r_filtered) > 0:
-        st.subheader("Stock Details -- Top 20 by Mean Upside")
-
-        # Load supplementary data
-        estimates_df = load_analyst_estimates()
-        targets_df = load_price_target_summary()
-        grades_df = load_recent_grades(days=60)
-
-        top_20 = r_filtered.sort_values('upside_percent', ascending=False).head(20)
-        for _, row in top_20.iterrows():
-            sym = row['symbol']
-            company_label = f" ({row['company_name']})" if pd.notna(row.get('company_name')) else ""
-            with st.expander(
-                f"**{sym}**{company_label}  |  {row['upside_percent']:+.1f}% upside  |  "
-                f"{row['num_analysts']:.0f} analysts  |  {row['recommendation'] or 'N/A'}  |  "
-                f"EV/EBITDA {row['ev_ebitda']:.1f}x" if pd.notna(row.get('ev_ebitda')) else
-                f"**{sym}**{company_label}  |  {row['upside_percent']:+.1f}% upside  |  "
-                f"{row['num_analysts']:.0f} analysts  |  {row['recommendation'] or 'N/A'}"
-            ):
-                # Company description
-                desc = row.get('company_description')
-                if pd.notna(desc) and desc:
-                    st.markdown(f"**About:** {str(desc)[:500]}{'...' if len(str(desc)) > 500 else ''}")
-                    st.markdown("---")
-
-                # Analyst Estimates
-                if not estimates_df.empty:
-                    sym_est = estimates_df[estimates_df['symbol'] == sym]
-                    if len(sym_est) > 0:
-                        st.markdown("**Analyst Estimates (Consensus)**")
-                        est_table = []
-                        for _, e in sym_est.iterrows():
-                            fy = int(e['fiscal_year'])
-                            est_table.append({
-                                'Fiscal Year': fy,
-                                'Revenue Low': f"${e['revenue_low']/1e9:.2f}B" if pd.notna(e.get('revenue_low')) and e['revenue_low'] else '-',
-                                'Revenue Avg': f"${e['revenue_avg']/1e9:.2f}B" if pd.notna(e.get('revenue_avg')) and e['revenue_avg'] else '-',
-                                'Revenue High': f"${e['revenue_high']/1e9:.2f}B" if pd.notna(e.get('revenue_high')) and e['revenue_high'] else '-',
-                                'EPS Low': f"${e['eps_low']:.2f}" if pd.notna(e.get('eps_low')) else '-',
-                                'EPS Avg': f"${e['eps_avg']:.2f}" if pd.notna(e.get('eps_avg')) else '-',
-                                'EPS High': f"${e['eps_high']:.2f}" if pd.notna(e.get('eps_high')) else '-',
-                                'Analysts (EPS)': int(e['num_analysts_eps']) if pd.notna(e.get('num_analysts_eps')) else '-',
-                            })
-                        if est_table:
-                            st.dataframe(pd.DataFrame(est_table), use_container_width=True, hide_index=True)
-
-                # Price Target Breakdown
-                if not targets_df.empty:
-                    sym_pt = targets_df[targets_df['symbol'] == sym]
-                    if len(sym_pt) > 0:
-                        pt = sym_pt.iloc[0]
-                        st.markdown("**Price Target Breakdown**")
-                        pt_data = []
-                        for period, avg_col, cnt_col in [
-                            ('Last Month', 'last_month_avg', 'last_month_count'),
-                            ('Last Quarter', 'last_quarter_avg', 'last_quarter_count'),
-                            ('Last Year', 'last_year_avg', 'last_year_count'),
-                            ('All Time', 'all_time_avg', 'all_time_count'),
-                        ]:
-                            avg_val = pt.get(avg_col)
-                            cnt_val = pt.get(cnt_col)
-                            pt_data.append({
-                                'Period': period,
-                                'Avg Target': f"${avg_val:,.2f}" if pd.notna(avg_val) and avg_val else '-',
-                                'Count': int(cnt_val) if pd.notna(cnt_val) and cnt_val else 0,
-                            })
-                        st.dataframe(pd.DataFrame(pt_data), use_container_width=True, hide_index=True)
-
-                # Recent Grade Changes
-                if not grades_df.empty:
-                    sym_grades = grades_df[grades_df['symbol'] == sym].head(10)
-                    if len(sym_grades) > 0:
-                        st.markdown("**Recent Analyst Grade Changes**")
-                        g_display = sym_grades[['date', 'grading_company', 'previous_grade', 'new_grade', 'action']].copy()
-                        g_display.columns = ['Date', 'Firm', 'Previous', 'New', 'Action']
-                        styled_grades = g_display.style.map(color_grade_action, subset=['Action'])
-                        st.dataframe(styled_grades, use_container_width=True, hide_index=True)
-
-                # Recent ratings (fallback)
-                if row.get('recent_ratings') and "No recent" not in str(row.get('recent_ratings', '')):
-                    if grades_df.empty or len(grades_df[grades_df['symbol'] == sym]) == 0:
-                        st.markdown("**Recent Rating Changes**")
-                        st.markdown(str(row['recent_ratings']).replace('\n', '  \n'))
+    st.dataframe(c_styled, use_container_width=True, height=620)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# TAB 2: ANALYSIS
+# TAB 2: RESEARCH
 # ══════════════════════════════════════════════════════════════════════════════
 with tab2:
-    st.title("Scoring & Conviction Tiers")
-    st.markdown("**Our algorithmic analysis -- backtested over 5 years on 2,847 stocks**")
+    st.title("Stock Research")
+    st.markdown("**Analyst coverage, price targets, and fundamental metrics**")
 
     # ── Tier Summary Cards ───────────────────────────────────────────────────
     t1_count = (base['conviction_tier'] == 'Tier 1').sum()
@@ -1271,646 +1222,9 @@ with tab3:
         else:
             st.info("No analyst grade data available. Run `collect_analyst_data.py` first.")
 
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 4: HYBRID PORTFOLIO
-# ══════════════════════════════════════════════════════════════════════════════
-with tab4:
-    st.title("Hybrid Portfolio Tracker")
-    st.markdown("**55% Mega-Cap Core | 25% Options Alpha | 20% Growth Picks**")
-
-    # Live refresh function
-    @st.cache_data(ttl=60)  # Cache for 60 seconds
-    def fetch_live_prices(symbols: list) -> dict:
-        """Fetch live prices from FMP API."""
-        import os
-        api_key = os.environ.get('FMP_API_KEY', '')
-        if not api_key:
-            return {}
-        try:
-            symbols_str = ','.join(symbols)
-            url = f"https://financialmodelingprep.com/stable/batch-quote?symbols={symbols_str}&apikey={api_key}"
-            resp = requests.get(url, timeout=10)
-            if resp.status_code == 200:
-                data = resp.json()
-                if isinstance(data, list):
-                    return {item['symbol']: item['price'] for item in data if 'price' in item}
-        except Exception:
-            pass
-        return {}
-
-    # Selection criteria explanation
-    with st.expander("📋 Selection Criteria (click to expand)", expanded=False):
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.markdown("""
-            **Bucket 1: Quality Growth Compounder**
-            - Value Score V2 >= 55
-            - Fundamentals Score >= 18
-            - EV/EBITDA between 5-20
-            - Revenue Growth > 10%
-            - Market Cap > $2B
-            - Analyst Coverage >= 6
-            """)
-        with col_b:
-            st.markdown("""
-            **Bucket 3: High-Growth Momentum**
-            - EPS Growth >= 35%
-            - EBITDA Growth >= 33%
-            - EV/EBITDA between 12-27
-            - RSI < 43 (oversold)
-
-            **Options requirement:** EPS Growth > 15%
-            """)
-
-    # Always download hybrid portfolio database from GitHub release on Streamlit Cloud
-    # to ensure we have the latest data (it's small and changes frequently)
-    if _data_source == 'GitHub Release':
-        with st.spinner("Downloading portfolio data from GitHub..."):
-            download_db_from_release("mock_portfolio.db", HYBRID_DB)
-    elif not Path(HYBRID_DB).exists():
-        with st.spinner("Downloading portfolio data from GitHub..."):
-            download_db_from_release("mock_portfolio.db", HYBRID_DB)
-
-    if Path(HYBRID_DB).exists() and Path(HYBRID_DB).stat().st_size > 0:
-        h_conn = sqlite3.connect(HYBRID_DB)
-
-        # Check if tables exist
-        tables = h_conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='hybrid_positions'"
-        ).fetchall()
-
-        if tables:
-            # Check which columns exist
-            cols_info = pd.read_sql_query("PRAGMA table_info(hybrid_positions)", h_conn)
-            existing_cols = cols_info['name'].values if not cols_info.empty else []
-            has_strike = 'strike_price' in existing_cols
-            has_expiration = 'expiration_date' in existing_cols
-            has_contracts = 'contracts' in existing_cols
-            has_premium = 'premium' in existing_cols
-
-            # Build SELECT based on available columns
-            base_cols = "symbol, position_type, entry_date, entry_price, cost_basis, current_price, current_value, pnl, pnl_pct, status, notes, updated_at"
-            if has_strike:
-                base_cols = base_cols.replace("entry_price,", "entry_price, strike_price,")
-            if has_expiration:
-                base_cols = base_cols.replace("cost_basis,", "expiration_date, cost_basis,")
-            if has_contracts:
-                base_cols = base_cols.replace("cost_basis,", "contracts, cost_basis,")
-            if has_premium:
-                base_cols = base_cols.replace("contracts,", "contracts, premium,")
-
-            positions = pd.read_sql_query(f'''
-                SELECT {base_cols}
-                FROM hybrid_positions WHERE status = 'open'
-                ORDER BY position_type, symbol
-            ''', h_conn)
-
-            if not has_strike:
-                positions['strike_price'] = None
-            if not has_expiration:
-                positions['expiration_date'] = None
-            if not has_contracts:
-                positions['contracts'] = None
-            if not has_premium:
-                positions['premium'] = None
-
-            # Load metrics from backtest.db or movers parquet for transparency
-            metrics_df = pd.DataFrame()
-            if Path(MOVERS_PARQUET).exists():
-                try:
-                    all_scores = pd.read_parquet(MOVERS_PARQUET)
-                    if not all_scores.empty and 'date' in all_scores.columns:
-                        latest_date = all_scores['date'].max()
-                        metrics_df = all_scores[all_scores['date'] == latest_date][[
-                            'symbol', 'lt_score', 'value_score_v2', 'fundamentals_score',
-                            'ev_ebitda', 'eps_growth', 'ebitda_growth', 'rev_growth', 'rsi'
-                        ]].copy()
-                except Exception:
-                    pass
-            elif Path(BACKTEST_DB).exists():
-                try:
-                    b_conn = sqlite3.connect(BACKTEST_DB)
-                    latest = b_conn.execute('SELECT MAX(date) FROM backtest_daily_scores').fetchone()[0]
-                    if latest:
-                        metrics_df = pd.read_sql_query(f'''
-                            SELECT symbol, lt_score, value_score_v2, fundamentals_score,
-                                   ev_ebitda, eps_growth, ebitda_growth, rev_growth, rsi
-                            FROM backtest_daily_scores WHERE date = '{latest}'
-                        ''', b_conn)
-                    b_conn.close()
-                except Exception:
-                    pass
-
-            if not positions.empty:
-                # Summary metrics
-                total_cost = positions['cost_basis'].sum()
-                total_value = positions['current_value'].sum() if positions['current_value'].notna().any() else total_cost
-                total_pnl = total_value - total_cost
-                total_pnl_pct = (total_pnl / total_cost * 100) if total_cost else 0
-
-                # Live refresh button
-                refresh_col1, refresh_col2 = st.columns([1, 4])
-                with refresh_col1:
-                    if st.button("🔄 Refresh Prices", help="Fetch live prices (requires FMP API key)"):
-                        symbols = positions['symbol'].unique().tolist() + ['SPY']
-                        live_prices = fetch_live_prices(symbols)
-                        if live_prices:
-                            st.session_state['live_prices'] = live_prices
-                            st.session_state['live_refresh_time'] = pd.Timestamp.now()
-                            st.rerun()
-                        else:
-                            st.warning("Could not fetch live prices. API key may not be set.")
-
-                # Use live prices if available, otherwise use stored prices
-                live_prices = st.session_state.get('live_prices', {})
-                if live_prices:
-                    # Recalculate values with live prices
-                    for idx, row in positions.iterrows():
-                        entry_price = row.get('entry_price') if 'entry_price' in row.index else None
-                        if row['symbol'] in live_prices and entry_price and pd.notna(entry_price) and entry_price > 0:
-                            new_price = live_prices[row['symbol']]
-                            shares = row['cost_basis'] / entry_price
-                            positions.at[idx, 'current_price'] = new_price
-                            positions.at[idx, 'current_value'] = shares * new_price
-                            positions.at[idx, 'pnl'] = (shares * new_price) - row['cost_basis']
-                            positions.at[idx, 'pnl_pct'] = (positions.at[idx, 'pnl'] / row['cost_basis']) * 100
-                    total_value = positions['current_value'].sum()
-                    total_pnl = total_value - total_cost
-                    total_pnl_pct = (total_pnl / total_cost * 100) if total_cost else 0
-
-                # Show summary cards
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Total Value", f"${total_value:,.0f}", f"{total_pnl_pct:+.1f}%")
-                with col2:
-                    mega_val = positions[positions['position_type'] == 'mega_cap']['current_value'].sum()
-                    mega_pnl_pct = ((mega_val / (total_cost * 0.55)) - 1) * 100 if total_cost else 0
-                    st.metric("Mega-Cap (55%)", f"${mega_val:,.0f}", f"{mega_pnl_pct:+.1f}%")
-                with col3:
-                    opt_val = positions[positions['position_type'] == 'options']['current_value'].sum()
-                    opt_pnl_pct = ((opt_val / (total_cost * 0.25)) - 1) * 100 if total_cost else 0
-                    st.metric("Options (25%)", f"${opt_val:,.0f}", f"{opt_pnl_pct:+.1f}%")
-                with col4:
-                    growth_val = positions[positions['position_type'] == 'growth']['current_value'].sum()
-                    growth_pnl_pct = ((growth_val / (total_cost * 0.20)) - 1) * 100 if total_cost else 0
-                    st.metric("Growth (20%)", f"${growth_val:,.0f}", f"{growth_pnl_pct:+.1f}%")
-
-                # S&P 500 Benchmark Comparison
-                spy_entry = None
-                spy_current = live_prices.get('SPY')
-
-                try:
-                    # Check if spy_entry_price column exists
-                    cols = pd.read_sql_query("PRAGMA table_info(hybrid_daily_snapshot)", h_conn)
-                    has_spy_entry = 'spy_entry_price' in cols['name'].values if not cols.empty else False
-
-                    if has_spy_entry:
-                        spy_snapshot = pd.read_sql_query('''
-                            SELECT spy_entry_price, spy_value FROM hybrid_daily_snapshot
-                            WHERE spy_entry_price IS NOT NULL
-                            ORDER BY date DESC LIMIT 1
-                        ''', h_conn)
-                        if not spy_snapshot.empty:
-                            spy_entry = spy_snapshot['spy_entry_price'].iloc[0]
-                            if not spy_current:
-                                spy_current = spy_snapshot['spy_value'].iloc[0]
-                    else:
-                        # Fallback: try to get just spy_value
-                        spy_snapshot = pd.read_sql_query('''
-                            SELECT spy_value FROM hybrid_daily_snapshot
-                            WHERE spy_value IS NOT NULL
-                            ORDER BY date DESC LIMIT 1
-                        ''', h_conn)
-                        if not spy_snapshot.empty and not spy_current:
-                            spy_current = spy_snapshot['spy_value'].iloc[0]
-                except Exception:
-                    pass  # SPY data not available
-
-                if spy_entry and spy_current:
-                    spy_return_pct = ((spy_current - spy_entry) / spy_entry) * 100
-                    spy_equiv_value = total_cost * (1 + spy_return_pct / 100)
-                    alpha = total_pnl_pct - spy_return_pct
-
-                    st.markdown("---")
-                    st.subheader("📈 S&P 500 Benchmark Comparison")
-                    bcol1, bcol2, bcol3, bcol4 = st.columns(4)
-                    with bcol1:
-                        st.metric("SPY Entry", f"${spy_entry:,.2f}")
-                    with bcol2:
-                        st.metric("SPY Current", f"${spy_current:,.2f}", f"{spy_return_pct:+.2f}%")
-                    with bcol3:
-                        st.metric("$100K in SPY", f"${spy_equiv_value:,.0f}")
-                    with bcol4:
-                        alpha_color = "normal" if alpha >= 0 else "inverse"
-                        st.metric("Alpha", f"{alpha:+.2f}%", delta_color=alpha_color)
-
-                    if 'live_refresh_time' in st.session_state:
-                        st.caption(f"Live prices as of: {st.session_state['live_refresh_time'].strftime('%Y-%m-%d %H:%M:%S')}")
-
-                st.markdown("---")
-
-                # Helper to determine which bucket a stock qualifies for
-                def get_bucket_reason(row):
-                    reasons = []
-                    # Check Bucket 1 criteria
-                    b1 = (row.get('value_score_v2', 0) >= 55 and
-                          row.get('fundamentals_score', 0) >= 18 and
-                          5 <= (row.get('ev_ebitda') or 0) <= 20 and
-                          (row.get('rev_growth') or 0) > 10)
-                    # Check Bucket 3 criteria
-                    b3 = ((row.get('eps_growth') or 0) >= 35 and
-                          (row.get('ebitda_growth') or 0) >= 33 and
-                          12 <= (row.get('ev_ebitda') or 0) <= 27 and
-                          (row.get('rsi') or 100) < 43)
-                    if b1:
-                        reasons.append('B1')
-                    if b3:
-                        reasons.append('B3')
-                    return ', '.join(reasons) if reasons else '-'
-
-                # Positions by type with metrics
-                for pos_type, emoji, title, description in [
-                    ('mega_cap', '📊', 'Mega-Cap Core', 'Top 10 mega-caps by market cap (buy & hold)'),
-                    ('options', '🎯', 'Options Alpha', 'OTM5 calls on Bucket 1/3 stocks with EPS Growth > 15%'),
-                    ('growth', '🌱', 'Growth Picks', 'Long-term holds from Bucket 1/3 signals')
-                ]:
-                    type_pos = positions[positions['position_type'] == pos_type]
-                    if not type_pos.empty:
-                        st.subheader(f"{emoji} {title}")
-                        st.caption(description)
-
-                        if pos_type == 'mega_cap':
-                            # Mega-caps are hardcoded, just show basic info
-                            display_df = type_pos[['symbol', 'cost_basis', 'current_price', 'pnl', 'pnl_pct', 'notes']].copy()
-                            display_df['Weight'] = display_df['notes'].apply(
-                                lambda x: x.split(' - ')[1] if ' - ' in str(x) else ''
-                            )
-                            display_df = display_df[['symbol', 'Weight', 'cost_basis', 'current_price', 'pnl', 'pnl_pct']]
-                            display_df.columns = ['Symbol', 'Weight', 'Cost', 'Price', 'P&L', 'P&L %']
-                        else:
-                            # Options and Growth - show why they were selected
-                            base_cols = ['symbol', 'cost_basis', 'current_price', 'pnl', 'pnl_pct']
-                            if pos_type == 'options':
-                                if 'strike_price' in type_pos.columns:
-                                    base_cols.insert(2, 'strike_price')  # Add strike after symbol
-                                if 'expiration_date' in type_pos.columns:
-                                    base_cols.insert(3 if 'strike_price' in type_pos.columns else 2, 'expiration_date')
-                            display_df = type_pos[base_cols].copy()
-
-                            # Merge metrics if available
-                            if not metrics_df.empty:
-                                display_df = display_df.merge(
-                                    metrics_df[['symbol', 'eps_growth', 'ebitda_growth', 'ev_ebitda', 'rsi', 'value_score_v2', 'fundamentals_score', 'rev_growth']],
-                                    on='symbol', how='left'
-                                )
-                                display_df['Bucket'] = display_df.apply(get_bucket_reason, axis=1)
-
-                                if pos_type == 'options':
-                                    # Include contracts, strike price and expiration for options
-                                    has_strike = 'strike_price' in display_df.columns
-                                    has_exp = 'expiration_date' in display_df.columns
-                                    has_contracts = 'contracts' in type_pos.columns and type_pos['contracts'].notna().any()
-
-                                    if has_contracts and has_strike and has_exp:
-                                        # Add contracts from type_pos
-                                        display_df = display_df.merge(type_pos[['symbol', 'contracts']], on='symbol', how='left')
-                                        display_df = display_df[['symbol', 'contracts', 'strike_price', 'expiration_date', 'Bucket', 'cost_basis', 'pnl_pct']]
-                                        display_df.columns = ['Symbol', 'Contracts', 'Strike $', 'Expires', 'Bucket', 'Cost', 'P&L %']
-                                    elif has_strike and has_exp:
-                                        display_df = display_df[['symbol', 'current_price', 'strike_price', 'expiration_date', 'Bucket', 'eps_growth', 'cost_basis', 'pnl_pct']]
-                                        display_df.columns = ['Symbol', 'Stock $', 'Strike $', 'Expires', 'Bucket', 'EPS Gr%', 'Cost', 'P&L %']
-                                    elif has_strike:
-                                        display_df = display_df[['symbol', 'current_price', 'strike_price', 'Bucket', 'eps_growth', 'cost_basis', 'pnl_pct']]
-                                        display_df.columns = ['Symbol', 'Stock $', 'Strike $', 'Bucket', 'EPS Gr%', 'Cost', 'P&L %']
-                                    else:
-                                        display_df = display_df[['symbol', 'Bucket', 'eps_growth', 'ebitda_growth', 'ev_ebitda', 'rsi', 'cost_basis', 'pnl_pct']]
-                                        display_df.columns = ['Symbol', 'Bucket', 'EPS Gr%', 'EBITDA Gr%', 'EV/EBITDA', 'RSI', 'Cost', 'P&L %']
-                                else:  # growth
-                                    display_df = display_df[['symbol', 'Bucket', 'value_score_v2', 'fundamentals_score', 'rev_growth', 'ev_ebitda', 'cost_basis', 'pnl_pct']]
-                                    display_df.columns = ['Symbol', 'Bucket', 'V2 Score', 'Fund Score', 'Rev Gr%', 'EV/EBITDA', 'Cost', 'P&L %']
-                            else:
-                                display_df.columns = ['Symbol', 'Cost', 'Price', 'P&L', 'P&L %']
-
-                        def color_pnl(val):
-                            if pd.isna(val):
-                                return ''
-                            return 'color: green' if val > 0 else 'color: red' if val < 0 else ''
-
-                        def color_bucket(val):
-                            if val == 'B1':
-                                return 'background-color: #e6f3ff'
-                            elif val == 'B3':
-                                return 'background-color: #fff3e6'
-                            elif val == 'B1, B3':
-                                return 'background-color: #e6ffe6'
-                            return ''
-
-                        # Build format dict based on columns present
-                        fmt = {}
-                        if 'Cost' in display_df.columns:
-                            fmt['Cost'] = '${:,.0f}'
-                        if 'Price' in display_df.columns:
-                            fmt['Price'] = lambda x: f'${x:.2f}' if pd.notna(x) else 'N/A'
-                        if 'Stock $' in display_df.columns:
-                            fmt['Stock $'] = lambda x: f'${x:.2f}' if pd.notna(x) else 'N/A'
-                        if 'Strike $' in display_df.columns:
-                            fmt['Strike $'] = lambda x: f'${x:.2f}' if pd.notna(x) else 'N/A'
-                        if 'P&L' in display_df.columns:
-                            fmt['P&L'] = lambda x: f'${x:+,.0f}' if pd.notna(x) else '-'
-                        if 'P&L %' in display_df.columns:
-                            fmt['P&L %'] = lambda x: f'{x:+.1f}%' if pd.notna(x) else '-'
-                        if 'EPS Gr%' in display_df.columns:
-                            fmt['EPS Gr%'] = lambda x: f'{x:.0f}%' if pd.notna(x) else '-'
-                        if 'EBITDA Gr%' in display_df.columns:
-                            fmt['EBITDA Gr%'] = lambda x: f'{x:.0f}%' if pd.notna(x) else '-'
-                        if 'Rev Gr%' in display_df.columns:
-                            fmt['Rev Gr%'] = lambda x: f'{x:.0f}%' if pd.notna(x) else '-'
-                        if 'EV/EBITDA' in display_df.columns:
-                            fmt['EV/EBITDA'] = lambda x: f'{x:.1f}' if pd.notna(x) else '-'
-                        if 'RSI' in display_df.columns:
-                            fmt['RSI'] = lambda x: f'{x:.0f}' if pd.notna(x) else '-'
-                        if 'V2 Score' in display_df.columns:
-                            fmt['V2 Score'] = lambda x: f'{x:.0f}' if pd.notna(x) else '-'
-                        if 'Fund Score' in display_df.columns:
-                            fmt['Fund Score'] = lambda x: f'{x:.0f}' if pd.notna(x) else '-'
-
-                        styled = display_df.style.format(fmt, na_rep='-')
-                        if 'P&L %' in display_df.columns:
-                            styled = styled.map(color_pnl, subset=['P&L %'])
-                        if 'P&L' in display_df.columns:
-                            styled = styled.map(color_pnl, subset=['P&L'])
-                        if 'Bucket' in display_df.columns:
-                            styled = styled.map(color_bucket, subset=['Bucket'])
-
-                        st.dataframe(styled, use_container_width=True, hide_index=True)
-
-                # Daily snapshot chart with SPY comparison
-                try:
-                    # Check which columns exist
-                    cols = pd.read_sql_query("PRAGMA table_info(hybrid_daily_snapshot)", h_conn)
-                    available_cols = cols['name'].tolist() if not cols.empty else []
-
-                    # Build query based on available columns
-                    select_cols = ['date', 'total_value', 'cumulative_pnl']
-                    if 'spy_value' in available_cols:
-                        select_cols.append('spy_value')
-                    if 'spy_entry_price' in available_cols:
-                        select_cols.append('spy_entry_price')
-
-                    snapshots = pd.read_sql_query(f'''
-                        SELECT {', '.join(select_cols)}
-                        FROM hybrid_daily_snapshot
-                        ORDER BY date
-                    ''', h_conn)
-                except Exception:
-                    snapshots = pd.DataFrame()
-
-                if len(snapshots) >= 1:
-                    st.subheader("📊 Performance Over Time")
-
-                    # Calculate portfolio and SPY returns as percentages
-                    has_spy_entry = 'spy_entry_price' in snapshots.columns and snapshots['spy_entry_price'].notna().any()
-                    has_spy_value = 'spy_value' in snapshots.columns and snapshots['spy_value'].notna().any()
-
-                    if has_spy_entry and has_spy_value:
-                        spy_entry_val = snapshots['spy_entry_price'].dropna().iloc[0]
-                        snapshots['Portfolio %'] = ((snapshots['total_value'] / total_cost) - 1) * 100
-                        snapshots['SPY %'] = ((snapshots['spy_value'] / spy_entry_val) - 1) * 100
-
-                        chart_data = snapshots.set_index('date')[['Portfolio %', 'SPY %']]
-                        st.line_chart(chart_data)
-                    else:
-                        st.line_chart(snapshots.set_index('date')['total_value'])
-
-                # Last update time
-                last_update = positions['updated_at'].max()
-                st.caption(f"Last updated: {last_update}")
-            else:
-                st.info("No positions in hybrid portfolio yet. Run `setup_hybrid_portfolio.py` to initialize.")
-        else:
-            st.warning("Hybrid portfolio tables not found. Run `setup_hybrid_portfolio.py` to create them.")
-
-        h_conn.close()
-    else:
-        st.warning("Hybrid portfolio database not found. Run `setup_hybrid_portfolio.py` to create it.")
-
-    # Instructions
-    with st.expander("How to use this portfolio"):
-        st.markdown("""
-        **Initial Setup:**
-        1. Run `python setup_hybrid_portfolio.py` to create the portfolio
-
-        **Daily Updates:**
-        2. Run `python update_hybrid_portfolio.py` to fetch prices and track P&L
-        3. Or click **🔄 Refresh Prices** above for live updates in the dashboard
-
-        **Live Refresh Requirements:**
-        - Set `FMP_API_KEY` environment variable for live price updates
-        - On Streamlit Cloud, add it to your app secrets
-
-        **Portfolio Structure:**
-        - **Mega-Cap Core (55%)**: AAPL, MSFT, NVDA, GOOG, AMZN, META, TSLA, BRK-B, AVGO, LLY
-        - **Options Alpha (25%)**: OTM5 calls on Bucket 1/3 signals with earnings beat
-        - **Growth Picks (20%)**: Long-term holds from quality signals
-
-        **Based on backtest showing:**
-        - +370% cumulative return vs SPY +83% (2021-2025)
-        - 36.3% CAGR vs SPY 12.8%
-        """)
-
-# ══════════════════════════════════════════════════════════════════════════════
-# TAB 5: MY PORTFOLIOS
-# ══════════════════════════════════════════════════════════════════════════════
-with tab5:
-    st.title("My Portfolios")
-    st.markdown("**Create and track your own custom portfolios**")
-
-    # Import custom portfolio functions
-    try:
-        from custom_portfolio import (
-            get_portfolios, create_portfolio, delete_portfolio,
-            get_positions, add_position, remove_position,
-            get_portfolio_summary, fetch_current_prices
-        )
-        portfolio_module_available = True
-    except ImportError:
-        portfolio_module_available = False
-        st.error("Custom portfolio module not found. Please ensure custom_portfolio.py exists.")
-
-    if portfolio_module_available:
-        # ── Portfolio Selection ──────────────────────────────────────────────────
-        portfolios_df = get_portfolios()
-
-        col_left, col_right = st.columns([2, 1])
-
-        with col_left:
-            if not portfolios_df.empty:
-                portfolio_options = portfolios_df['name'].tolist()
-                selected_portfolio_name = st.selectbox(
-                    "Select Portfolio",
-                    portfolio_options,
-                    key="my_portfolio_select"
-                )
-                selected_portfolio_id = int(portfolios_df[portfolios_df['name'] == selected_portfolio_name]['id'].iloc[0])
-            else:
-                st.info("No portfolios yet. Create one to get started!")
-                selected_portfolio_name = None
-                selected_portfolio_id = None
-
-        with col_right:
-            # Create new portfolio
-            with st.expander("➕ Create New Portfolio"):
-                new_name = st.text_input("Portfolio Name", key="new_portfolio_name")
-                new_desc = st.text_input("Description (optional)", key="new_portfolio_desc")
-                if st.button("Create Portfolio", key="create_portfolio_btn"):
-                    if new_name:
-                        create_portfolio(new_name, new_desc)
-                        st.success(f"Created portfolio: {new_name}")
-                        st.rerun()
-                    else:
-                        st.warning("Please enter a portfolio name")
-
-        if selected_portfolio_id:
-            st.markdown("---")
-
-            # ── Add Position ─────────────────────────────────────────────────────
-            with st.expander("➕ Add Stock to Portfolio"):
-                add_cols = st.columns([2, 1, 1, 1, 2])
-                with add_cols[0]:
-                    add_symbol = st.text_input("Symbol", key="add_symbol").upper()
-                with add_cols[1]:
-                    add_shares = st.number_input("Shares", min_value=0.01, value=1.0, key="add_shares")
-                with add_cols[2]:
-                    add_price = st.number_input("Entry Price", min_value=0.01, value=100.0, key="add_price")
-                with add_cols[3]:
-                    add_date = st.date_input("Entry Date", key="add_date")
-                with add_cols[4]:
-                    add_notes = st.text_input("Notes", key="add_notes")
-
-                if st.button("Add Position", key="add_position_btn"):
-                    if add_symbol:
-                        success = add_position(
-                            selected_portfolio_id,
-                            add_symbol,
-                            add_shares,
-                            add_price,
-                            add_date.strftime('%Y-%m-%d'),
-                            add_notes
-                        )
-                        if success:
-                            st.success(f"Added {add_shares} shares of {add_symbol} at ${add_price:.2f}")
-                            st.rerun()
-                        else:
-                            st.error("Failed to add position")
-                    else:
-                        st.warning("Please enter a symbol")
-
-            # ── Portfolio Summary ────────────────────────────────────────────────
-            summary = get_portfolio_summary(selected_portfolio_id)
-
-            if summary['total_cost'] > 0:
-                # Summary metrics
-                m1, m2, m3, m4 = st.columns(4)
-                with m1:
-                    st.metric("Total Cost", f"${summary['total_cost']:,.2f}")
-                with m2:
-                    st.metric("Current Value", f"${summary['total_value']:,.2f}")
-                with m3:
-                    pnl_delta = f"{summary['pnl_pct']:+.2f}%"
-                    st.metric("Total P&L", f"${summary['pnl']:+,.2f}", delta=pnl_delta)
-                with m4:
-                    num_positions = len(summary['positions'])
-                    st.metric("Positions", num_positions)
-
-                st.markdown("---")
-
-                # Positions table
-                st.subheader("Positions")
-                positions_df = summary['positions'].copy()
-
-                if not positions_df.empty and 'current_price' in positions_df.columns:
-                    # Format for display
-                    display_df = positions_df[['symbol', 'shares', 'entry_price', 'current_price',
-                                               'cost_basis', 'current_value', 'pnl', 'pnl_pct']].copy()
-                    display_df.columns = ['Symbol', 'Shares', 'Entry $', 'Current $',
-                                          'Cost', 'Value', 'P&L $', 'P&L %']
-
-                    # Color P&L
-                    def color_pnl(val):
-                        if pd.isna(val):
-                            return ''
-                        color = 'green' if val > 0 else 'red' if val < 0 else ''
-                        return f'color: {color}'
-
-                    styled = display_df.style.applymap(
-                        color_pnl, subset=['P&L $', 'P&L %']
-                    ).format({
-                        'Shares': '{:.2f}',
-                        'Entry $': '${:.2f}',
-                        'Current $': '${:.2f}',
-                        'Cost': '${:,.2f}',
-                        'Value': '${:,.2f}',
-                        'P&L $': '${:+,.2f}',
-                        'P&L %': '{:+.2f}%'
-                    })
-
-                    st.dataframe(styled, use_container_width=True, hide_index=True)
-
-                    # Remove position
-                    st.markdown("---")
-                    remove_col1, remove_col2 = st.columns([3, 1])
-                    with remove_col1:
-                        symbol_to_remove = st.selectbox(
-                            "Remove Position",
-                            positions_df['symbol'].tolist(),
-                            key="remove_symbol"
-                        )
-                    with remove_col2:
-                        st.write("")  # Spacing
-                        st.write("")
-                        if st.button("🗑️ Remove", key="remove_position_btn"):
-                            remove_position(selected_portfolio_id, symbol_to_remove)
-                            st.success(f"Removed {symbol_to_remove}")
-                            st.rerun()
-                else:
-                    st.info("Add positions to start tracking your portfolio")
-            else:
-                st.info("Portfolio is empty. Add some positions to get started!")
-
-            # ── Delete Portfolio ─────────────────────────────────────────────────
-            st.markdown("---")
-            with st.expander("⚠️ Danger Zone"):
-                st.warning(f"Delete portfolio '{selected_portfolio_name}' and all its positions?")
-                if st.button("🗑️ Delete Portfolio", key="delete_portfolio_btn"):
-                    delete_portfolio(selected_portfolio_id)
-                    st.success(f"Deleted portfolio: {selected_portfolio_name}")
-                    st.rerun()
-
-        # ── Quick Add from Research ──────────────────────────────────────────────
-        st.markdown("---")
-        st.subheader("Quick Add from Stock List")
-        st.markdown("Search for a stock from our database and add it to your portfolio:")
-
-        quick_symbol = st.text_input("Search Symbol", key="quick_search").upper()
-        if quick_symbol and len(quick_symbol) >= 1:
-            # Search in our database
-            matches = df[df['symbol'].str.contains(quick_symbol, case=False, na=False)].head(10)
-            if not matches.empty:
-                st.dataframe(
-                    matches[['symbol', 'company_name', 'sector', 'current_price', 'upside_percent', 'value_score_v2']].rename(columns={
-                        'symbol': 'Symbol',
-                        'company_name': 'Company',
-                        'sector': 'Sector',
-                        'current_price': 'Price',
-                        'upside_percent': 'Upside %',
-                        'value_score_v2': 'V2 Score'
-                    }),
-                    use_container_width=True,
-                    hide_index=True
-                )
 
 # ── Footer ───────────────────────────────────────────────────────────────────
 st.markdown("---")
-st.caption("Data from Financial Modeling Prep | 6,600+ NYSE/NASDAQ/AMEX stocks | "
-           "Pipeline runs daily via GitHub Actions | "
-           "Live prices during market hours")
+st.caption("Compass Score Dashboard | Quality-focused stock analysis | "
+           "Data from Financial Modeling Prep")
+
