@@ -114,6 +114,10 @@ def get_fmp_api_key():
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_live_prices(symbols_csv: str) -> dict:
     """Fetch live prices from FMP batch-quote endpoint (cached 5 min)"""
+    # TEMPORARILY DISABLED - causing page freezes
+    # Remove this return statement to re-enable live prices
+    return {}
+
     api_key = get_fmp_api_key()
     if not api_key:
         return {}
