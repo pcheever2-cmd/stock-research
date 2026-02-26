@@ -125,6 +125,19 @@ def compute_raw_score(symbol, prices_df, fund_df):
         if pd.isna(val):
             return None, None
 
+    # Quality filters - exclude stocks with suspicious/extreme values
+    # These thresholds catch data quality issues
+    if abs(factors['roa']) > 0.5:  # ROA > 50% is suspicious
+        return None, None
+    if abs(factors['ocf_assets']) > 0.75:  # OCF/Assets > 75% is suspicious
+        return None, None
+    if abs(factors['fcf_assets']) > 0.75:  # FCF/Assets > 75% is suspicious
+        return None, None
+    if abs(factors['gp_assets']) > 1.0:  # GP/Assets > 100% is suspicious
+        return None, None
+    if factors['asset_growth'] < -0.5:  # Asset shrinkage > 50% is suspicious
+        return None, None
+
     # Compute z-scores
     z_scores = {}
     for f, val in factors.items():
@@ -213,6 +226,15 @@ def update_nasdaq_db(scores_df):
         print("  Added compass_updated_at column")
     except sqlite3.OperationalError:
         pass  # Column already exists
+
+    # Clear ALL existing compass scores first
+    # This ensures filtered-out stocks don't retain old scores
+    cursor.execute("""
+        UPDATE stock_consensus
+        SET compass_score = NULL, compass_grade = NULL, compass_updated_at = NULL
+    """)
+    cleared = cursor.rowcount
+    print(f"  Cleared {cleared:,} existing scores")
 
     # Update scores
     updated = 0
