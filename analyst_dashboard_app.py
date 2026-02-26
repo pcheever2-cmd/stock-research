@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# File: analyst_dashboard_app.py — 3-Tab Dashboard: Research, Analysis, Movers
+# File: analyst_dashboard_app.py — Compass Score Dashboard
 import streamlit as st
 import sqlite3
 import pandas as pd
@@ -8,6 +8,53 @@ import requests
 from pathlib import Path
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AUTHENTICATION (Optional - disable by setting ENABLE_AUTH=False)
+# ══════════════════════════════════════════════════════════════════════════════
+
+ENABLE_AUTH = True  # Set to False to disable authentication
+
+def check_auth():
+    """Simple password authentication."""
+    if not ENABLE_AUTH:
+        return True
+
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if st.session_state.authenticated:
+        return True
+
+    # Try to get password from secrets (Streamlit Cloud) or environment
+    correct_password = None
+    try:
+        correct_password = st.secrets["APP_PASSWORD"]
+    except (KeyError, FileNotFoundError):
+        correct_password = os.environ.get("APP_PASSWORD", "")
+
+    if not correct_password:
+        # No password configured - allow access (for development)
+        return True
+
+    # Show login form
+    st.title("🧭 Compass Score Dashboard")
+    st.markdown("Please enter the password to access the dashboard.")
+
+    password = st.text_input("Password", type="password", key="password_input")
+
+    if st.button("Login"):
+        if password == correct_password:
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Incorrect password")
+
+    st.stop()
+    return False
+
+# ══════════════════════════════════════════════════════════════════════════════
+
 try:
     from config import DATABASE_NAME, PARQUET_PATH, BACKTEST_DB
 except Exception:
@@ -37,7 +84,10 @@ def download_db_from_release(db_name: str, dest_path: str) -> bool:
         pass
     return False
 
-st.set_page_config(page_title="Stock Research Dashboard", layout="wide")
+st.set_page_config(page_title="Compass Score Dashboard", layout="wide")
+
+# Check authentication before loading the rest of the app
+check_auth()
 
 # ══════════════════════════════════════════════════════════════════════════════
 # SHARED UTILITIES
@@ -200,7 +250,8 @@ def load_data():
                        long_term_score, value_score, value_score_v2,
                        trend_score, fundamentals_score, valuation_score,
                        momentum_score, market_risk_score,
-                       trend_signal, trend_signal_count
+                       trend_signal, trend_signal_count,
+                       compass_score, compass_grade
                 FROM stock_consensus
                 WHERE num_analysts >= 1
                 ORDER BY upside_percent DESC
@@ -234,7 +285,8 @@ def load_data():
                           ('earnings_growth', None), ('adx', None), ('sma50', None),
                           ('sma200', None), ('close_price_technical', None),
                           ('projected_revenue_next_year', None), ('projected_eps_next_year', None),
-                          ('consensus_rating', None)]:
+                          ('consensus_rating', None),
+                          ('compass_score', None), ('compass_grade', None)]:
         if col not in df.columns:
             df[col] = default
 
@@ -789,8 +841,8 @@ with tab2:
     am1.metric("Tier 1", t1_count)
     am2.metric("Tier 2", t2_count)
     am3.metric("Tier 3", t3_count)
-    avg_v2 = a_filtered['value_score_v2'].mean() if len(a_filtered) > 0 else 0
-    am4.metric("Avg V2 Score", f"{avg_v2:.0f}/100" if pd.notna(avg_v2) else "N/A")
+    avg_compass = a_filtered['compass_score'].mean() if len(a_filtered) > 0 else 0
+    am4.metric("Avg Compass Score", f"{avg_compass:.0f}/100" if pd.notna(avg_compass) else "N/A")
     trending_count = (a_filtered['trend_signal_count'].fillna(0) > 0).sum()
     am5.metric("With Trend Signals", trending_count)
 
@@ -798,7 +850,8 @@ with tab2:
     st.subheader(f"Scored Stocks ({len(a_filtered):,})")
 
     a_display = a_filtered[[
-        'symbol', 'company_name', 'sector', 'cap_category', 'conviction_tier',
+        'symbol', 'company_name', 'compass_score', 'compass_grade',
+        'sector', 'cap_category', 'conviction_tier',
         'value_score_v2', 'long_term_score',
         'trend_score', 'fundamentals_score', 'valuation_score',
         'momentum_score', 'market_risk_score',
@@ -809,8 +862,9 @@ with tab2:
     ]].copy()
 
     a_display.rename(columns={
-        'symbol': 'Symbol', 'company_name': 'Company', 'sector': 'Sector',
-        'cap_category': 'Cap', 'conviction_tier': 'Tier',
+        'symbol': 'Symbol', 'company_name': 'Company',
+        'compass_score': 'Compass', 'compass_grade': 'Grade',
+        'sector': 'Sector', 'cap_category': 'Cap', 'conviction_tier': 'Tier',
         'value_score_v2': 'V2 Score', 'long_term_score': 'LT Score',
         'trend_score': 'Trend (/25)', 'fundamentals_score': 'Fund (/25)',
         'valuation_score': 'Val (/16)', 'momentum_score': 'Mom (/10)',
@@ -822,7 +876,7 @@ with tab2:
     }, inplace=True)
 
     a_format = {
-        'V2 Score': '{:.0f}', 'LT Score': '{:.0f}',
+        'Compass': '{:.0f}', 'V2 Score': '{:.0f}', 'LT Score': '{:.0f}',
         'Trend (/25)': '{:.0f}', 'Fund (/25)': '{:.0f}', 'Val (/16)': '{:.0f}',
         'Mom (/10)': '{:.0f}', 'Mkt (/10)': '{:.0f}',
         'Price': '${:.2f}', 'Mean Up%': '{:+.1f}%',
@@ -830,11 +884,18 @@ with tab2:
         'Rev Gr%': '{:+.1f}%', 'EPS Gr%': '{:+.1f}%',
     }
 
+    def color_compass_grade(val):
+        """Color code Compass Grade A-F."""
+        colors = {'A': '#1a7431', 'B': '#2e8b57', 'C': '#b8860b', 'D': '#cd853f', 'F': '#b22222'}
+        return f'background-color: {colors.get(val, "white")}; color: white; font-weight: bold'
+
     a_styled = a_display.style \
         .format(a_format, na_rep='-') \
         .map(color_tier, subset=['Tier']) \
+        .map(color_compass_grade, subset=['Grade']) \
         .map(color_trend_signal, subset=['Trend Signals']) \
         .map(color_upside, subset=['Mean Up%']) \
+        .background_gradient(subset=['Compass'], cmap='RdYlGn', vmin=0, vmax=100) \
         .background_gradient(subset=['V2 Score'], cmap='Blues', vmin=0, vmax=100) \
         .background_gradient(subset=['LT Score'], cmap='Oranges', vmin=0, vmax=100) \
         .background_gradient(subset=['Rev Gr%'], cmap='YlGn', vmin=0, vmax=50) \

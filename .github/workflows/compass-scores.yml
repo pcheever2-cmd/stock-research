@@ -1,0 +1,46 @@
+name: Compass Score Update
+
+on:
+  schedule:
+    # Run at 7 AM UTC on Mon/Wed/Fri (2 AM EST, after daily pipeline)
+    - cron: '0 7 * * 1,3,5'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  compute-scores:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install pandas numpy
+
+      - name: Download databases from release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Downloading databases from 'data' release..."
+          gh release download data --pattern "backtest.db" --dir . || echo "backtest.db not found"
+          gh release download data --pattern "nasdaq_stocks.db" --dir . || echo "nasdaq_stocks.db not found"
+
+      - name: Compute Compass Scores
+        run: python compute_compass_scores.py
+
+      - name: Upload updated nasdaq_stocks.db to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Uploading updated nasdaq_stocks.db..."
+          gh release upload data nasdaq_stocks.db --clobber

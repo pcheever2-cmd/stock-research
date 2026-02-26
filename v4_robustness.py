@@ -33,7 +33,7 @@ V4_WEIGHTS = {
     'roa': 0.20,
     'ocf_assets': 0.15,
     'fcf_assets': 0.15,
-    'gp_assets': 0.10,
+    'gp_assets': 0.20,  # Novy-Marx gross profitability premium
     'vol_60d': -0.15,  # Negative = prefer low volatility
     'asset_growth': -0.15,  # Negative = prefer low growth (conservative)
 }

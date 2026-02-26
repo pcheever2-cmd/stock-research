@@ -215,7 +215,7 @@ def validate_period(df, train_start, train_end, test_start, test_end, period_nam
             dataset['roa_z'] * 0.20 +
             dataset['ocf_assets_z'] * 0.15 +
             dataset['fcf_assets_z'] * 0.15 +
-            dataset['gp_assets_z'] * 0.10 +
+            dataset['gp_assets_z'] * 0.20 +  # Novy-Marx
             (-dataset['vol_60d_z']) * 0.15 +
             (-dataset['asset_growth_z']) * 0.15
         )
