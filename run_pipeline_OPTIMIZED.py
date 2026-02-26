@@ -314,7 +314,8 @@ def export_dashboard_parquet():
                trend_score, fundamentals_score, valuation_score,
                momentum_score, market_risk_score,
                trend_signal, trend_signal_count,
-               altman_z_score, piotroski_score, market_cap, exchange
+               altman_z_score, piotroski_score, market_cap, exchange,
+               compass_score, compass_grade
         FROM stock_consensus
         ORDER BY value_score_v2 DESC NULLS LAST, upside_percent DESC NULLS LAST
     """
