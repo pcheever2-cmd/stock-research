@@ -74,12 +74,27 @@ def load_data():
     fund['date'] = pd.to_datetime(fund['date'])
     conn.close()
 
-    # Compute fundamental ratios
-    fund['roa'] = fund['net_income'] / fund['total_assets']
-    fund['ocf_assets'] = fund['operating_cash_flow'] / fund['total_assets']
-    fund['fcf_assets'] = fund['free_cash_flow'] / fund['total_assets']
-    fund['gp_assets'] = fund['gross_profit'] / fund['total_assets']
+    # Sort by symbol and date for rolling calculations
     fund = fund.sort_values(['symbol', 'date'])
+
+    # Compute TTM (Trailing Twelve Months) for flow metrics
+    # Sum of last 4 quarters for income statement and cash flow items
+    print("  Computing TTM metrics...")
+    sys.stdout.flush()
+
+    for col in ['net_income', 'gross_profit', 'operating_cash_flow', 'free_cash_flow']:
+        fund[f'{col}_ttm'] = fund.groupby('symbol')[col].transform(
+            lambda x: x.rolling(4, min_periods=4).sum()
+        )
+
+    # Compute fundamental ratios using TTM for flow metrics, latest for balance sheet
+    # Note: total_assets is point-in-time (latest quarter), not summed
+    fund['roa'] = fund['net_income_ttm'] / fund['total_assets']
+    fund['ocf_assets'] = fund['operating_cash_flow_ttm'] / fund['total_assets']
+    fund['fcf_assets'] = fund['free_cash_flow_ttm'] / fund['total_assets']
+    fund['gp_assets'] = fund['gross_profit_ttm'] / fund['total_assets']
+
+    # Asset growth: compare latest assets to assets 4 quarters ago
     fund['asset_growth'] = fund.groupby('symbol')['total_assets'].pct_change(4)
 
     # Clean up infinities
@@ -191,8 +206,17 @@ def compute_all_scores():
     print(f"  {len(df):,} stocks with valid Compass Scores")
     sys.stdout.flush()
 
-    # Percentile rank (0-100 scale)
-    df['compass_score'] = (df['raw_score'].rank(pct=True) * 100).round(0).astype(int)
+    # Percentile base (maintains ~20% per grade) with raw score tiers at top
+    percentile = df['raw_score'].rank(pct=True)
+    df['compass_score'] = (percentile * 100).round(0).astype(int)
+
+    # Top tier: use raw score to spread out the best stocks
+    # Tighter thresholds = fewer stocks per tier
+    df.loc[df['raw_score'] >= 0.15, 'compass_score'] = 96
+    df.loc[df['raw_score'] >= 0.20, 'compass_score'] = 97
+    df.loc[df['raw_score'] >= 0.28, 'compass_score'] = 98
+    df.loc[df['raw_score'] >= 0.40, 'compass_score'] = 99
+    df.loc[df['raw_score'] >= 0.55, 'compass_score'] = 100
 
     # Assign grades
     df['compass_grade'] = df['compass_score'].apply(assign_grade)
@@ -262,7 +286,7 @@ def print_examples(scores_df):
     print("VERIFICATION: Famous Stock Examples")
     print("=" * 60)
 
-    famous = ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA', 'META', 'JPM', 'SMCI', 'PLTR', 'COIN']
+    famous = ['AAPL', 'MSFT', 'GOOGL', 'NVDA', 'TSLA', 'META', 'JPM', 'SMCI', 'PLTR', 'COIN', 'FLWS']
 
     print(f"\n{'Symbol':<8} {'Score':<8} {'Grade':<6} {'Raw':<10}")
     print("-" * 40)
