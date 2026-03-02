@@ -1,50 +1,158 @@
 #!/usr/bin/env python3
 """
-Quick export script to generate stocks.json for the website
+Export stocks.json for website from nasdaq_stocks.db (fresh compass scores)
 """
 
 import pandas as pd
 import json
+import sqlite3
 from pathlib import Path
 
 # Paths
 PROJECT_ROOT = Path(__file__).parent
-PARQUET_FILE = PROJECT_ROOT / 'data' / 'dashboard_data.parquet'
+NASDAQ_DB = PROJECT_ROOT / 'nasdaq_stocks.db'
 OUTPUT_FILE = Path('/Users/pcheev/Documents/compass-score-site/src/data/stocks.json')
 
-print(f"Loading data from {PARQUET_FILE}...")
-df = pd.read_parquet(PARQUET_FILE)
+print(f"Loading data from {NASDAQ_DB}...")
+conn = sqlite3.connect(str(NASDAQ_DB))
 
-print(f"Loaded {len(df)} stocks")
-print(f"Columns: {df.columns.tolist()}")
+# Get all stock data with compass scores and premium metrics
+df = pd.read_sql_query("""
+    SELECT
+        symbol,
+        company_name,
+        company_description,
+        current_price,
+        avg_price_target,
+        num_analysts,
+        consensus_rating as consensus_rating,
+        recent_ratings,
+        industry,
+        sector,
+        market_cap,
+        compass_score,
+        compass_grade,
+        country,
+        -- Premium: Valuation metrics
+        ev_ebitda,
+        forward_pe,
+        peg_ratio,
+        -- Premium: Growth metrics
+        projected_eps_growth,
+        projected_revenue_growth,
+        -- Premium: Financial health
+        piotroski_score,
+        altman_z_score,
+        -- Premium: Technical indicators
+        rsi,
+        sma50,
+        sma200,
+        trend_signal,
+        -- Premium: Additional scores
+        value_score_v2,
+        long_term_score
+    FROM stock_consensus
+    WHERE compass_score IS NOT NULL
+    ORDER BY compass_score DESC
+""", conn)
 
-# Filter out stocks with no compass score
-df = df[df['compass_score'].notna()].copy()
-print(f"Filtered to {len(df)} stocks with compass scores")
+conn.close()
+
+print(f"Loaded {len(df)} stocks with compass scores")
+
+# Filter out stocks with incomplete/missing metadata
+print(f"\nFiltering out stocks with incomplete metadata...")
+initial_count = len(df)
+
+# Remove stocks with missing or generic industry
+df = df[df['industry'].notna()]
+df = df[df['industry'] != 'Unknown']
+df = df[df['industry'] != '']
+
+# Remove stocks with missing or generic sector
+df = df[df['sector'].notna()]
+df = df[df['sector'] != 'Unknown']
+df = df[df['sector'] != '']
+
+# Remove stocks where company name is missing or same as symbol (indicates no real company data)
+df = df[df['company_name'].notna()]
+df = df[df['company_name'] != '']
+df = df[df['company_name'] != df['symbol']]
+
+# Remove stocks with missing or very short descriptions (less than 50 chars indicates incomplete data)
+df = df[df['company_description'].notna()]
+df = df[df['company_description'].str.len() >= 50]
+
+# Filter to US-based companies only
+df = df[df['country'] == 'US']
+
+filtered_count = initial_count - len(df)
+print(f"  Filtered out {filtered_count} stocks with incomplete metadata")
+print(f"  Remaining: {len(df)} stocks")
+
+# Calculate upside if we have price targets (rounded to whole numbers)
+df['upside'] = None
+mask = df['avg_price_target'].notna() & df['current_price'].notna() & (df['current_price'] > 0)
+df.loc[mask, 'upside'] = (((df.loc[mask, 'avg_price_target'] - df.loc[mask, 'current_price']) / df.loc[mask, 'current_price']) * 100).round(0)
+
+# Helper to safely convert to float
+def safe_float(val, decimals=2):
+    if pd.notna(val):
+        return round(float(val), decimals)
+    return None
+
+def safe_int(val):
+    if pd.notna(val):
+        return int(val)
+    return None
 
 # Convert to JSON format expected by website
 stocks_list = []
 for _, row in df.iterrows():
     stock = {
+        # Basic info (Free tier)
         'symbol': row['symbol'],
-        'name': row.get('company_name', row['symbol']),
-        'price': float(row.get('current_price', 0)) if pd.notna(row.get('current_price')) else 0.0,
+        'name': row.get('company_name', row['symbol']) or row['symbol'],
+        'price': float(row['current_price']) if pd.notna(row.get('current_price')) else 0.0,
         'compassScore': int(row['compass_score']),
-        'grade': row.get('compass_grade', 'F'),
-        'industry': row.get('industry', 'Unknown'),
-        'sector': row.get('sector', 'Unknown'),
-        'marketCap': float(row.get('market_cap', 0)) if pd.notna(row.get('market_cap')) else 0.0,
-        'description': row.get('company_description', ''),
-        'avgPriceTarget': float(row['avg_price_target']) if pd.notna(row.get('avg_price_target')) else None,
-        'upside': float(row['upside_percent']) if pd.notna(row.get('upside_percent')) else None,
-        'numAnalysts': int(row['num_analysts']) if pd.notna(row.get('num_analysts')) else None,
+        'grade': row['compass_grade'],
+        'industry': row.get('industry', 'Unknown') or 'Unknown',
+        'sector': row.get('sector', 'Unknown') or 'Unknown',
+        'marketCap': float(row['market_cap']) / 1_000_000_000 if pd.notna(row.get('market_cap')) and row['market_cap'] > 0 else 0.0,
+        'description': row.get('company_description', '') or '',
+
+        # Analyst data (Partial: consensus free, details premium)
+        'numAnalysts': safe_int(row.get('num_analysts')),
         'consensus': row.get('consensus_rating'),
-        'recentRatings': row.get('recent_ratings', '')
+        # Premium analyst details
+        'avgPriceTarget': safe_float(row.get('avg_price_target')),
+        'upside': safe_int(row.get('upside')),
+        'recentRatings': row.get('recent_ratings', '') or '',
+
+        # Premium: Valuation metrics
+        'evEbitda': safe_float(row.get('ev_ebitda'), 1),
+        'forwardPe': safe_float(row.get('forward_pe'), 1),
+        'pegRatio': safe_float(row.get('peg_ratio')),
+
+        # Premium: Growth metrics
+        'epsGrowth': safe_float(row.get('projected_eps_growth'), 1),
+        'revenueGrowth': safe_float(row.get('projected_revenue_growth'), 1),
+
+        # Premium: Financial health
+        'piotroskiScore': safe_int(row.get('piotroski_score')),
+        'altmanZ': safe_float(row.get('altman_z_score')),
+
+        # Premium: Technical indicators
+        'rsi': safe_float(row.get('rsi'), 1),
+        'sma50': safe_float(row.get('sma50')),
+        'sma200': safe_float(row.get('sma200')),
+        'trendSignal': row.get('trend_signal') if pd.notna(row.get('trend_signal')) else None,
+
+        # Premium: Additional scores
+        'valueScore': safe_int(row.get('value_score_v2')),
+        'longTermScore': safe_float(row.get('long_term_score'), 1),
     }
     stocks_list.append(stock)
-
-# Sort by compass score descending
-stocks_list.sort(key=lambda x: x['compassScore'], reverse=True)
 
 print(f"\nWriting {len(stocks_list)} stocks to {OUTPUT_FILE}...")
 OUTPUT_FILE.write_text(json.dumps(stocks_list, indent=2))
