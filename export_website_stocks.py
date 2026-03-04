@@ -22,28 +22,28 @@ conn = sqlite3.connect(str(NASDAQ_DB))
 print(f"Loading analyst accuracy data from {BACKTEST_DB}...")
 backtest_conn = sqlite3.connect(str(BACKTEST_DB))
 
-# Get overall analyst accuracy
-analyst_accuracy_df = pd.read_sql_query("""
-    SELECT grading_company, hit_rate, avg_return, total_calls
-    FROM analyst_accuracy
-    WHERE total_calls >= 50
+# Get sector-specific analyst accuracy (this is the key data)
+analyst_sector_df = pd.read_sql_query("""
+    SELECT grading_company, sector, hit_rate, total_calls
+    FROM analyst_sector_accuracy
+    WHERE total_calls >= 20
 """, backtest_conn)
 
-# Calculate percentile rank for each analyst (0-100, higher = better)
-analyst_accuracy_df['percentile'] = analyst_accuracy_df['hit_rate'].rank(pct=True) * 100
+# Calculate percentile rank WITHIN each sector
+analyst_sector_df['percentile'] = analyst_sector_df.groupby('sector')['hit_rate'].rank(pct=True) * 100
 
-analyst_accuracy = {
-    row['grading_company']: {
+# Build lookup: (analyst, sector) -> accuracy data
+analyst_sector_accuracy = {}
+for _, row in analyst_sector_df.iterrows():
+    key = (row['grading_company'], row['sector'])
+    analyst_sector_accuracy[key] = {
         'hitRate': round(row['hit_rate'] * 100, 1),
-        'percentile': round(row['percentile']),  # Rank vs all analysts
-        'avgReturn': round(row['avg_return'], 1) if pd.notna(row['avg_return']) else None,
+        'percentile': round(row['percentile']),  # Rank vs other analysts in same sector
         'totalCalls': int(row['total_calls'])
     }
-    for _, row in analyst_accuracy_df.iterrows()
-}
-print(f"  Loaded accuracy for {len(analyst_accuracy)} analyst firms")
+print(f"  Loaded {len(analyst_sector_accuracy)} analyst-sector accuracy records")
 
-# Get sector-level accuracy (average across all analysts in each sector)
+# Get sector-level averages for display
 sector_accuracy_df = pd.read_sql_query("""
     SELECT sector, AVG(hit_rate) as avg_hit_rate, SUM(total_calls) as total_calls
     FROM analyst_sector_accuracy
@@ -74,20 +74,21 @@ def parse_analyst_firms(recent_ratings_str):
     return firms
 
 
-def get_covering_analysts(recent_ratings_str):
-    """Get accuracy data for analysts covering this stock."""
+def get_covering_analysts(recent_ratings_str, sector):
+    """Get sector-specific accuracy data for analysts covering this stock."""
     firms = parse_analyst_firms(recent_ratings_str)
-    if not firms:
+    if not firms or not sector:
         return None
 
     covering = []
     for firm in firms[:5]:  # Top 5 most recent
-        if firm in analyst_accuracy:
+        key = (firm, sector)
+        if key in analyst_sector_accuracy:
             covering.append({
                 'firm': firm,
-                'hitRate': analyst_accuracy[firm]['hitRate'],
-                'percentile': analyst_accuracy[firm]['percentile'],  # Rank vs all 174 analysts
-                'totalCalls': analyst_accuracy[firm]['totalCalls']
+                'hitRate': analyst_sector_accuracy[key]['hitRate'],
+                'percentile': analyst_sector_accuracy[key]['percentile'],  # Rank vs other analysts in THIS sector
+                'totalCalls': analyst_sector_accuracy[key]['totalCalls']
             })
 
     return covering if covering else None
@@ -228,9 +229,9 @@ for _, row in df.iterrows():
         'valueScore': safe_int(row.get('value_score_v2')),
         'longTermScore': safe_float(row.get('long_term_score'), 1),
 
-        # Premium: Analyst accuracy
+        # Premium: Analyst accuracy (sector-specific)
         'sectorAnalystAccuracy': sector_accuracy.get(row.get('sector')),
-        'coveringAnalysts': get_covering_analysts(row.get('recent_ratings', '')),
+        'coveringAnalysts': get_covering_analysts(row.get('recent_ratings', ''), row.get('sector')),
     }
     stocks_list.append(stock)
 
