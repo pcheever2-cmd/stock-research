@@ -28,9 +28,14 @@ analyst_accuracy_df = pd.read_sql_query("""
     FROM analyst_accuracy
     WHERE total_calls >= 50
 """, backtest_conn)
+
+# Calculate percentile rank for each analyst (0-100, higher = better)
+analyst_accuracy_df['percentile'] = analyst_accuracy_df['hit_rate'].rank(pct=True) * 100
+
 analyst_accuracy = {
     row['grading_company']: {
         'hitRate': round(row['hit_rate'] * 100, 1),
+        'percentile': round(row['percentile']),  # Rank vs all analysts
         'avgReturn': round(row['avg_return'], 1) if pd.notna(row['avg_return']) else None,
         'totalCalls': int(row['total_calls'])
     }
@@ -81,6 +86,7 @@ def get_covering_analysts(recent_ratings_str):
             covering.append({
                 'firm': firm,
                 'hitRate': analyst_accuracy[firm]['hitRate'],
+                'percentile': analyst_accuracy[firm]['percentile'],  # Rank vs all 174 analysts
                 'totalCalls': analyst_accuracy[firm]['totalCalls']
             })
 
