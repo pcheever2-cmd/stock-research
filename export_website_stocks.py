@@ -6,15 +6,85 @@ Export stocks.json for website from nasdaq_stocks.db (fresh compass scores)
 import pandas as pd
 import json
 import sqlite3
+import re
 from pathlib import Path
 
 # Paths
 PROJECT_ROOT = Path(__file__).parent
 NASDAQ_DB = PROJECT_ROOT / 'nasdaq_stocks.db'
+BACKTEST_DB = PROJECT_ROOT / 'backtest.db'
 OUTPUT_FILE = Path('/Users/pcheev/Documents/compass-score-site/src/data/stocks.json')
 
 print(f"Loading data from {NASDAQ_DB}...")
 conn = sqlite3.connect(str(NASDAQ_DB))
+
+# Load analyst accuracy data from backtest.db
+print(f"Loading analyst accuracy data from {BACKTEST_DB}...")
+backtest_conn = sqlite3.connect(str(BACKTEST_DB))
+
+# Get overall analyst accuracy
+analyst_accuracy_df = pd.read_sql_query("""
+    SELECT grading_company, hit_rate, avg_return, total_calls
+    FROM analyst_accuracy
+    WHERE total_calls >= 50
+""", backtest_conn)
+analyst_accuracy = {
+    row['grading_company']: {
+        'hitRate': round(row['hit_rate'] * 100, 1),
+        'avgReturn': round(row['avg_return'], 1) if pd.notna(row['avg_return']) else None,
+        'totalCalls': int(row['total_calls'])
+    }
+    for _, row in analyst_accuracy_df.iterrows()
+}
+print(f"  Loaded accuracy for {len(analyst_accuracy)} analyst firms")
+
+# Get sector-level accuracy (average across all analysts in each sector)
+sector_accuracy_df = pd.read_sql_query("""
+    SELECT sector, AVG(hit_rate) as avg_hit_rate, SUM(total_calls) as total_calls
+    FROM analyst_sector_accuracy
+    GROUP BY sector
+""", backtest_conn)
+sector_accuracy = {
+    row['sector']: round(row['avg_hit_rate'] * 100, 1)
+    for _, row in sector_accuracy_df.iterrows()
+}
+print(f"  Loaded sector accuracy for {len(sector_accuracy)} sectors")
+
+backtest_conn.close()
+
+
+def parse_analyst_firms(recent_ratings_str):
+    """Extract analyst firm names from recent_ratings string."""
+    if not recent_ratings_str:
+        return []
+
+    firms = []
+    # Pattern: date: Firm Name → Rating
+    for line in recent_ratings_str.split('\n'):
+        match = re.search(r'\d{4}-\d{2}-\d{2}:\s*(.+?)\s*→', line)
+        if match:
+            firm = match.group(1).strip()
+            if firm and firm not in firms:
+                firms.append(firm)
+    return firms
+
+
+def get_covering_analysts(recent_ratings_str):
+    """Get accuracy data for analysts covering this stock."""
+    firms = parse_analyst_firms(recent_ratings_str)
+    if not firms:
+        return None
+
+    covering = []
+    for firm in firms[:5]:  # Top 5 most recent
+        if firm in analyst_accuracy:
+            covering.append({
+                'firm': firm,
+                'hitRate': analyst_accuracy[firm]['hitRate'],
+                'totalCalls': analyst_accuracy[firm]['totalCalls']
+            })
+
+    return covering if covering else None
 
 # Get all stock data with compass scores and premium metrics
 df = pd.read_sql_query("""
@@ -151,6 +221,10 @@ for _, row in df.iterrows():
         # Premium: Additional scores
         'valueScore': safe_int(row.get('value_score_v2')),
         'longTermScore': safe_float(row.get('long_term_score'), 1),
+
+        # Premium: Analyst accuracy
+        'sectorAnalystAccuracy': sector_accuracy.get(row.get('sector')),
+        'coveringAnalysts': get_covering_analysts(row.get('recent_ratings', '')),
     }
     stocks_list.append(stock)
 
