@@ -1,0 +1,260 @@
+================================================================================
+MOONSHOT QUALITY-FIRST INSTITUTIONAL STATISTICS
+================================================================================
+Run at: 2026-03-04T10:01:03.213953
+
+Methodology: Quality-First v2.0 (≥$500M market cap)
+In-sample: 1995-2019 | Out-of-sample: 2020-2026
+================================================================================
+Downloading FF factors...
+  751 months
+
+======================================================================
+COMPUTING MOONSHOT QUINTILE RETURNS
+======================================================================
+
+Loading data...
+  23,005,369 price records, 6,554 symbols
+  412,788 fundamental records
+Computing metrics...
+Computing forward 1-year returns...
+  203,692 observations after market cap filter
+  29,796 observations after quality filters
+  29,698 observations ready for scoring
+
+  In-sample: 19,492 observations
+  Out-of-sample: 10,206 observations
+
+Computing z-scores from IS data...
+Assigning quintiles...
+  IS: 90 months
+  OOS: 26 months
+
+
+
+
+======================================================================
+INSTITUTIONAL STATISTICS (IN-SAMPLE (1995-2019))
+======================================================================
+
+Months: 90
+Date range: 1997-12-01 to 2019-12-01
+
+1. RETURN STATISTICS
+   Average monthly return: -19.15%
+   Monthly std dev: 45.20%
+   Annualized return: -229.79%
+   Annualized vol: 156.57%
+
+2. SHARPE RATIO
+   Monthly Sharpe (annualized): -1.47
+   Interpretation: WEAK
+
+3. DRAWDOWN ANALYSIS
+   Max drawdown: -100.00%
+   Max DD date: 2007-12-01
+   Interpretation: HIGH RISK (>30%)
+
+4. CUMULATIVE PERFORMANCE
+   Total cumulative return: -100.00%
+   Annualized (CAGR): +nan%
+
+5. YEAR-BY-YEAR RETURNS (Q5-Q1)
+   Year         Return       Status
+   -----------------------------------
+   1997         -4.31%    ❌ NEGATIVE
+   1998        -56.27%    ❌ NEGATIVE
+   1999        -37.21%    ❌ NEGATIVE
+   2000       -244.89%    ❌ NEGATIVE
+   2001        -81.56%    ❌ NEGATIVE
+   2002        -64.17%    ❌ NEGATIVE
+   2003        +25.40%    ✅ POSITIVE
+   2004        +26.60%    ✅ POSITIVE
+   2005        +25.95%    ✅ POSITIVE
+   2006        -12.46%    ❌ NEGATIVE
+   2007       -110.58%    ❌ NEGATIVE
+   2008        -92.06%    ❌ NEGATIVE
+   2009         +0.95%    ✅ POSITIVE
+   2010        -47.64%    ❌ NEGATIVE
+   2011        -53.40%    ❌ NEGATIVE
+   2012        -14.21%    ❌ NEGATIVE
+   2013         -7.86%    ❌ NEGATIVE
+   2014       -527.35%    ❌ NEGATIVE
+   2015       -155.40%    ❌ NEGATIVE
+   2016        -36.15%    ❌ NEGATIVE
+   2017        -34.21%    ❌ NEGATIVE
+   2018       -100.82%    ❌ NEGATIVE
+   2019       -121.79%    ❌ NEGATIVE
+
+   Positive years: 4/23 (17%)
+
+6. WIN RATE (MONTHLY)
+   Positive months: 28.9%
+   Interpretation: INCONSISTENT
+
+7. BEST 5 MONTHS
+   1999-12: +22.46%
+   2003-03: +12.37%
+   2004-12: +12.00%
+   2004-09: +11.12%
+   2012-12: +9.98%
+
+8. WORST 5 MONTHS
+   2014-06: -366.97%
+   2007-12: -101.86%
+   2019-03: -100.00%
+   2000-03: -98.90%
+   2000-09: -97.31%
+
+9. FACTOR CORRELATIONS
+   Market (Mkt-RF): +0.020
+   Size (SMB): +0.104
+   Value (HML): -0.028
+   Profitability (RMW): -0.052
+   Investment (CMA): +0.014
+   Momentum (MOM): -0.011
+
+   Interpretation:
+   - Positive RMW: Strategy benefits from quality/profitability factor ✅
+   - Positive SMB: Strategy benefits from small-cap factor ✅
+   - Low Mkt-RF: Strategy is market-neutral (good for diversification) ✅
+
+
+
+
+======================================================================
+INSTITUTIONAL STATISTICS (OUT-OF-SAMPLE (2020-2026))
+======================================================================
+
+Months: 26
+Date range: 2020-03-01 to 2024-12-01
+
+1. RETURN STATISTICS
+   Average monthly return: -199.17%
+   Monthly std dev: 765.69%
+   Annualized return: -2390.06%
+   Annualized vol: 2652.41%
+
+2. SHARPE RATIO
+   Monthly Sharpe (annualized): -0.90
+   Interpretation: WEAK
+
+3. DRAWDOWN ANALYSIS
+   Max drawdown: -108.86%
+   Max DD date: 2021-03-01
+   Interpretation: HIGH RISK (>30%)
+
+4. CUMULATIVE PERFORMANCE
+   Total cumulative return: -100.01%
+   Annualized (CAGR): +nan%
+
+5. YEAR-BY-YEAR RETURNS (Q5-Q1)
+   Year         Return       Status
+   -----------------------------------
+   2020        -72.76%    ❌ NEGATIVE
+   2021       -613.33%    ❌ NEGATIVE
+   2022       -356.28%    ❌ NEGATIVE
+   2023       -107.66%    ❌ NEGATIVE
+   2024      -4028.45%    ❌ NEGATIVE
+
+   Positive years: 0/5 (0%)
+
+6. WIN RATE (MONTHLY)
+   Positive months: 11.5%
+   Interpretation: INCONSISTENT
+
+7. BEST 5 MONTHS
+   2021-07: +11.33%
+   2020-06: +6.69%
+   2020-03: +6.56%
+   2022-07: -2.79%
+   2024-12: -10.05%
+
+8. WORST 5 MONTHS
+   2024-03: -3944.55%
+   2021-12: -193.99%
+   2021-06: -139.70%
+   2021-03: -136.36%
+   2022-09: -134.67%
+
+9. FACTOR CORRELATIONS
+   Market (Mkt-RF): -0.109
+   Size (SMB): +0.014
+   Value (HML): -0.170
+   Profitability (RMW): -0.036
+   Investment (CMA): -0.047
+   Momentum (MOM): +0.047
+
+   Interpretation:
+   - Positive RMW: Strategy benefits from quality/profitability factor ✅
+   - Positive SMB: Strategy benefits from small-cap factor ✅
+   - Low Mkt-RF: Strategy is market-neutral (good for diversification) ✅
+
+
+
+
+======================================================================
+SHORTING COST MODEL
+======================================================================
+
+Gross annualized spread: -2390.06%
+
+Net spread after borrow costs:
+Borrow Cost       Net Spread     Feasibility
+---------------------------------------------
+0.5% annual       -2390.56%    ❌ UNPROFITABLE
+1.0% annual       -2391.06%    ❌ UNPROFITABLE
+1.5% annual       -2391.56%    ❌ UNPROFITABLE
+2.0% annual       -2392.06%    ❌ UNPROFITABLE
+3.0% annual       -2393.06%    ❌ UNPROFITABLE
+5.0% annual       -2395.06%    ❌ UNPROFITABLE
+
+Notes:
+  - Small/mid-cap general collateral: 0.5-1.5% annually
+  - Large-cap general collateral: 0.25-0.50% annually
+  - Hard-to-borrow names: 5-20%+ annually
+  - Quality growth stocks (Q5) are typically easy to borrow
+  - Lower quality stocks (Q1) may have higher borrow costs
+
+
+
+
+======================================================================
+ROLLING 12-MONTH ALPHA
+======================================================================
+
+  Rolling 12-month alpha statistics:
+  Mean alpha: -1691.72%
+  Median alpha: -811.20%
+  Std dev: 1710.84%
+  Min alpha: -5828.38%
+  Max alpha: -497.26%
+
+  Positive alpha windows: 0/15 (0%)
+  Interpretation: UNSTABLE
+
+
+======================================================================
+IS vs OOS COMPARISON
+======================================================================
+
+Metric                          In-Sample      Out-of-Sample
+------------------------------------------------------------
+Avg Monthly Return                -19.15%           -199.17%
+Annualized Return                -229.79%          -2390.06%
+Monthly Std Dev                    45.20%            765.69%
+Sharpe Ratio                       -1.47              -0.90
+Max Drawdown                     -100.00%           -108.86%
+Win Rate                            28.9%              11.5%
+Cumulative Return                 -100.0%            -100.0%
+
+================================================================================
+ANALYSIS COMPLETE
+================================================================================
+
+✅ SUCCESS CRITERIA:
+   - Sharpe ratio >1.0 OOS
+   - Max drawdown <30% OOS
+   - Positive returns in >50% of years OOS
+   - Win rate >50% OOS
+   - Returns robust to reasonable shorting costs (<1.5% annually)

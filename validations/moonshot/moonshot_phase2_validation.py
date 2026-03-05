@@ -24,7 +24,7 @@ from pathlib import Path
 from datetime import datetime
 import sys
 
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 BACKTEST_DB = str(PROJECT_ROOT / 'backtest.db')
 
 # Period split

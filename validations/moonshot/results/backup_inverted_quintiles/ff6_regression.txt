@@ -1,0 +1,207 @@
+================================================================================
+MOONSHOT QUALITY-FIRST FAMA-FRENCH 6-FACTOR REGRESSION
+================================================================================
+Run at: 2026-03-04T10:01:02.165264
+
+Methodology: Quality-First v2.0 (≥$500M market cap)
+In-sample: 1995-2019 | Out-of-sample: 2020-2026
+Z-scores: Computed from IS data only, applied to both IS and OOS
+================================================================================
+Downloading Fama-French factors...
+  Fetching FF5 factors (monthly)...
+    FF5: 751 months
+  Fetching Momentum factor (monthly)...
+    MOM: 1189 months
+  FF6 factors: 751 monthly observations (1963-07-01 to 2026-01-01)
+
+======================================================================
+COMPUTING MOONSHOT QUINTILE RETURNS (NO LOOK-AHEAD BIAS)
+======================================================================
+
+Loading prices...
+Loading fundamentals...
+Computing TTM metrics...
+  23,005,369 price records
+  412,788 fundamental records
+
+Computing forward 1-year returns...
+Merging fundamentals with monthly prices...
+  203,692 stock-months after market cap filter (≥$500M)
+Applying Quality-First v2.0 filters...
+  29,796 stock-months passed quality filters
+Computing momentum...
+  29,698 stock-months ready for scoring
+
+  In-sample: 19,492 observations (1995-03-31 to 2019-12-31)
+  Out-of-sample: 10,206 observations (2020-01-03 to 2025-02-28)
+
+Computing z-score statistics from IS data...
+  revenue_growth_3yr: mean=0.0777, std=0.1747
+  eps_growth_3yr: mean=0.0742, std=0.3281
+  gross_margin: mean=0.5728, std=0.1771
+  margin_improvement: mean=0.0327, std=1.9186
+  fcf_margin: mean=0.1077, std=0.1887
+  roe: mean=0.1423, std=0.1907
+  small_cap: mean=-0.7198, std=0.7960
+  momentum_12_1: mean=0.2508, std=0.4597
+
+Applying IS z-scores to both IS and OOS data...
+
+Assigning quintiles...
+Computing monthly quintile returns...
+  Full sample: 116 months
+  In-sample: 90 months
+  Out-of-sample: 26 months
+
+
+
+
+======================================================================
+FAMA-FRENCH 6-FACTOR REGRESSION (FULL SAMPLE (1995-2026))
+======================================================================
+
+Merged observations: 116 months
+Date range: 1997-12-01 to 2024-12-01
+Using Newey-West HAC standard errors (12 lags)
+
+----------------------------------------------------------------------
+REGRESSION RESULTS
+----------------------------------------------------------------------
+
+Portfolio   Alpha (ann)   t-stat   Mkt-RF      SMB      HML      RMW      CMA      MOM       R²
+---------------------------------------------------------------------------------------------------------
+Q1            +722.85%    +1.79    +6.62   -11.94   +16.07    -2.47    -4.57    +4.88    2.6%
+Q2             +77.38%    +1.58    +1.36    -0.82    +0.47    +2.20    +1.23    +2.10   10.4%
+Q3             +49.04%    +1.13    +1.57    -1.63    +0.80    -0.05    +0.03    +2.01   10.4%
+Q4             +57.69%    +1.46    +1.22    -0.51    +0.45    +1.10    +1.11    +1.72    7.3%
+Q5             +33.61%    +0.90    +1.32    -1.21    +0.76    +1.96    +0.25    +1.62   10.9%
+Q5-Q1         -689.24%    -1.71    -5.30   +10.73   -15.31    +4.43    +4.83    -3.27    2.1%
+
+----------------------------------------------------------------------
+Q5-Q1 SPREAD ANALYSIS (MOONSHOT EXCESS RETURN)
+----------------------------------------------------------------------
+Alpha (monthly):        -57.44%
+Alpha (annualized):    -689.24%
+Standard error:          33.54%
+t-statistic:             -1.71
+p-value:                0.0868
+R²:                      2.1%
+Observations:         116 months
+
+Significance: *
+(*** = 99% confidence, ** = 95% confidence, * = 90% confidence)
+
+Factor Exposures:
+  Mkt-RF     β= -5.296  t= -1.17  
+  SMB        β=+10.729  t= +1.00  
+  HML        β=-15.311  t= -0.97  
+  RMW        β= +4.431  t= +0.67  
+  CMA        β= +4.828  t= +0.48  
+  MOM        β= -3.265  t= -0.83  
+
+
+
+
+======================================================================
+FAMA-FRENCH 6-FACTOR REGRESSION (IN-SAMPLE (1995-2019))
+======================================================================
+
+Merged observations: 90 months
+Date range: 1997-12-01 to 2019-12-01
+Using Newey-West HAC standard errors (12 lags)
+
+----------------------------------------------------------------------
+REGRESSION RESULTS
+----------------------------------------------------------------------
+
+Portfolio   Alpha (ann)   t-stat   Mkt-RF      SMB      HML      RMW      CMA      MOM       R²
+---------------------------------------------------------------------------------------------------------
+Q1            +246.98%    +2.82    +1.45    -3.21    +1.27    +1.94    -0.08    +2.43    5.7%
+Q2             +51.18%    +1.19    +0.89    -1.34    -0.44    +1.39    +1.11    +2.44   13.9%
+Q3             +20.97%    +0.75    +0.99    -1.70    +0.29    -0.39    -1.25    +2.02   15.0%
+Q4             +54.17%    +1.15    +0.89    -0.74    +0.01    +0.49    +0.50    +1.55    5.2%
+Q5             +13.18%    +0.41    +1.57    -1.48    +0.10    +2.46    +1.38    +1.92   14.7%
+Q5-Q1         -233.80%    -2.76    +0.12    +1.73    -1.16    +0.52    +1.46    -0.51    1.5%
+
+----------------------------------------------------------------------
+Q5-Q1 SPREAD ANALYSIS (MOONSHOT EXCESS RETURN)
+----------------------------------------------------------------------
+Alpha (monthly):        -19.48%
+Alpha (annualized):    -233.80%
+Standard error:           7.05%
+t-statistic:             -2.76
+p-value:                0.0057
+R²:                      1.5%
+Observations:         90 months
+
+Significance: ***
+(*** = 99% confidence, ** = 95% confidence, * = 90% confidence)
+
+Factor Exposures:
+  Mkt-RF     β= +0.122  t= +0.14  
+  SMB        β= +1.733  t= +1.90  *
+  HML        β= -1.163  t= -0.53  
+  RMW        β= +0.521  t= +0.22  
+  CMA        β= +1.458  t= +0.33  
+  MOM        β= -0.510  t= -0.64  
+
+
+
+
+======================================================================
+FAMA-FRENCH 6-FACTOR REGRESSION (OUT-OF-SAMPLE (2020-2026))
+======================================================================
+
+Merged observations: 26 months
+Date range: 2020-03-01 to 2024-12-01
+Using Newey-West HAC standard errors (12 lags)
+
+----------------------------------------------------------------------
+REGRESSION RESULTS
+----------------------------------------------------------------------
+
+Portfolio   Alpha (ann)   t-stat   Mkt-RF      SMB      HML      RMW      CMA      MOM       R²
+---------------------------------------------------------------------------------------------------------
+Q1           +2916.76%    +1.91   +25.46   -58.94   +64.66   -39.86   -56.91   +26.26    8.9%
+Q2            +208.01%    +1.58    +1.19    -0.87    +1.37    +1.98    +1.34    -0.51   19.3%
+Q3            +184.63%    +1.30    +2.22    -2.20    +1.92    -1.32    +0.31    +1.32   16.2%
+Q4             +96.47%    +0.95    +1.33    +0.48    +1.11    +3.16    +0.66    +3.06   21.9%
+Q5            +122.35%    +1.03    +1.12    -0.67    +1.31    +0.25    -0.70    +0.75    7.5%
+Q5-Q1        -2794.41%    -1.73   -24.34   +58.27   -63.35   +40.11   +56.21   -25.51    8.4%
+
+----------------------------------------------------------------------
+Q5-Q1 SPREAD ANALYSIS (MOONSHOT EXCESS RETURN)
+----------------------------------------------------------------------
+Alpha (monthly):       -232.87%
+Alpha (annualized):   -2794.41%
+Standard error:         134.98%
+t-statistic:             -1.73
+p-value:                0.0845
+R²:                      8.4%
+Observations:         26 months
+
+Significance: *
+(*** = 99% confidence, ** = 95% confidence, * = 90% confidence)
+
+Factor Exposures:
+  Mkt-RF     β=-24.342  t= -1.20  
+  SMB        β=+58.271  t= +1.02  
+  HML        β=-63.351  t= -1.04  
+  RMW        β=+40.106  t= +0.96  
+  CMA        β=+56.213  t= +1.04  
+  MOM        β=-25.510  t= -0.92  
+
+================================================================================
+ANALYSIS COMPLETE
+================================================================================
+
+KEY METRICS TO EVALUATE:
+1. Alpha (annualized): Excess return beyond FF6 factors
+2. t-statistic: Statistical significance (>2.0 for 95% confidence)
+3. R²: Proportion explained by FF6 (30-50% typical for good strategies)
+4. OOS vs IS: Out-of-sample alpha should be positive and significant
+
+✅ SUCCESS CRITERIA:
+   - OOS alpha > 0 and t-stat > 2.0
+   - Factor exposures make economic sense (e.g., positive SMB for small-cap tilt)
+   - R² not too high (<70%) - we want unexplained alpha, not just factor exposure

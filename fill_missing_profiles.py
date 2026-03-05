@@ -62,6 +62,7 @@ def fetch_profiles(symbols: list) -> dict:
                         'description': item.get('description', '')[:500] if item.get('description') else None,
                         'market_cap': item.get('mktCap') or item.get('marketCap'),
                         'exchange': item.get('exchange'),
+                        'country': item.get('country'),
                     }
 
             # Progress update every 100 symbols
@@ -88,13 +89,15 @@ def update_database(profiles: dict):
             SET company_name = COALESCE(?, company_name),
                 sector = COALESCE(?, sector),
                 industry = COALESCE(?, industry),
-                company_description = COALESCE(?, company_description)
+                company_description = COALESCE(?, company_description),
+                country = COALESCE(?, country)
             WHERE symbol = ?
         """, (
             data.get('company_name'),
             data.get('sector'),
             data.get('industry'),
             data.get('description'),
+            data.get('country'),
             symbol
         ))
         if cur.rowcount > 0:

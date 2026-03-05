@@ -26,7 +26,7 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 BACKTEST_DB = str(PROJECT_ROOT / 'backtest.db')
 
 # Entry criteria (relaxed)

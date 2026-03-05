@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
-Export stocks.json for website from nasdaq_stocks.db (fresh compass scores)
+Export stocks.json for website from nasdaq_stocks.db
+
+Exports:
+- Compass Score (Quality/Value): A-F grades based on profitability, efficiency, and value metrics
+- Moonshot Score (Quality/Growth): A-F grades based on growth metrics with quality filters
+- Golden Stocks: Stocks with A or B grade in BOTH Compass AND Moonshot (Quality GARP)
 """
 
 import pandas as pd
@@ -93,7 +98,7 @@ def get_covering_analysts(recent_ratings_str, sector):
 
     return covering if covering else None
 
-# Get all stock data with compass scores and premium metrics
+# Get all stock data with compass scores, moonshot scores, and premium metrics
 df = pd.read_sql_query("""
     SELECT
         symbol,
@@ -109,6 +114,8 @@ df = pd.read_sql_query("""
         market_cap,
         compass_score,
         compass_grade,
+        moonshot_score,
+        moonshot_grade,
         country,
         -- Premium: Valuation metrics
         ev_ebitda,
@@ -186,6 +193,11 @@ def safe_int(val):
 # Convert to JSON format expected by website
 stocks_list = []
 for _, row in df.iterrows():
+    # Determine if "golden" stock (high in both Compass AND Moonshot)
+    compass_grade = row.get('compass_grade', '')
+    moonshot_grade = row.get('moonshot_grade', '')
+    is_golden = (compass_grade in ['A', 'B']) and (moonshot_grade in ['A', 'B'])
+
     stock = {
         # Basic info (Free tier)
         'symbol': row['symbol'],
@@ -197,6 +209,11 @@ for _, row in df.iterrows():
         'sector': row.get('sector', 'Unknown') or 'Unknown',
         'marketCap': float(row['market_cap']) / 1_000_000_000 if pd.notna(row.get('market_cap')) and row['market_cap'] > 0 else 0.0,
         'description': row.get('company_description', '') or '',
+
+        # Moonshot Score (Quality Growth)
+        'moonshotScore': safe_int(row.get('moonshot_score')),
+        'moonshotGrade': row.get('moonshot_grade') if pd.notna(row.get('moonshot_grade')) else None,
+        'isGolden': is_golden,  # High in BOTH Compass and Moonshot
 
         # Analyst data (Partial: consensus free, details premium)
         'numAnalysts': safe_int(row.get('num_analysts')),
@@ -238,7 +255,16 @@ for _, row in df.iterrows():
 print(f"\nWriting {len(stocks_list)} stocks to {OUTPUT_FILE}...")
 OUTPUT_FILE.write_text(json.dumps(stocks_list, indent=2))
 
+# Count stats
+moonshot_count = sum(1 for s in stocks_list if s['moonshotScore'] is not None)
+golden_count = sum(1 for s in stocks_list if s['isGolden'])
+
 print(f"✓ Successfully exported stocks.json")
-print(f"  Top 5 stocks:")
+print(f"  Total stocks: {len(stocks_list)}")
+print(f"  With Moonshot score: {moonshot_count}")
+print(f"  Golden stocks (A/B in both): {golden_count}")
+print(f"\n  Top 5 by Compass:")
 for stock in stocks_list[:5]:
-    print(f"    {stock['symbol']}: {stock['compassScore']} ({stock['grade']})")
+    moonshot_info = f", Moonshot: {stock['moonshotGrade']}" if stock['moonshotGrade'] else ""
+    golden_flag = " ⭐GOLDEN" if stock['isGolden'] else ""
+    print(f"    {stock['symbol']}: Compass {stock['compassScore']} ({stock['grade']}){moonshot_info}{golden_flag}")

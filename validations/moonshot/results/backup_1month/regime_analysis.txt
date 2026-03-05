@@ -1,0 +1,68 @@
+================================================================================
+MOONSHOT QUALITY-FIRST REGIME ANALYSIS
+================================================================================
+Run at: 2026-03-04T09:01:37.966900
+
+Methodology: Quality-First v2.0 (≥$500M market cap)
+Out-of-sample focus: 2020-2026
+================================================================================
+
+======================================================================
+LOADING AND SCORING DATA
+======================================================================
+
+Loading data...
+  23,005,369 price records
+  412,788 fundamental records
+Computing metrics...
+Computing returns and volatility...
+  216,248 observations after market cap filter
+  31,279 observations after quality filters
+  31,095 observations ready for scoring
+
+Computing z-scores from IS data...
+
+======================================================================
+PRE-DEFINED REGIME ANALYSIS
+======================================================================
+
+Regime                    Period                            Q5-Q1 Spread
+---------------------------------------------------------------------------
+COVID Crash               2020-01-01 to 2020-04-30               +3.34% ✅ POSITIVE
+COVID Recovery            2020-05-01 to 2020-12-31              +18.14% ✅ POSITIVE
+Growth Boom               2021-01-01 to 2021-12-31               -5.56% ❌ NEGATIVE
+Rate Hikes / Bear         2022-01-01 to 2023-12-31               -1.89% ❌ NEGATIVE
+Recovery 2024+            2024-01-01 to 2026-12-31               -2.15% ❌ NEGATIVE
+
+======================================================================
+VOLATILITY REGIME ANALYSIS
+======================================================================
+
+  Median volatility (OOS): 44.2%
+  High vol months: 37
+  Low vol months: 36
+
+  High Volatility: +1.19% ✅ POSITIVE
+
+  Low Volatility: -3.57% ❌ NEGATIVE
+
+======================================================================
+BULL / BEAR MARKET ANALYSIS
+======================================================================
+
+  Bull months (past 3m > 0): 48
+  Bear months (past 3m < 0): 25
+
+  Bull Market: -0.19% ❌ NEGATIVE
+
+  Bear Market: -2.96% ❌ NEGATIVE
+
+================================================================================
+ANALYSIS COMPLETE
+================================================================================
+
+✅ SUCCESS CRITERIA:
+   - Positive spread in most regimes
+   - Quality factors should perform especially well in bear markets
+   - Some underperformance acceptable in extreme risk-off (COVID crash)
+   - Robustness across different market conditions demonstrates strategy viability

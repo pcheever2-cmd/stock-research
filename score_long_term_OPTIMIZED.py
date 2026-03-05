@@ -827,9 +827,9 @@ async def main():
     today = date.today().isoformat()
     conn = sqlite3.connect(DATABASE_NAME)
     df = pd.read_sql_query("""
-        SELECT * FROM stock_consensus 
+        SELECT * FROM stock_consensus
         WHERE (scored_at < ? OR scored_at IS NULL)
-          AND ev_ebitda IS NOT NULL
+          AND compass_score IS NOT NULL
           AND current_price IS NOT NULL
     """, conn, params=[today])
     conn.close()

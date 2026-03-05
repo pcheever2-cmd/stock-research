@@ -1,0 +1,89 @@
+================================================================================
+MOONSHOT QUALITY-FIRST FACTOR CONTRIBUTION ANALYSIS
+================================================================================
+Run at: 2026-03-04T10:40:06.259086
+
+Methodology: Quality-First v2.0 (≥$500M market cap)
+Period: Out-of-sample (2020-2026)
+================================================================================
+
+======================================================================
+LOADING AND PREPARING DATA (OOS FOCUS)
+======================================================================
+
+Loading data...
+  9,045,916 price records
+  221,972 fundamental records
+Computing metrics...
+Computing forward 1-year returns...
+  65,467 OOS observations after market cap filter
+  10,261 OOS observations after quality filters
+  10,202 OOS observations ready for analysis
+
+======================================================================
+FULL MOONSHOT SPREAD
+======================================================================
+
+Full Moonshot Q5-Q1 Spread (OOS): -216.69%
+
+======================================================================
+SINGLE FACTOR CONTRIBUTIONS
+======================================================================
+
+Factor                      Weight    Q5-Q1 Spread       Q5 Return
+----------------------------------------------------------------------
+revenue_growth_3yr             20%         -25.37%         +20.66%
+eps_growth_3yr                 15%         -12.82%         -13.12%
+gross_margin                   15%        -151.74%         +26.86%
+margin_improvement             10%         -24.58%         +17.42%
+fcf_margin                     15%        -228.70%          +8.06%
+roe                            10%        -222.44%          +8.46%
+small_cap                      10%         +11.28%         +31.14%
+momentum_12_1                   5%        -187.97%         +25.63%
+
+======================================================================
+FACTOR ANALYSIS SUMMARY
+======================================================================
+
+Factors with positive spread: 1/8
+
+Top 3 contributing factors:
+  1. small_cap: +11.28% spread
+  2. eps_growth_3yr: -12.82% spread
+  3. margin_improvement: -24.58% spread
+
+Weakest factors:
+  1. momentum_12_1: -187.97% spread
+  2. roe: -222.44% spread
+  3. fcf_margin: -228.70% spread
+
+⚠️ WARNING: 7 factors have negative spread:
+  - revenue_growth_3yr: -25.37%
+  - eps_growth_3yr: -12.82%
+  - gross_margin: -151.74%
+  - margin_improvement: -24.58%
+  - fcf_margin: -228.70%
+  - roe: -222.44%
+  - momentum_12_1: -187.97%
+
+======================================================================
+WEIGHTED CONTRIBUTION ESTIMATE
+======================================================================
+
+Note: This is a rough approximation. Factors interact non-linearly.
+
+Sum of weighted single-factor spreads: -97.04%
+Full Moonshot spread: -216.69%
+Ratio (interaction effect): 2.23x
+
+⚠️ Factors have NEGATIVE interaction (some redundancy)
+
+================================================================================
+ANALYSIS COMPLETE
+================================================================================
+
+✅ SUCCESS CRITERIA:
+   - All factors should contribute positively
+   - Growth factors (revenue/EPS growth) should be top contributors
+   - Quality factors (FCF margin, ROE) should add signal
+   - No single factor should dominate (diversification)

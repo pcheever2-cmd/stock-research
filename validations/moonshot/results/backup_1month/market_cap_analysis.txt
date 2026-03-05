@@ -1,0 +1,121 @@
+================================================================================
+MOONSHOT QUALITY-FIRST MARKET CAP SEGMENTATION ANALYSIS
+================================================================================
+Run at: 2026-03-04T09:01:36.951702
+
+Methodology: Quality-First v2.0 (≥$500M market cap)
+Segments: Small ($500M-$2B), Mid ($2B-$10B), Large (>$10B)
+================================================================================
+
+======================================================================
+LOADING AND PREPARING DATA
+======================================================================
+
+Loading data...
+  23,005,369 price records, 6,554 symbols
+  412,788 fundamental records
+
+Computing metrics...
+Computing forward returns...
+  216,248 observations after market cap filter
+  31,279 observations after quality filters
+  31,095 observations ready for scoring
+
+======================================================================
+MARKET CAP SEGMENTATION ANALYSIS
+======================================================================
+
+  In-sample: 19,495 observations
+  Out-of-sample: 11,600 observations
+
+Computing z-scores from IS data...
+
+======================================================================
+IN-SAMPLE PERFORMANCE BY SEGMENT (1995-2019)
+======================================================================
+
+Segment            Observations     Avg Market Cap    Q5-Q1 Spread
+----------------------------------------------------------------------
+Small-cap                 5,272 $           1.0B          -1.10%
+
+  Small-cap - Quintile Returns:
+    Q1:    +1.50%
+    Q2:    +1.45%
+    Q3:    +1.00%
+    Q4:    +0.46%
+    Q5:    +0.40%
+Mid-cap                   4,735 $           3.9B          -1.09%
+
+  Mid-cap - Quintile Returns:
+    Q1:    +0.92%
+    Q2:    -0.46%
+    Q3:    +0.30%
+    Q4:    -0.34%
+    Q5:    -0.18%
+Large-cap                 4,097 $          30.5B         -15.06%
+
+  Large-cap - Quintile Returns:
+    Q1:   +14.55%
+    Q2:    -0.14%
+    Q3:    -0.32%
+    Q4:    -0.87%
+    Q5:    -0.50%
+
+  Monotonicity Check:
+    Small-cap       ⚠️ NON-MONOTONIC
+    Mid-cap         ⚠️ NON-MONOTONIC
+    Large-cap       ⚠️ NON-MONOTONIC
+
+  Summary:
+    Segments with positive spread: 0/3
+    Best performing segment: Mid-cap (-1.09%)
+
+======================================================================
+OUT-OF-SAMPLE PERFORMANCE BY SEGMENT (2020-2026)
+======================================================================
+
+Segment            Observations     Avg Market Cap    Q5-Q1 Spread
+----------------------------------------------------------------------
+Small-cap                 2,834 $           1.1B          +0.77%
+
+  Small-cap - Quintile Returns:
+    Q1:    +2.39%
+    Q2:    -0.20%
+    Q3:    -0.44%
+    Q4:    -0.99%
+    Q5:    +3.17%
+Mid-cap                   3,807 $           4.3B          -3.09%
+
+  Mid-cap - Quintile Returns:
+    Q1:    +2.53%
+    Q2:    -0.09%
+    Q3:    -0.25%
+    Q4:    -0.88%
+    Q5:    -0.56%
+Large-cap                 3,727 $          32.9B          -0.74%
+
+  Large-cap - Quintile Returns:
+    Q1:    +1.28%
+    Q2:    -0.40%
+    Q3:    -0.76%
+    Q4:    -0.26%
+    Q5:    +0.54%
+
+  Monotonicity Check:
+    Small-cap       ⚠️ NON-MONOTONIC
+    Mid-cap         ⚠️ NON-MONOTONIC
+    Large-cap       ⚠️ NON-MONOTONIC
+
+  Summary:
+    Segments with positive spread: 1/3
+    Best performing segment: Small-cap (+0.77%)
+
+================================================================================
+ANALYSIS COMPLETE
+================================================================================
+
+✅ SUCCESS CRITERIA:
+   - All segments show positive OOS Q5-Q1 spread
+   - Small/Mid-cap may outperform Large-cap (less efficient markets)
+   - Monotonic quintile returns within each segment
+   - Consistent performance across market conditions

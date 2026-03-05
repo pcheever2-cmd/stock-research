@@ -29,7 +29,7 @@ from datetime import datetime
 import sys
 from collections import defaultdict
 
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 BACKTEST_DB = str(PROJECT_ROOT / 'backtest.db')
 
 # Split dates (following Compass methodology)
@@ -387,10 +387,14 @@ def multivariate_regression(df, period_name):
     for factor in factors:
         reg_df[f'{factor}_z'] = (reg_df[factor] - reg_df[factor].mean()) / reg_df[factor].std()
 
+    # Drop any rows with NaN in z-scores (can happen if std = 0)
+    z_cols = [f'{f}_z' for f in factors]
+    reg_df = reg_df.dropna(subset=z_cols)
+
     # Run regression
     from sklearn.linear_model import LinearRegression
 
-    X = reg_df[[f'{f}_z' for f in factors]].values
+    X = reg_df[z_cols].values
     y = reg_df['fwd_return'].values
 
     model = LinearRegression()
