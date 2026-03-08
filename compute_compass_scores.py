@@ -288,24 +288,16 @@ def compute_all_scores():
     percentile = df['raw_score'].rank(pct=True)
     df['compass_score'] = (percentile * 100).round(0).astype(int)
 
-    # MINIMAL top-tier adjustments - only for exceptional stocks
-    # These thresholds are much tighter to preserve the 15% A-grade distribution
-    # Only the absolute best ~2-3% of stocks get 97+
-    top_1_pct = df['raw_score'].quantile(0.99)   # Top 1%
-    top_2_pct = df['raw_score'].quantile(0.98)   # Top 2%
-    top_3_pct = df['raw_score'].quantile(0.97)   # Top 3%
-    top_5_pct = df['raw_score'].quantile(0.95)   # Top 5%
+    # CAP percentile scores at 98 - no stock gets 99+ just from percentile
+    # 99 and 100 are reserved for truly exceptional outliers (absolute thresholds)
+    df.loc[df['compass_score'] >= 99, 'compass_score'] = 98
 
-    # Assign top scores conservatively
-    df.loc[df['raw_score'] >= top_5_pct, 'compass_score'] = 96
-    df.loc[df['raw_score'] >= top_3_pct, 'compass_score'] = 97
-    df.loc[df['raw_score'] >= top_2_pct, 'compass_score'] = 98
-    df.loc[df['raw_score'] >= top_1_pct, 'compass_score'] = 99
-
-    # Only the absolute best (top 0.1%) get perfect 100
-    # This typically results in 4-5 stocks out of ~4,560
-    top_0_1_pct = df['raw_score'].quantile(0.999)
-    df.loc[df['raw_score'] >= top_0_1_pct, 'compass_score'] = 100
+    # ABSOLUTE thresholds for top scores (like FIFA - only true outliers get 99+)
+    # 99 = raw score > 2.0 (exceptional z-score combo - maybe 2-5 stocks)
+    # 100 = raw score > 2.5 (legendary - maybe 0-2 stocks)
+    # This ensures 99 is truly exceptional, not just "top X%"
+    df.loc[df['raw_score'] > 2.0, 'compass_score'] = 99
+    df.loc[df['raw_score'] > 2.5, 'compass_score'] = 100
 
     # Assign grades
     df['compass_grade'] = df['compass_score'].apply(assign_grade)
@@ -349,23 +341,26 @@ def update_nasdaq_db(scores_df):
     cleared = cursor.rowcount
     print(f"  Cleared {cleared:,} existing scores")
 
-    # Update scores
-    updated = 0
+    # Upsert scores - INSERT new stocks or UPDATE existing ones
+    # This ensures stocks from backtest.db get added to stock_consensus
+    upserted = 0
     timestamp = datetime.now().isoformat()
 
     for _, row in scores_df.iterrows():
         cursor.execute("""
-            UPDATE stock_consensus
-            SET compass_score = ?, compass_grade = ?, compass_updated_at = ?
-            WHERE symbol = ?
-        """, (row['compass_score'], row['compass_grade'], timestamp, row['symbol']))
-        if cursor.rowcount > 0:
-            updated += 1
+            INSERT INTO stock_consensus (symbol, compass_score, compass_grade, compass_updated_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(symbol) DO UPDATE SET
+                compass_score = excluded.compass_score,
+                compass_grade = excluded.compass_grade,
+                compass_updated_at = excluded.compass_updated_at
+        """, (row['symbol'], row['compass_score'], row['compass_grade'], timestamp))
+        upserted += 1
 
     conn.commit()
     conn.close()
 
-    print(f"  Updated {updated:,} stocks in stock_consensus")
+    print(f"  Upserted {upserted:,} stocks in stock_consensus")
     sys.stdout.flush()
 
 

@@ -190,31 +190,31 @@ def analyze_period(period_df, period_name):
             qtr_df.get('roe_m_rank', 0.5) * 0.20
         )
 
-        # Assign quintiles
-        qtr_df['compass_quintile'] = pd.qcut(qtr_df['compass_score'], 5, labels=[1,2,3,4,5], duplicates='drop')
-        qtr_df['moonshot_quintile'] = pd.qcut(qtr_df['moonshot_score'], 5, labels=[1,2,3,4,5], duplicates='drop')
+        # Assign quintiles using percentile ranks
+        qtr_df['compass_pct'] = qtr_df['compass_score'].rank(pct=True)
+        qtr_df['moonshot_pct'] = qtr_df['moonshot_score'].rank(pct=True)
 
-        # Identify categories
+        # Identify categories based on percentiles
         qtr_df['category'] = 'Other'
 
-        # Golden: Top quintile in BOTH
-        golden_mask = (qtr_df['compass_quintile'] == 5) & (qtr_df['moonshot_quintile'] == 5)
+        # Golden: Top 20% in BOTH
+        golden_mask = (qtr_df['compass_pct'] >= 0.8) & (qtr_df['moonshot_pct'] >= 0.8)
         qtr_df.loc[golden_mask, 'category'] = 'Golden (Top Both)'
 
-        # Top 2 quintiles in BOTH (A or B equivalent)
-        ab_both = (qtr_df['compass_quintile'] >= 4) & (qtr_df['moonshot_quintile'] >= 4)
+        # Top 40% in BOTH (A or B equivalent)
+        ab_both = (qtr_df['compass_pct'] >= 0.6) & (qtr_df['moonshot_pct'] >= 0.6)
         qtr_df.loc[ab_both & ~golden_mask, 'category'] = 'Strong Both (Q4-5)'
 
-        # High Compass Only
-        high_compass_only = (qtr_df['compass_quintile'] >= 4) & (qtr_df['moonshot_quintile'] < 4)
+        # High Compass Only (top 40% compass, bottom 60% moonshot)
+        high_compass_only = (qtr_df['compass_pct'] >= 0.6) & (qtr_df['moonshot_pct'] < 0.6)
         qtr_df.loc[high_compass_only, 'category'] = 'High Compass Only'
 
-        # High Moonshot Only
-        high_moonshot_only = (qtr_df['moonshot_quintile'] >= 4) & (qtr_df['compass_quintile'] < 4)
+        # High Moonshot Only (top 40% moonshot, bottom 60% compass)
+        high_moonshot_only = (qtr_df['moonshot_pct'] >= 0.6) & (qtr_df['compass_pct'] < 0.6)
         qtr_df.loc[high_moonshot_only, 'category'] = 'High Moonshot Only'
 
-        # Low Both
-        low_both = (qtr_df['compass_quintile'] <= 2) & (qtr_df['moonshot_quintile'] <= 2)
+        # Low Both (bottom 40% in both)
+        low_both = (qtr_df['compass_pct'] <= 0.4) & (qtr_df['moonshot_pct'] <= 0.4)
         qtr_df.loc[low_both, 'category'] = 'Low Both'
 
         # Store results
