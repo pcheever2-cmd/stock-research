@@ -134,7 +134,14 @@ df = pd.read_sql_query("""
         trend_signal,
         -- Premium: Additional scores
         value_score_v2,
-        long_term_score
+        long_term_score,
+        -- Factor values for Score Breakdown
+        factor_roa,
+        factor_ocf_assets,
+        factor_fcf_assets,
+        factor_gp_assets,
+        factor_asset_growth,
+        factor_volatility
     FROM stock_consensus
     WHERE compass_score IS NOT NULL
     ORDER BY compass_score DESC
@@ -249,6 +256,16 @@ for _, row in df.iterrows():
         # Premium: Analyst accuracy (sector-specific)
         'sectorAnalystAccuracy': sector_accuracy.get(row.get('sector')),
         'coveringAnalysts': get_covering_analysts(row.get('recent_ratings', ''), row.get('sector')),
+
+        # Factor values for Score Breakdown (displayed as percentages)
+        'factorValues': {
+            'roa': safe_float(row.get('factor_roa') * 100, 1) if pd.notna(row.get('factor_roa')) else None,
+            'grossProfit': safe_float(row.get('factor_gp_assets') * 100, 1) if pd.notna(row.get('factor_gp_assets')) else None,
+            'operatingCashFlow': safe_float(row.get('factor_ocf_assets') * 100, 1) if pd.notna(row.get('factor_ocf_assets')) else None,
+            'freeCashFlow': safe_float(row.get('factor_fcf_assets') * 100, 1) if pd.notna(row.get('factor_fcf_assets')) else None,
+            'volatility': safe_float(row.get('factor_volatility'), 1) if pd.notna(row.get('factor_volatility')) else None,
+            'assetGrowth': safe_float(row.get('factor_asset_growth') * 100, 1) if pd.notna(row.get('factor_asset_growth')) else None,
+        } if pd.notna(row.get('factor_roa')) else None,
     }
     stocks_list.append(stock)
 

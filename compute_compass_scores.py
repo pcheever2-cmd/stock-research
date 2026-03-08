@@ -271,8 +271,12 @@ def compute_all_scores():
             results.append({
                 'symbol': symbol,
                 'raw_score': raw_score,
-                'roa': factors['roa'],
-                'vol_60d': factors['vol_60d']
+                'factor_roa': factors['roa'],
+                'factor_ocf_assets': factors['ocf_assets'],
+                'factor_fcf_assets': factors['fcf_assets'],
+                'factor_gp_assets': factors['gp_assets'],
+                'factor_asset_growth': factors['asset_growth'],
+                'factor_volatility': factors['vol_60d']
             })
 
         if (i + 1) % 1000 == 0:
@@ -302,7 +306,9 @@ def compute_all_scores():
     # Assign grades
     df['compass_grade'] = df['compass_score'].apply(assign_grade)
 
-    return df[['symbol', 'compass_score', 'compass_grade', 'raw_score']]
+    return df[['symbol', 'compass_score', 'compass_grade', 'raw_score',
+                'factor_roa', 'factor_ocf_assets', 'factor_fcf_assets',
+                'factor_gp_assets', 'factor_asset_growth', 'factor_volatility']]
 
 
 def update_nasdaq_db(scores_df):
@@ -332,6 +338,18 @@ def update_nasdaq_db(scores_df):
     except sqlite3.OperationalError:
         pass  # Column already exists
 
+    # Add factor columns if they don't exist
+    factor_columns = [
+        'factor_roa', 'factor_ocf_assets', 'factor_fcf_assets',
+        'factor_gp_assets', 'factor_asset_growth', 'factor_volatility'
+    ]
+    for col in factor_columns:
+        try:
+            cursor.execute(f"ALTER TABLE stock_consensus ADD COLUMN {col} REAL")
+            print(f"  Added {col} column")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
+
     # Clear ALL existing compass scores first
     # This ensures filtered-out stocks don't retain old scores
     cursor.execute("""
@@ -348,13 +366,23 @@ def update_nasdaq_db(scores_df):
 
     for _, row in scores_df.iterrows():
         cursor.execute("""
-            INSERT INTO stock_consensus (symbol, compass_score, compass_grade, compass_updated_at)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO stock_consensus (symbol, compass_score, compass_grade, compass_updated_at,
+                factor_roa, factor_ocf_assets, factor_fcf_assets,
+                factor_gp_assets, factor_asset_growth, factor_volatility)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(symbol) DO UPDATE SET
                 compass_score = excluded.compass_score,
                 compass_grade = excluded.compass_grade,
-                compass_updated_at = excluded.compass_updated_at
-        """, (row['symbol'], row['compass_score'], row['compass_grade'], timestamp))
+                compass_updated_at = excluded.compass_updated_at,
+                factor_roa = excluded.factor_roa,
+                factor_ocf_assets = excluded.factor_ocf_assets,
+                factor_fcf_assets = excluded.factor_fcf_assets,
+                factor_gp_assets = excluded.factor_gp_assets,
+                factor_asset_growth = excluded.factor_asset_growth,
+                factor_volatility = excluded.factor_volatility
+        """, (row['symbol'], row['compass_score'], row['compass_grade'], timestamp,
+              row['factor_roa'], row['factor_ocf_assets'], row['factor_fcf_assets'],
+              row['factor_gp_assets'], row['factor_asset_growth'], row['factor_volatility']))
         upserted += 1
 
     conn.commit()
