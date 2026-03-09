@@ -230,10 +230,13 @@ def compute_raw_score(symbol, prices_df, fund_df):
     if factors['asset_growth'] < -0.5 or factors['asset_growth'] > 5.0:  # Extreme asset growth
         return None, None
 
-    # Compute z-scores
+    # Compute z-scores (capped at ±3.0 to prevent extreme outliers from dominating)
     z_scores = {}
     for f, val in factors.items():
-        z_scores[f] = (val - UNIVERSE_STATS[f]['mean']) / UNIVERSE_STATS[f]['std']
+        z_scores[f] = np.clip(
+            (val - UNIVERSE_STATS[f]['mean']) / UNIVERSE_STATS[f]['std'],
+            -3.0, 3.0
+        )
 
     # Raw Compass Score (weighted z-score combination)
     raw_score = (

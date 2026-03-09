@@ -34,6 +34,7 @@ ENDPOINTS = {
     'profile': f'{BASE_URL}/stable/profile',
     'quote': f'{BASE_URL}/stable/quote',
     'target': f'{BASE_URL}/stable/price-target-consensus',
+    'price_targets': f'{BASE_URL}/stable/price-target',  # Individual analyst price targets
     'estimates': f'{BASE_URL}/stable/analyst-estimates',
     'rating': f'{BASE_URL}/stable/ratings-snapshot',
     'grades': f'{BASE_URL}/stable/grades',
@@ -151,13 +152,14 @@ class AsyncFMPFetcher:
         tasks = {
             'quote': self.fetch(ENDPOINTS['quote'], {'symbol': ticker}),
             'target': self.fetch(ENDPOINTS['target'], {'symbol': ticker}),
+            'price_targets': self.fetch(ENDPOINTS['price_targets'], {'symbol': ticker, 'limit': 10}),
             'estimates': self.fetch(ENDPOINTS['estimates'], {'symbol': ticker, 'period': 'annual'}),
             'rating': self.fetch(ENDPOINTS['rating'], {'symbol': ticker}),
             'grades': self.fetch(ENDPOINTS['grades'], {'symbol': ticker, 'limit': 5}),
             'metrics': self.fetch(ENDPOINTS['metrics'], {'symbol': ticker}),
             'ratios': self.fetch(ENDPOINTS['ratios'], {'symbol': ticker}),
         }
-        
+
         results = await asyncio.gather(*tasks.values(), return_exceptions=True)
         return dict(zip(tasks.keys(), results))
 
@@ -225,7 +227,7 @@ def format_recent_ratings(grades_data: list) -> str:
     """Format analyst rating changes"""
     if not grades_data:
         return "No recent rating changes"
-    
+
     lines = []
     for g in grades_data[:5]:
         if not isinstance(g, dict):
@@ -238,8 +240,33 @@ def format_recent_ratings(grades_data: list) -> str:
         company = safe_get(g, 'gradingCompany', default='Unknown')
         grade = safe_get(g, 'newGrade', default='N/A')
         lines.append(f"{emoji} {date_str}: {company} → {grade}")
-    
+
     return "\n".join(lines) if lines else "No recent rating changes"
+
+
+def format_analyst_price_targets(price_targets_data: list) -> str:
+    """Format individual analyst price targets (no analyst names, just firm)"""
+    if not price_targets_data:
+        return ""
+
+    lines = []
+    for pt in price_targets_data[:10]:  # Keep up to 10 most recent
+        if not isinstance(pt, dict):
+            continue
+        date_val = safe_get(pt, 'publishedDate', default='')
+        date_str = str(date_val)[:10] if date_val else ''
+        firm = safe_get(pt, 'analystCompany', default='Unknown')
+        target = safe_get(pt, 'priceTarget')
+        price_when_posted = safe_get(pt, 'priceWhenPosted')
+
+        if not target or not firm:
+            continue
+
+        # Format: "2026-01-15|Goldman Sachs|200|185" (date|firm|target|priceWhenPosted)
+        line = f"{date_str}|{firm}|{target}|{price_when_posted or ''}"
+        lines.append(line)
+
+    return "\n".join(lines) if lines else ""
 
 # ==================== MAIN PROCESSING ====================
 async def process_ticker(ticker: str, fetcher: AsyncFMPFetcher) -> Optional[Dict]:
@@ -329,6 +356,12 @@ async def process_ticker(ticker: str, fetcher: AsyncFMPFetcher) -> Optional[Dict
         if isinstance(grades, Exception) or not grades:
             grades = []
         recent_ratings = format_recent_ratings(grades)
+
+        # Individual analyst price targets
+        price_targets_data = data.get('price_targets')
+        if isinstance(price_targets_data, Exception) or not price_targets_data:
+            price_targets_data = []
+        analyst_price_targets = format_analyst_price_targets(price_targets_data)
         
         # Key metrics
         metrics_data = data.get('metrics')
@@ -400,6 +433,7 @@ async def process_ticker(ticker: str, fetcher: AsyncFMPFetcher) -> Optional[Dict
             'company_name': company_name,
             'company_description': company_description,
             'recent_ratings': recent_ratings,
+            'analyst_price_targets': analyst_price_targets,
             'enterprise_value': enterprise_value,
             'ebitda': ebitda,
             'ev_ebitda': ev_ebitda,

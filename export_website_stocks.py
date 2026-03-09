@@ -109,6 +109,7 @@ df = pd.read_sql_query("""
         num_analysts,
         consensus_rating as consensus_rating,
         recent_ratings,
+        analyst_price_targets,
         industry,
         sector,
         market_cap,
@@ -229,6 +230,7 @@ for _, row in df.iterrows():
         'avgPriceTarget': safe_float(row.get('avg_price_target')),
         'upside': safe_int(row.get('upside')),
         'recentRatings': row.get('recent_ratings', '') or '',
+        'analystPriceTargets': row.get('analyst_price_targets', '') or '',
 
         # Premium: Valuation metrics
         'evEbitda': safe_float(row.get('ev_ebitda'), 1),
