@@ -62,6 +62,16 @@ print(f"  Loaded sector accuracy for {len(sector_accuracy)} sectors")
 
 backtest_conn.close()
 
+# Calculate industry median P/E for comparison
+print("Calculating industry P/E medians...")
+industry_pe_df = pd.read_sql_query("""
+    SELECT industry, forward_pe
+    FROM stock_consensus
+    WHERE forward_pe IS NOT NULL AND forward_pe > 0 AND forward_pe < 100
+""", conn)
+industry_pe_medians = industry_pe_df.groupby('industry')['forward_pe'].median().round(1).to_dict()
+print(f"  Calculated P/E medians for {len(industry_pe_medians)} industries")
+
 # Special notes for stocks where the Compass Score needs context
 # These are stocks where the methodology doesn't capture their true quality
 SCORE_NOTES = {
@@ -248,6 +258,7 @@ for _, row in df.iterrows():
         # Premium: Valuation metrics
         'evEbitda': safe_float(row.get('ev_ebitda'), 1),
         'forwardPe': safe_float(row.get('forward_pe'), 1),
+        'industryPe': industry_pe_medians.get(row.get('industry')),  # Median P/E for this industry
         'pegRatio': safe_float(row.get('peg_ratio')),
 
         # Premium: Growth metrics
