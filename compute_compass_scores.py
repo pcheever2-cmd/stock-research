@@ -75,8 +75,30 @@ def load_data():
     fund['date'] = pd.to_datetime(fund['date'])
     conn.close()
 
+    # DATA QUALITY FILTER: Exclude quarters with suspicious total_assets
+    # This catches FMP data errors where assets drop to near-zero
+    original_len = len(fund)
+    fund = fund[fund['total_assets'] > 1_000_000]  # Require > $1M assets
+    if original_len > len(fund):
+        print(f"  Excluded {original_len - len(fund):,} quarters with assets < $1M (data errors)")
+
     # Sort by symbol and date for rolling calculations
     fund = fund.sort_values(['symbol', 'date'])
+
+    # DATA QUALITY: Detect quarter-over-quarter asset anomalies
+    # Flag quarters where assets change by >80% as potential data errors
+    fund['prev_assets'] = fund.groupby('symbol')['total_assets'].shift(1)
+    fund['asset_qoq_change'] = (fund['total_assets'] - fund['prev_assets']) / fund['prev_assets']
+
+    # Mark anomalous quarters (>80% change either direction)
+    fund['is_asset_anomaly'] = (
+        (fund['asset_qoq_change'].abs() > 0.8) &
+        fund['asset_qoq_change'].notna()
+    )
+
+    anomaly_count = fund['is_asset_anomaly'].sum()
+    if anomaly_count > 0:
+        print(f"  Flagged {anomaly_count:,} quarters with >80% asset change as anomalies")
 
     # Compute net income attributable to common shareholders
     # This filters out one-time gains that don't benefit equity holders
@@ -121,64 +143,6 @@ def load_data():
     return prices, fund
 
 
-def passes_quality_filters(latest_fund):
-    """
-    Apply quality filters to exclude stocks with suspicious financials.
-    Validated through 25-year backtest (1995-2026).
-
-    Returns: (passes: bool, exclusion_reason: str)
-    """
-    # Get required values
-    oi_ni_ratio = np.nan
-    operating_income_ttm = latest_fund.get('operating_income_ttm', np.nan)
-    net_income_ttm = latest_fund.get('net_income_to_common_ttm', np.nan)
-
-    if not pd.isna(operating_income_ttm) and not pd.isna(net_income_ttm):
-        if abs(net_income_ttm) > 0:
-            oi_ni_ratio = abs(operating_income_ttm) / abs(net_income_ttm)
-
-    fcf_ni_ratio = np.nan
-    fcf_ttm = latest_fund.get('free_cash_flow_ttm', np.nan)
-    if not pd.isna(fcf_ttm) and not pd.isna(net_income_ttm) and net_income_ttm != 0:
-        fcf_ni_ratio = fcf_ttm / net_income_ttm
-
-    gross_margin = latest_fund.get('gross_margin', np.nan)
-    revenue_ttm = latest_fund.get('revenue_ttm', np.nan)
-    debt_to_assets = latest_fund.get('debt_to_assets', np.nan)
-
-    # Filter 1: Operating income / Net income ratio (0.3-3.0)
-    # Catches one-time gains/losses like RHLD
-    if not pd.isna(oi_ni_ratio) and not pd.isna(net_income_ttm):
-        if abs(net_income_ttm) > 1_000_000:
-            if oi_ni_ratio < 0.3:
-                return False, "OI/NI ratio too low (<0.3)"
-            elif oi_ni_ratio > 3.0:
-                return False, "OI/NI ratio too high (>3.0)"
-
-    # Filter 2: Cash flow quality (FCF/NI > 0.4 for profitable companies)
-    if not pd.isna(net_income_ttm) and net_income_ttm > 50_000_000:
-        if not pd.isna(fcf_ni_ratio) and fcf_ni_ratio < 0.4:
-            return False, "Low cash quality (FCF/NI < 0.4)"
-
-    # Filter 3: Negative FCF despite significant positive net income
-    if not pd.isna(net_income_ttm) and not pd.isna(fcf_ttm):
-        if net_income_ttm > 50_000_000 and fcf_ttm < -10_000_000:
-            return False, "Negative FCF despite positive NI"
-
-    # Filter 4: Gross margin sanity check
-    if not pd.isna(gross_margin):
-        if gross_margin > 0.98:
-            return False, "Suspicious gross margin (>98%)"
-        elif gross_margin > 0.95 and (pd.isna(revenue_ttm) or revenue_ttm < 10_000_000_000):
-            return False, "Suspicious gross margin (>95% for small company)"
-
-    # Filter 5: Overleveraged (Debt > 2x Assets)
-    if not pd.isna(debt_to_assets) and debt_to_assets > 2.0:
-        return False, "Overleveraged (Debt/Assets > 2.0)"
-
-    return True, "Passed all quality filters"
-
-
 def compute_raw_score(symbol, prices_df, fund_df):
     """Compute raw Compass Score for a single symbol."""
     # Get latest fundamentals
@@ -187,11 +151,6 @@ def compute_raw_score(symbol, prices_df, fund_df):
         return None, None
 
     latest_fund = sym_fund.sort_values('date').iloc[-1]
-
-    # Apply quality filters (validated through 25-year backtest)
-    passes, reason = passes_quality_filters(latest_fund)
-    if not passes:
-        return None, None
 
     # Get volatility (60-day)
     sym_prices = prices_df[prices_df['symbol'] == symbol].sort_values('date').tail(60)
@@ -321,6 +280,22 @@ def update_nasdaq_db(scores_df):
 
     conn = sqlite3.connect(NASDAQ_DB)
     cursor = conn.cursor()
+
+    # Exclude stocks that are proven to be non-US listed
+    # Only exclude if we have exchange data AND it's not a US exchange
+    # Keep stocks with NULL exchange (benefit of the doubt)
+    # Backtest showed quality factor has stronger predictive power for US stocks
+    non_us_stocks = pd.read_sql_query("""
+        SELECT symbol FROM stock_consensus
+        WHERE exchange IS NOT NULL
+        AND exchange NOT IN ('NYSE', 'NASDAQ', 'AMEX')
+    """, conn)
+    non_us_symbols = set(non_us_stocks['symbol'].tolist())
+    original_count = len(scores_df)
+    scores_df = scores_df[~scores_df['symbol'].isin(non_us_symbols)]
+    excluded = original_count - len(scores_df)
+    if excluded > 0:
+        print(f"  Excluded {excluded:,} non-US exchange stocks")
 
     # Add columns if they don't exist
     try:

@@ -62,6 +62,19 @@ print(f"  Loaded sector accuracy for {len(sector_accuracy)} sectors")
 
 backtest_conn.close()
 
+# Special notes for stocks where the Compass Score needs context
+# These are stocks where the methodology doesn't capture their true quality
+SCORE_NOTES = {
+    'BRK-B': {
+        'title': 'Financial Holding Company',
+        'text': "Berkshire Hathaway's Compass Score appears lower than expected because it operates as an insurance and investment holding company with nearly $1 trillion in total assets. Asset-based metrics like Gross Profit/Assets and Cash Flow/Assets appear artificially low when measured against such a massive balance sheet. The Compass Score methodology works best for operating companies, not financial conglomerates. Berkshire's actual business quality and Warren Buffett's track record speak for themselves."
+    },
+    'BRK-A': {
+        'title': 'Financial Holding Company',
+        'text': "Berkshire Hathaway's Compass Score appears lower than expected because it operates as an insurance and investment holding company with nearly $1 trillion in total assets. Asset-based metrics like Gross Profit/Assets and Cash Flow/Assets appear artificially low when measured against such a massive balance sheet. The Compass Score methodology works best for operating companies, not financial conglomerates. Berkshire's actual business quality and Warren Buffett's track record speak for themselves."
+    },
+}
+
 
 def parse_analyst_firms(recent_ratings_str):
     """Extract analyst firm names from recent_ratings string."""
@@ -175,8 +188,8 @@ df = df[df['company_name'] != df['symbol']]
 df = df[df['company_description'].notna()]
 df = df[df['company_description'].str.len() >= 50]
 
-# Filter to US-based companies only
-df = df[df['country'] == 'US']
+# Note: All stocks in our database are US-listed (NYSE, NASDAQ, AMEX)
+# We no longer filter by country since ADRs are tradeable on US exchanges
 
 filtered_count = initial_count - len(df)
 print(f"  Filtered out {filtered_count} stocks with incomplete metadata")
@@ -268,6 +281,9 @@ for _, row in df.iterrows():
             'volatility': safe_float(row.get('factor_volatility'), 1) if pd.notna(row.get('factor_volatility')) else None,
             'assetGrowth': safe_float(row.get('factor_asset_growth') * 100, 1) if pd.notna(row.get('factor_asset_growth')) else None,
         } if pd.notna(row.get('factor_roa')) else None,
+
+        # Special note for stocks where the score needs context
+        'scoreNote': SCORE_NOTES.get(row['symbol']),
     }
     stocks_list.append(stock)
 
