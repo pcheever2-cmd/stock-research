@@ -192,6 +192,11 @@ def compute_raw_score(symbol, prices_df, fund_df):
     # Compute z-scores (capped at ±3.0 to prevent extreme outliers from dominating)
     z_scores = {}
     for f, val in factors.items():
+        # For asset_growth: cap at 0% - shrinking companies get NO bonus
+        # (Lower growth is normally better, but negative growth is a red flag)
+        if f == 'asset_growth' and val < 0:
+            val = 0
+
         z_scores[f] = np.clip(
             (val - UNIVERSE_STATS[f]['mean']) / UNIVERSE_STATS[f]['std'],
             -3.0, 3.0
