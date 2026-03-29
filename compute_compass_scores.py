@@ -202,6 +202,14 @@ def compute_raw_score(symbol, prices_df, fund_df):
             -3.0, 3.0
         )
 
+    # Detect asset-light outliers: 3+ quality factors hit the +3.0 cap
+    # These stocks have artificially inflated per-asset metrics due to small asset bases
+    # Exclude if: negative ROA, high volatility, OR extreme ROA (>100% suggests tiny assets)
+    quality_z = [z_scores['roa'], z_scores['ocf_assets'], z_scores['fcf_assets'], z_scores['gp_assets']]
+    n_maxed = sum(1 for z in quality_z if z >= 2.99)
+    if n_maxed >= 3 and (factors['roa'] < 0 or factors['vol_60d'] > 60 or factors['roa'] > 1.0):
+        return None, None  # Exclude: asset-light outlier
+
     # Raw Compass Score (weighted z-score combination)
     raw_score = (
         z_scores['roa'] * 0.20 +

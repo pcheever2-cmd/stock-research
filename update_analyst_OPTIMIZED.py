@@ -459,8 +459,14 @@ def save_batch_to_db(results: List[Dict]):
     conn = sqlite3.connect(DATABASE_NAME)
     cur = conn.cursor()
 
-    # Get column names from first result
+    # Ensure all columns exist in the table (handles schema drift between local and remote DBs)
+    existing_cols = {row[1] for row in cur.execute("PRAGMA table_info(stock_consensus)").fetchall()}
     columns = list(results[0].keys())
+    for col in columns:
+        if col not in existing_cols:
+            col_type = 'TEXT' if isinstance(results[0].get(col), str) else 'REAL'
+            cur.execute(f"ALTER TABLE stock_consensus ADD COLUMN {col} {col_type}")
+            log.info(f"  Added missing column: {col} ({col_type})")
     placeholders = ', '.join(['?'] * len(columns))
     cols_str = ', '.join(columns)
 

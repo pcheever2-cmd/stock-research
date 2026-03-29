@@ -153,6 +153,41 @@ def ensure_database():
         ("market_cap", "REAL"),
         # Exchange info
         ("exchange", "TEXT"),
+        # Country
+        ("country", "TEXT"),
+        # Analyst price targets (individual targets string)
+        ("analyst_price_targets", "TEXT"),
+        # Projected growth
+        ("projected_revenue_growth", "REAL"),
+        ("projected_ebitda_growth", "REAL"),
+        # Compass Score
+        ("compass_score", "INTEGER"),
+        ("compass_grade", "TEXT"),
+        ("compass_updated_at", "TEXT"),
+        ("factor_roa", "REAL"),
+        ("factor_ocf_assets", "REAL"),
+        ("factor_fcf_assets", "REAL"),
+        ("factor_gp_assets", "REAL"),
+        ("factor_asset_growth", "REAL"),
+        ("factor_volatility", "REAL"),
+        ("factor_valuation", "REAL"),
+        # Moonshot Score
+        ("moonshot_score", "INTEGER"),
+        ("moonshot_grade", "TEXT"),
+        ("moonshot_updated_at", "TEXT"),
+        # Valuation Score
+        ("valuation_score", "INTEGER"),
+        ("valuation_rating", "TEXT"),
+        ("valuation_updated_at", "TEXT"),
+        ("price_vs_sma200", "REAL"),
+        ("price_vs_sma50", "REAL"),
+        ("position_52w", "REAL"),
+        ("high_52w", "REAL"),
+        ("low_52w", "REAL"),
+        # Long-term score
+        ("long_term_score", "REAL"),
+        ("scored_at", "TEXT"),
+        ("price_updated_at", "TEXT"),
     ]
 
     cur.execute("PRAGMA table_info(stock_consensus)")
