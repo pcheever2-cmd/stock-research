@@ -36,7 +36,13 @@ jobs:
           gh release download data --pattern "nasdaq_stocks.db" --dir . || echo "nasdaq_stocks.db not found"
 
       - name: Compute Compass Scores
-        run: python compute_compass_scores.py
+        run: python compute_compass_scores.py     
+        
+      - name: Compute Moonshot Scores
+        run: python compute_moonshot_scores.py
+
+      - name: Compute Valuation Scores
+        run: python compute_valuation_scores.py
 
       - name: Upload updated nasdaq_stocks.db to release
         env:
