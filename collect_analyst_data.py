@@ -110,6 +110,18 @@ def save_grades_batch(symbols_data: Dict[str, list]) -> int:
             (symbol, date, grading_company, previous_grade, new_grade, action)
             VALUES (?, ?, ?, ?, ?, ?)
         """, rows)
+        # Backfill price_at_rating for newly inserted grades
+        cur.execute("""
+            UPDATE historical_grades
+            SET price_at_rating = (
+                SELECT hp.adjusted_close
+                FROM historical_prices hp
+                WHERE hp.symbol = historical_grades.symbol
+                AND hp.date <= historical_grades.date
+                ORDER BY hp.date DESC LIMIT 1
+            )
+            WHERE price_at_rating IS NULL
+        """)
     conn.commit()
     conn.close()
     return len(rows)
