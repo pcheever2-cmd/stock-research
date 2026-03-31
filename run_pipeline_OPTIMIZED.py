@@ -28,7 +28,8 @@ PRICE_BATCH_SIZE = 400
 # ==================== PIPELINE STEPS ====================
 
 def run_batch_price_update():
-    """Step 0: Fast batch price update for ALL stocks using bulk endpoint"""
+    """Step 0: Fast batch price update for ALL stocks using bulk endpoint.
+    Updates both nasdaq_stocks.db (current prices) and backtest.db (historical prices)."""
     log.info("\n" + "="*60)
     log.info("STEP 0: Batch Price Update (all stocks)")
     log.info("="*60)
@@ -44,6 +45,10 @@ def run_batch_price_update():
 
     log.info(f"Updating prices for {len(symbols)} stocks in batches of {PRICE_BATCH_SIZE}...")
     updated_count = 0
+    backtest_count = 0
+    today = datetime.now().strftime('%Y-%m-%d')
+
+    BACKTEST_DB = str(Path(__file__).parent / 'backtest.db')
 
     for i in range(0, len(symbols), PRICE_BATCH_SIZE):
         batch = symbols[i:i + PRICE_BATCH_SIZE]
@@ -58,6 +63,7 @@ def run_batch_price_update():
                 log.warning(f"Batch {i//PRICE_BATCH_SIZE + 1}: Unexpected response: {str(data)[:200]}")
                 continue
 
+            # Update nasdaq_stocks.db (current prices)
             conn = sqlite3.connect(DATABASE_NAME)
             cur = conn.cursor()
             for quote in data:
@@ -73,12 +79,33 @@ def run_batch_price_update():
             conn.commit()
             conn.close()
 
+            # Also store in backtest.db (historical prices for SMA calculations)
+            bt_conn = sqlite3.connect(BACKTEST_DB)
+            bt_cur = bt_conn.cursor()
+            for quote in data:
+                symbol = quote.get('symbol')
+                price = quote.get('price')
+                day_high = quote.get('dayHigh', price)
+                day_low = quote.get('dayLow', price)
+                day_open = quote.get('open', price) or quote.get('previousClose', price)
+                volume = quote.get('volume', 0)
+                if symbol and price is not None:
+                    bt_cur.execute(
+                        """INSERT OR REPLACE INTO historical_prices
+                           (symbol, date, open, high, low, close, volume, adjusted_close)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                        (symbol, today, day_open, day_high, day_low, price, volume, price)
+                    )
+                    backtest_count += 1
+            bt_conn.commit()
+            bt_conn.close()
+
             log.info(f"  Batch {i//PRICE_BATCH_SIZE + 1}: {len(data)} prices "
                      f"({min(i + PRICE_BATCH_SIZE, len(symbols))}/{len(symbols)})")
         except Exception as e:
             log.error(f"  Batch {i//PRICE_BATCH_SIZE + 1} error: {e}")
 
-    log.info(f"  ✓ Price update complete: {updated_count} stocks updated")
+    log.info(f"  ✓ Price update complete: {updated_count} stocks updated (+ {backtest_count} historical records)")
 
 async def run_analyst_update():
     """Step 1: Update analyst data"""

@@ -31,8 +31,8 @@ BACKTEST_DB = str(PROJECT_ROOT / 'backtest.db')
 
 # Historical data collection settings
 HISTORICAL_BATCH_SIZE = 50       # Symbols per batch
-HISTORICAL_MAX_CONCURRENT = 10   # Parallel requests
-HISTORICAL_CALLS_PER_MINUTE = 700
+HISTORICAL_MAX_CONCURRENT = 20   # Parallel requests
+HISTORICAL_CALLS_PER_MINUTE = 2500  # FMP limit is 3000/min, leave headroom
 HISTORICAL_REQUEST_TIMEOUT = 30  # Longer timeout for large responses
 
 # FMP Historical Endpoints
