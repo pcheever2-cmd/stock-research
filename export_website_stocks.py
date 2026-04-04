@@ -18,7 +18,13 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent
 NASDAQ_DB = PROJECT_ROOT / 'nasdaq_stocks.db'
 BACKTEST_DB = PROJECT_ROOT / 'backtest.db'
-OUTPUT_FILE = Path('/Users/pcheev/Documents/compass-score-site/src/data/stocks.json')
+
+# Default output: local compass-score-site repo; CI overrides via STOCKS_JSON_OUTPUT env var
+import os
+OUTPUT_FILE = Path(os.environ.get(
+    'STOCKS_JSON_OUTPUT',
+    str(PROJECT_ROOT.parent / 'compass-score-site' / 'src' / 'data' / 'stocks.json')
+))
 
 print(f"Loading data from {NASDAQ_DB}...")
 conn = sqlite3.connect(str(NASDAQ_DB))

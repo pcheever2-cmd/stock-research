@@ -44,9 +44,31 @@ jobs:
       - name: Compute Valuation Scores
         run: python compute_valuation_scores.py
 
+      - name: Export website stocks.json
+        env:
+          STOCKS_JSON_OUTPUT: data/stocks.json
+        run: python export_website_stocks.py
+
       - name: Upload updated nasdaq_stocks.db to release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Uploading updated nasdaq_stocks.db..."
           gh release upload data nasdaq_stocks.db --clobber
+
+      - name: Push stocks.json to compass-score-site
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DEPLOY_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "SITE_DEPLOY_TOKEN not set, skipping push to compass-score-site"
+            exit 0
+          fi
+          git clone https://x-access-token:${GH_TOKEN}@github.com/pcheever2-cmd/stockbrowse-app.git compass-site
+          cp data/stocks.json compass-site/src/data/stocks.json
+          cd compass-site
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/stocks.json
+          git diff --staged --quiet || git commit -m "Update stocks.json $(date +%Y-%m-%d)"
+          git push

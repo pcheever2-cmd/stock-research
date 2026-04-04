@@ -19,7 +19,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
 from config import BACKTEST_DB, DATABASE_NAME
-from analyst_accuracy_scorer import SECTOR_TOP3_ANALYSTS
+from analyst_accuracy_scorer import _get_sector_top3
 
 def analyze_downgrade_accuracy():
     """Analyze whether top 3 analyst downgrades predict negative returns."""
@@ -60,7 +60,7 @@ def analyze_downgrade_accuracy():
 
     # Build set of top 3 analysts per sector for fast lookup
     top3_set = {}
-    for sector, analysts in SECTOR_TOP3_ANALYSTS.items():
+    for sector, analysts in _get_sector_top3().items():
         top3_set[sector] = {name for name, _ in analysts}
 
     # Mark if downgrade is from top 3 analyst

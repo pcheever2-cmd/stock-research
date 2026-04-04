@@ -7,7 +7,7 @@ Uses historical accuracy to weight current recommendations.
 
 IMPORTANT: Rolling window accuracy is now available to eliminate look-ahead bias.
 - Use get_rolling_top3_analysts(sector, as_of_date) for backtest scenarios
-- Use the hardcoded SECTOR_TOP3_ANALYSTS for live/production scoring
+- Production scoring loads accuracy from backtest.db (refreshed weekly by pipeline)
 
 Integration with scoring system:
     from analyst_accuracy_scorer import get_analyst_signal_boost
@@ -33,93 +33,55 @@ BACKTEST_DB = str(PROJECT_ROOT / 'backtest.db')
 # Cache for rolling analyst accuracy (cleared when parameters change)
 _rolling_accuracy_cache = {}
 
-# Top analysts by overall hit rate (hardcoded for performance)
-# These are updated periodically by running analyze_analyst_accuracy.py
-TOP_ANALYSTS = {
-    'Hovde Group': 0.738,
-    'Daiwa Capital': 0.690,
-    'Melius Research': 0.667,
-    'Atlantic Equities': 0.640,
-    'Stephens & Co.': 0.630,
-    'Telsey Advisory Group': 0.630,
-    'New Street Research': 0.625,
-    'Northland Capital Markets': 0.620,
-    'Cantor Fitzgerald': 0.604,
-    'Bernstein': 0.602,
-}
-
-# Worst analysts (potential contrarian signals)
-WORST_ANALYSTS = {
-    'Odeon Capital': 0.365,
-    'Lake Street': 0.385,
-    'DZ Bank': 0.408,
-    'Berenberg': 0.419,
-    'MoffettNathanson': 0.426,
-    'Sidoti & Co.': 0.424,
-}
-
-# TOP 3 ANALYSTS PER SECTOR (validated by backtest - 71% hit rate, +0.254 correlation)
-# Using top 3 instead of top 1 for better sample size while maintaining high accuracy
-SECTOR_TOP3_ANALYSTS = {
-    'Basic Materials': [
-        ('Raymond James', 0.786),
-        ('Deutsche Bank', 0.771),
-        ('JP Morgan', 0.695),
-    ],
-    'Communication Services': [
-        ('Bernstein', 0.769),
-        ('Benchmark', 0.727),
-        ('UBS', 0.700),
-    ],
-    'Consumer Cyclical': [
-        ('CFRA', 0.727),
-        ('Canaccord Genuity', 0.700),
-        ('Telsey Advisory Group', 0.690),
-    ],
-    'Consumer Defensive': [
-        ('Evercore ISI Group', 0.818),
-        ('Stephens & Co.', 0.800),
-        ('Bernstein', 0.786),
-    ],
-    'Energy': [
-        ('Roth MKM', 0.812),
-        ('Evercore ISI Group', 0.722),
-        ('Wells Fargo', 0.672),
-    ],
-    'Financial Services': [
-        ('Hovde Group', 0.744),
-        ('Atlantic Equities', 0.714),
-        ('Deutsche Bank', 0.676),
-    ],
-    'Healthcare': [
-        ('Bernstein', 0.688),
-        ('Guggenheim', 0.680),
-        ('William Blair', 0.652),
-    ],
-    'Industrials': [
-        ('CJS Securities', 0.800),
-        ('Seaport Global', 0.762),
-        ('Stephens & Co.', 0.700),
-    ],
-    'Real Estate': [
-        ('Argus Research', 0.800),
-        ('RBC Capital', 0.750),
-        ('BTIG', 0.727),
-    ],
-    'Technology': [
-        ('Daiwa Capital', 0.929),  # 92.9% - exceptional!
-        ('Redburn Atlantic', 0.769),
-        ('Northland Capital Markets', 0.712),
-    ],
-    'Utilities': [
-        ('Wolfe Research', 0.684),
-        ('B of A Securities', 0.659),
-        ('Citigroup', 0.636),
-    ],
-}
+# Analyst accuracy data — loaded from DB (refreshed weekly by pipeline).
 
 # Average hit rate (baseline)
 BASELINE_HIT_RATE = 0.527
+
+# Module-level cache — populated on first call
+_db_analyst_accuracy = None  # {analyst: hit_rate}
+_db_sector_accuracy = None   # {(analyst, sector): hit_rate}
+_db_sector_top3 = None       # {sector: [(analyst, hit_rate), ...]}
+
+
+def _load_accuracy_from_db():
+    """Load analyst accuracy tables from backtest.db (refreshed weekly by pipeline)."""
+    global _db_analyst_accuracy, _db_sector_accuracy, _db_sector_top3
+
+    conn = sqlite3.connect(BACKTEST_DB)
+
+    # Load overall analyst accuracy
+    overall = pd.read_sql_query(
+        "SELECT grading_company, hit_rate FROM analyst_accuracy WHERE total_calls >= 50",
+        conn)
+    _db_analyst_accuracy = dict(zip(overall['grading_company'], overall['hit_rate']))
+
+    # Load sector-level accuracy
+    sector = pd.read_sql_query(
+        "SELECT grading_company, sector, hit_rate FROM analyst_sector_accuracy WHERE total_calls >= 20",
+        conn)
+    _db_sector_accuracy = {
+        (row['grading_company'], row['sector']): row['hit_rate']
+        for _, row in sector.iterrows()
+    }
+
+    # Build top 3 per sector
+    _db_sector_top3 = {}
+    for s in sector['sector'].unique():
+        s_data = sector[sector['sector'] == s].nlargest(3, 'hit_rate')
+        _db_sector_top3[s] = [(row['grading_company'], row['hit_rate']) for _, row in s_data.iterrows()]
+
+    conn.close()
+
+
+def _ensure_loaded():
+    if _db_analyst_accuracy is None:
+        _load_accuracy_from_db()
+
+
+def _get_sector_top3():
+    _ensure_loaded()
+    return _db_sector_top3
 
 # Rolling window settings (for bias-free backtesting)
 ROLLING_WINDOW_YEARS = 3  # Use 3 years of historical data
@@ -406,7 +368,7 @@ def get_rolling_analyst_signal_score(symbol: str, sector: str,
             if is_top3:
                 top3_upgrades += 1
                 top_actions.append(f"⭐ {analyst}: Upgrade (Rolling Top 3 {sector})")
-            elif analyst in TOP_ANALYSTS:
+            elif analyst in _db_analyst_accuracy and _db_analyst_accuracy[analyst] >= 0.60:
                 other_upgrades += 1
                 top_actions.append(f"{analyst}: Upgrade")
 
@@ -441,19 +403,15 @@ def get_analyst_accuracy(analyst: str, sector: str = None) -> float:
     - > 1.0: More accurate than baseline
     - < 1.0: Less accurate than baseline
     """
-    # Check if in top 3 for sector (highest priority - best signal)
-    if sector and sector in SECTOR_TOP3_ANALYSTS:
-        for top_analyst, hit_rate in SECTOR_TOP3_ANALYSTS[sector]:
-            if analyst == top_analyst:
-                return hit_rate / BASELINE_HIT_RATE  # Strong boost for sector expert
+    _ensure_loaded()
 
-    # Check top analysts (overall)
-    if analyst in TOP_ANALYSTS:
-        return TOP_ANALYSTS[analyst] / BASELINE_HIT_RATE
+    # Check sector-specific accuracy first (highest priority)
+    if sector and (analyst, sector) in _db_sector_accuracy:
+        return _db_sector_accuracy[(analyst, sector)] / BASELINE_HIT_RATE
 
-    # Check worst analysts (contrarian potential)
-    if analyst in WORST_ANALYSTS:
-        return WORST_ANALYSTS[analyst] / BASELINE_HIT_RATE
+    # Check overall analyst accuracy
+    if analyst in _db_analyst_accuracy:
+        return _db_analyst_accuracy[analyst] / BASELINE_HIT_RATE
 
     # Unknown analyst - use baseline
     return 1.0
@@ -461,9 +419,11 @@ def get_analyst_accuracy(analyst: str, sector: str = None) -> float:
 
 def is_top3_analyst(analyst: str, sector: str) -> bool:
     """Check if an analyst is in the top 3 for a sector."""
-    if not sector or sector not in SECTOR_TOP3_ANALYSTS:
+    _ensure_loaded()
+    sector_top3 = _db_sector_top3
+    if not sector or sector not in sector_top3:
         return False
-    top3_names = [name for name, _ in SECTOR_TOP3_ANALYSTS[sector]]
+    top3_names = [name for name, _ in sector_top3[sector]]
     return analyst in top3_names
 
 
@@ -553,7 +513,7 @@ def calculate_analyst_signal_score(symbol: str, sector: str = None) -> Dict:
             if is_top3:
                 top3_upgrades += 1
                 top_actions.append(f"⭐ {analyst}: Upgrade (Top 3 {sector})")
-            elif analyst in TOP_ANALYSTS:
+            elif analyst in _db_analyst_accuracy and _db_analyst_accuracy[analyst] >= 0.60:
                 other_upgrades += 1
                 top_actions.append(f"{analyst}: Upgrade")
 
@@ -659,10 +619,10 @@ if __name__ == '__main__':
             else:
                 print("  (No data available)")
 
-        # Compare rolling vs hardcoded for Technology
-        print(f"\n=== Comparison: Rolling vs Hardcoded (Technology) ===")
-        print("\nHardcoded Top 3:")
-        for analyst, hit_rate in SECTOR_TOP3_ANALYSTS.get('Technology', []):
+        # Compare rolling vs DB-loaded for Technology
+        print(f"\n=== Comparison: Rolling vs DB-Loaded (Technology) ===")
+        print("\nDB-Loaded Top 3:")
+        for analyst, hit_rate in _get_sector_top3().get('Technology', []):
             print(f"  {analyst}: {hit_rate:.1%}")
 
         print(f"\nRolling Top 3 (as of {args.date}):")

@@ -62,11 +62,6 @@ jobs:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         run: python enrich_stock_data.py
 
-      - name: Fetch news sentiment
-        env:
-          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
-        run: python fetch_news_sentiment.py
-
       - name: Update hybrid portfolio
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
@@ -78,6 +73,21 @@ jobs:
             echo "No hybrid portfolio found (mock_portfolio.db is empty)."
             echo "Run setup_hybrid_portfolio.py locally first to initialize."
           fi
+
+      - name: Refresh analyst accuracy rates (weekly, Mondays only)
+        run: |
+          DOW=$(date -u +%u)
+          if [ "$DOW" = "1" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Refreshing analyst accuracy rates..."
+            python general/research/analyze_analyst_accuracy.py --export
+          else
+            echo "Skipping — only runs on Mondays (today is day $DOW)"
+          fi
+
+      - name: Export website stocks.json
+        env:
+          STOCKS_JSON_OUTPUT: data/stocks.json
+        run: python export_website_stocks.py
 
       - name: Export movers data to parquet
         run: python export_movers_data.py
@@ -118,8 +128,25 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git pull --rebase origin main || true
-          git add data/dashboard_data.parquet data/movers_data.parquet
+          git add data/dashboard_data.parquet data/movers_data.parquet data/stocks.json
           git diff --staged --quiet || git commit -m "Update dashboard data $(date +%Y-%m-%d)"
           git push || echo "Push failed (non-critical) - data already uploaded to release"
+
+      - name: Push stocks.json to compass-score-site
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DEPLOY_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "SITE_DEPLOY_TOKEN not set, skipping push to compass-score-site"
+            exit 0
+          fi
+          git clone https://x-access-token:${GH_TOKEN}@github.com/pcheever2-cmd/stockbrowse-app.git compass-site
+          cp data/stocks.json compass-site/src/data/stocks.json
+          cd compass-site
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/stocks.json
+          git diff --staged --quiet || git commit -m "Update stocks.json $(date +%Y-%m-%d)"
+          git push
 
 
