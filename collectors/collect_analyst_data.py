@@ -25,6 +25,7 @@ from typing import Dict, List, Optional
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from config import (
     FMP_API_KEY, DATABASE_NAME, BACKTEST_DB,
     HISTORICAL_BATCH_SIZE, HISTORICAL_MAX_CONCURRENT,
