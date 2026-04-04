@@ -9,6 +9,7 @@
 
 # Cache
 cache/
+moonshot_cache/
 
 # Archived legacy files
 archived files 1.4/
