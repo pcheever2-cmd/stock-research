@@ -437,6 +437,30 @@ def setup_backtest_tables():
         )
     """)
 
+    # Analyst accuracy tables (populated weekly by analyze_analyst_accuracy.py --export)
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS analyst_accuracy (
+            grading_company TEXT PRIMARY KEY,
+            hit_rate REAL,
+            avg_return REAL,
+            total_calls INTEGER,
+            unique_symbols INTEGER,
+            updated_at TEXT
+        )
+    """)
+
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS analyst_sector_accuracy (
+            grading_company TEXT,
+            sector TEXT,
+            hit_rate REAL,
+            avg_return REAL,
+            total_calls INTEGER,
+            updated_at TEXT,
+            PRIMARY KEY (grading_company, sector)
+        )
+    """)
+
     # Add value_score_v2 column to backtest tables (safe migration)
     for table in ['backtest_daily_scores', 'backtest_signals']:
         try:

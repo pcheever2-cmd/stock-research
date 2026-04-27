@@ -210,7 +210,8 @@ def compute_raw_score(symbol, prices_df, fund_df):
         return None, None  # Exclude: asset-light outlier
 
     # Manually excluded asset-light outliers that slip through the z-score filter
-    if symbol in ('DAVE',):
+    # BRLT (Brilliant Earth): jewelry retailer, GP/Assets ~125% inflates score despite TTM losses
+    if symbol in ('DAVE', 'BRLT'):
         return None, None
 
     # Raw Compass Score (weighted z-score combination)
@@ -271,15 +272,18 @@ def compute_all_scores():
     df['compass_score'] = (percentile * 100).round(0).astype(int)
 
     # CAP percentile scores at 98 - no stock gets 99+ just from percentile
-    # 99 and 100 are reserved for truly exceptional outliers (absolute thresholds)
+    # 99 and 100 are reserved for truly exceptional outliers (quantile-based)
     df.loc[df['compass_score'] >= 99, 'compass_score'] = 98
 
-    # ABSOLUTE thresholds for top scores (like FIFA - only true outliers get 99+)
-    # 99 = raw score > 2.0 (exceptional z-score combo - maybe 2-5 stocks)
-    # 100 = raw score > 2.5 (legendary - maybe 0-2 stocks)
-    # This ensures 99 is truly exceptional, not just "top X%"
-    df.loc[df['raw_score'] > 2.0, 'compass_score'] = 99
-    df.loc[df['raw_score'] > 2.5, 'compass_score'] = 100
+    # QUANTILE-based top scores — proportional to universe size, not hard-coded raw thresholds
+    # 99 = top 0.5% of universe (~22 stocks at 4500) — very rare
+    # 100 = top 0.05% of universe (~2-3 stocks at 4500) — legendary
+    # Replaces the previous hard 2.0/2.5 raw_score thresholds, which produced
+    # too many tied 100s (26+) when the universe shifted. See FIXES_SUMMARY.md.
+    top_99_threshold = df['raw_score'].quantile(0.995)
+    top_100_threshold = df['raw_score'].quantile(0.9995)
+    df.loc[df['raw_score'] >= top_99_threshold, 'compass_score'] = 99
+    df.loc[df['raw_score'] >= top_100_threshold, 'compass_score'] = 100
 
     # Assign grades
     df['compass_grade'] = df['compass_score'].apply(assign_grade)

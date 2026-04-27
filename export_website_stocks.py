@@ -29,44 +29,52 @@ OUTPUT_FILE = Path(os.environ.get(
 print(f"Loading data from {NASDAQ_DB}...")
 conn = sqlite3.connect(str(NASDAQ_DB))
 
-# Load analyst accuracy data from backtest.db
-print(f"Loading analyst accuracy data from {BACKTEST_DB}...")
-backtest_conn = sqlite3.connect(str(BACKTEST_DB))
-
-# Get sector-specific analyst accuracy (this is the key data)
-analyst_sector_df = pd.read_sql_query("""
-    SELECT grading_company, sector, hit_rate, total_calls
-    FROM analyst_sector_accuracy
-    WHERE total_calls >= 20
-""", backtest_conn)
-
-# Calculate percentile rank WITHIN each sector
-analyst_sector_df['percentile'] = analyst_sector_df.groupby('sector')['hit_rate'].rank(pct=True) * 100
-
-# Build lookup: (analyst, sector) -> accuracy data
+# Load analyst accuracy data from backtest.db (optional — may not exist in CI)
 analyst_sector_accuracy = {}
-for _, row in analyst_sector_df.iterrows():
-    key = (row['grading_company'], row['sector'])
-    analyst_sector_accuracy[key] = {
-        'hitRate': round(row['hit_rate'] * 100, 1),
-        'percentile': round(row['percentile']),  # Rank vs other analysts in same sector
-        'totalCalls': int(row['total_calls'])
-    }
-print(f"  Loaded {len(analyst_sector_accuracy)} analyst-sector accuracy records")
+sector_accuracy = {}
 
-# Get sector-level averages for display
-sector_accuracy_df = pd.read_sql_query("""
-    SELECT sector, AVG(hit_rate) as avg_hit_rate, SUM(total_calls) as total_calls
-    FROM analyst_sector_accuracy
-    GROUP BY sector
-""", backtest_conn)
-sector_accuracy = {
-    row['sector']: round(row['avg_hit_rate'] * 100, 1)
-    for _, row in sector_accuracy_df.iterrows()
-}
-print(f"  Loaded sector accuracy for {len(sector_accuracy)} sectors")
+if BACKTEST_DB.exists():
+    print(f"Loading analyst accuracy data from {BACKTEST_DB}...")
+    backtest_conn = sqlite3.connect(str(BACKTEST_DB))
+    try:
+        # Get sector-specific analyst accuracy (this is the key data)
+        analyst_sector_df = pd.read_sql_query("""
+            SELECT grading_company, sector, hit_rate, total_calls
+            FROM analyst_sector_accuracy
+            WHERE total_calls >= 20
+        """, backtest_conn)
 
-backtest_conn.close()
+        # Calculate percentile rank WITHIN each sector
+        analyst_sector_df['percentile'] = analyst_sector_df.groupby('sector')['hit_rate'].rank(pct=True) * 100
+
+        # Build lookup: (analyst, sector) -> accuracy data
+        for _, row in analyst_sector_df.iterrows():
+            key = (row['grading_company'], row['sector'])
+            analyst_sector_accuracy[key] = {
+                'hitRate': round(row['hit_rate'] * 100, 1),
+                'percentile': round(row['percentile']),
+                'totalCalls': int(row['total_calls'])
+            }
+        print(f"  Loaded {len(analyst_sector_accuracy)} analyst-sector accuracy records")
+
+        # Get sector-level averages for display
+        sector_accuracy_df = pd.read_sql_query("""
+            SELECT sector, AVG(hit_rate) as avg_hit_rate, SUM(total_calls) as total_calls
+            FROM analyst_sector_accuracy
+            GROUP BY sector
+        """, backtest_conn)
+        sector_accuracy = {
+            row['sector']: round(row['avg_hit_rate'] * 100, 1)
+            for _, row in sector_accuracy_df.iterrows()
+        }
+        print(f"  Loaded sector accuracy for {len(sector_accuracy)} sectors")
+    except (pd.errors.DatabaseError, sqlite3.OperationalError) as e:
+        print(f"  WARNING: Could not load analyst accuracy data: {e}")
+        print(f"  Continuing without analyst accuracy — run backtest pipeline to populate.")
+    finally:
+        backtest_conn.close()
+else:
+    print(f"  backtest.db not found at {BACKTEST_DB} — skipping analyst accuracy data")
 
 # Calculate sector median P/E for comparison (11 sectors, not 148 industries)
 print("Calculating sector P/E medians...")
@@ -165,6 +173,13 @@ df = pd.read_sql_query("""
         -- Premium: Additional scores
         value_score_v2,
         long_term_score,
+        -- Premium: Valuation rating + supporting data
+        valuation_rating,
+        price_vs_sma200,
+        price_vs_sma50,
+        position_52w,
+        high_52w,
+        low_52w,
         -- Factor values for Score Breakdown
         factor_roa,
         factor_ocf_assets,
@@ -285,6 +300,17 @@ for _, row in df.iterrows():
         'valueScore': safe_int(row.get('value_score_v2')),
         'longTermScore': safe_float(row.get('long_term_score'), 1),
 
+        # Premium: Valuation rating (Undervalued / Fair Value / Overvalued) + supporting data
+        'valuationScore': safe_int(row.get('value_score_v2')),
+        'valuationRating': row.get('valuation_rating') if pd.notna(row.get('valuation_rating')) else None,
+        'valuationData': {
+            'vsSma200': safe_float(row.get('price_vs_sma200'), 1),
+            'vsSma50': safe_float(row.get('price_vs_sma50'), 1),
+            'position52w': safe_float(row.get('position_52w'), 1),
+            'high52w': safe_float(row.get('high_52w'), 2),
+            'low52w': safe_float(row.get('low_52w'), 2),
+        } if pd.notna(row.get('valuation_rating')) else None,
+
         # Premium: Analyst accuracy (sector-specific)
         'sectorAnalystAccuracy': sector_accuracy.get(row.get('sector')),
         'coveringAnalysts': get_covering_analysts(row.get('recent_ratings', ''), row.get('sector')),
@@ -307,11 +333,62 @@ for _, row in df.iterrows():
 print(f"\nWriting {len(stocks_list)} stocks to {OUTPUT_FILE}...")
 OUTPUT_FILE.write_text(json.dumps(stocks_list, indent=2))
 
+# ============================================================
+# Premium tier rollout: also emit stocks-public.json + stocks-premium.json
+# ============================================================
+# stocks-public.json — list of free-tier-only fields, safe to bake into SSG
+# stocks-premium.json — dict keyed by symbol, gated fields only, served via auth'd Function
+#
+# Both files live alongside stocks.json during the migration. Once the website is
+# updated to use the split (Phase B), stocks.json can be removed from this export.
+
+PUBLIC_FIELDS = {
+    'symbol', 'name', 'price',
+    'compassScore', 'grade',
+    'industry', 'sector', 'marketCap', 'description',
+    'numAnalysts', 'consensus',
+    'moonshotGrade', 'isGolden', 'scoreNote',
+}
+
+public_list = []
+premium_dict = {}
+for stock in stocks_list:
+    public = {k: v for k, v in stock.items() if k in PUBLIC_FIELDS}
+    premium = {k: v for k, v in stock.items() if k not in PUBLIC_FIELDS and k != 'symbol'}
+    public_list.append(public)
+    premium_dict[stock['symbol']] = premium
+
+PUBLIC_FILE = OUTPUT_FILE.parent / 'stocks-public.json'
+PREMIUM_FILE = OUTPUT_FILE.parent / 'stocks-premium.json'
+
+print(f"Writing {len(public_list)} stocks to {PUBLIC_FILE.name}...")
+PUBLIC_FILE.write_text(json.dumps(public_list, indent=2))
+
+print(f"Writing {len(premium_dict)} stocks to {PREMIUM_FILE.name}...")
+PREMIUM_FILE.write_text(json.dumps(premium_dict, indent=2))
+
+# Sanity check: public + premium should reconstruct the full record
+sample_sym = stocks_list[0]['symbol']
+sample_full = stocks_list[0]
+sample_public = public_list[0]
+sample_premium = premium_dict[sample_sym]
+reconstructed = {**sample_public, **sample_premium}
+missing_in_split = set(sample_full.keys()) - set(reconstructed.keys())
+extra_in_split = set(reconstructed.keys()) - set(sample_full.keys())
+if missing_in_split or extra_in_split:
+    print(f"  WARNING: split mismatch for {sample_sym}:")
+    if missing_in_split:
+        print(f"    missing in split: {missing_in_split}")
+    if extra_in_split:
+        print(f"    extra in split: {extra_in_split}")
+else:
+    print(f"  ✓ split round-trips: public ({len(sample_public)} fields) + premium ({len(sample_premium)} fields) = full ({len(sample_full)} fields)")
+
 # Count stats
 moonshot_count = sum(1 for s in stocks_list if s['moonshotScore'] is not None)
 golden_count = sum(1 for s in stocks_list if s['isGolden'])
 
-print(f"✓ Successfully exported stocks.json")
+print(f"\n✓ Successfully exported stocks.json (+ stocks-public.json + stocks-premium.json)")
 print(f"  Total stocks: {len(stocks_list)}")
 print(f"  With Moonshot score: {moonshot_count}")
 print(f"  Golden stocks (A/B in both): {golden_count}")
