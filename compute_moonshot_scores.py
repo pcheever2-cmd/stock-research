@@ -363,6 +363,10 @@ def compute_all_scores():
             for factor, weight in WEIGHTS.items()
         )
 
+    if len(df) == 0:
+        print("  WARNING: No stocks with valid scores — check that backtest.db has fundamental data")
+        return df
+
     # Convert to percentile-based score (0-100) across ALL stocks
     percentile = df['raw_score'].rank(pct=True)
     df['moonshot_score'] = (percentile * 100).round(0).astype(int)
@@ -476,6 +480,12 @@ def main():
 
     # Compute scores
     scores_df = compute_all_scores()
+
+    if len(scores_df) == 0:
+        print("\nNo scores computed — skipping database update.")
+        print("Ensure backtest.db has historical fundamental data.")
+        print("Run: python collectors/collect_historical_data.py --financials-only")
+        sys.exit(0)
 
     # Update database
     update_nasdaq_db(scores_df)

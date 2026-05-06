@@ -266,6 +266,10 @@ def compute_all_scores():
     print(f"  {len(df):,} stocks with valid Compass Scores")
     sys.stdout.flush()
 
+    if len(df) == 0:
+        print("  WARNING: No stocks with valid scores — check that backtest.db has fundamental data")
+        return df
+
     # Percentile-based scoring (maintains proper grade distribution)
     # This ensures ~15% A, ~25% B, ~20% C/D/F as per research paper
     percentile = df['raw_score'].rank(pct=True)
@@ -423,6 +427,12 @@ def main():
 
     # Compute scores
     scores_df = compute_all_scores()
+
+    if len(scores_df) == 0:
+        print("\nNo scores computed — skipping database update.")
+        print("Ensure backtest.db has historical fundamental data.")
+        print("Run: python collectors/collect_historical_data.py --financials-only")
+        sys.exit(0)
 
     # Update database
     update_nasdaq_db(scores_df)

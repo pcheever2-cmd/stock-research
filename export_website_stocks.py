@@ -102,7 +102,7 @@ SCORE_NOTES = {
 
 def parse_analyst_firms(recent_ratings_str):
     """Extract analyst firm names from recent_ratings string."""
-    if not recent_ratings_str:
+    if not isinstance(recent_ratings_str, str) or not recent_ratings_str:
         return []
 
     firms = []

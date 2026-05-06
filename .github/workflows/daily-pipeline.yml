@@ -105,12 +105,16 @@ jobs:
               gh release delete-asset data nasdaq_stocks.db --yes 2>/dev/null || true
               gh release upload data nasdaq_stocks.db
             }
-            # Upload backtest.db if it has data
-            if [ -s backtest.db ]; then
+            # Upload backtest.db only if it has fundamental data (protects against clobbering)
+            FUND_COUNT=$(sqlite3 backtest.db "SELECT COUNT(*) FROM historical_income_statements" 2>/dev/null || echo "0")
+            echo "backtest.db has $FUND_COUNT fundamental records"
+            if [ "$FUND_COUNT" -gt 1000 ]; then
               gh release upload data backtest.db --clobber || {
                 gh release delete-asset data backtest.db --yes 2>/dev/null || true
                 gh release upload data backtest.db
               }
+            else
+              echo "WARNING: Skipping backtest.db upload — too few fundamental records ($FUND_COUNT). Protecting release data."
             fi
             # Upload mock_portfolio.db if it has data
             if [ -s mock_portfolio.db ]; then
