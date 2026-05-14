@@ -10,6 +10,7 @@ Exports:
 
 import pandas as pd
 import json
+import math
 import sqlite3
 import re
 from pathlib import Path
@@ -330,7 +331,18 @@ for _, row in df.iterrows():
     }
     stocks_list.append(stock)
 
+def sanitize_nans(obj):
+    """Replace NaN/Infinity with None for valid JSON output."""
+    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+        return None
+    if isinstance(obj, dict):
+        return {k: sanitize_nans(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [sanitize_nans(v) for v in obj]
+    return obj
+
 print(f"\nWriting {len(stocks_list)} stocks to {OUTPUT_FILE}...")
+stocks_list = sanitize_nans(stocks_list)
 OUTPUT_FILE.write_text(json.dumps(stocks_list, indent=2))
 
 # ============================================================
