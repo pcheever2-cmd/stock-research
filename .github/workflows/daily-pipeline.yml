@@ -155,4 +155,27 @@ jobs:
           git diff --staged --quiet || git commit -m "Update stock data $(date +%Y-%m-%d)"
           git push
 
-
+      - name: Sync premium data to Cloudflare KV
+        if: success()
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "CLOUDFLARE_API_TOKEN not set, skipping KV sync"
+            exit 0
+          fi
+          npm install -g wrangler
+          python3 -c "
+          import json
+          with open('data/stocks-premium.json') as f:
+              data = json.load(f)
+          pairs = [{'key': f'stock:{sym}', 'value': json.dumps(val)} for sym, val in data.items()]
+          with open('/tmp/kv_bulk.json', 'w') as f:
+              json.dump(pairs, f)
+          print(f'Prepared {len(pairs)} KV entries')
+          "
+          wrangler kv bulk put /tmp/kv_bulk.json --namespace-id a16202c79b5b4372b3a686d6a4f8baf1 --remote
+          rm /tmp/kv_bulk.json
+          echo "KV sync complete"
