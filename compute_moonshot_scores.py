@@ -341,7 +341,8 @@ def compute_all_scores():
             sys.stdout.flush()
 
     print(f"  {len(results):,} stocks passed quality filters (≥$500M)")
-    print(f"  {excluded:,} stocks excluded ({excluded/len(all_symbols)*100:.1f}%)")
+    if len(all_symbols) > 0:
+        print(f"  {excluded:,} stocks excluded ({excluded/len(all_symbols)*100:.1f}%)")
     sys.stdout.flush()
 
     # Compute z-scores and composite scores
