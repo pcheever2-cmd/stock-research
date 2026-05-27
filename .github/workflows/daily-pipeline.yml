@@ -136,7 +136,7 @@ jobs:
           git stash pop || true
           git add data/dashboard_data.parquet data/movers_data.parquet data/stocks.json
           git diff --staged --quiet || git commit -m "Update dashboard data $(date +%Y-%m-%d)"
-          for i in 1 2 3; do git push && break || sleep 5; done
+          for i in 1 2 3; do git push && break || echo "Push attempt $i failed, retrying..." && sleep 15; done
 
       - name: Push stock data to compass-score-site
         env:
