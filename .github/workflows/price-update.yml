@@ -1,0 +1,69 @@
+name: Price Update
+on:
+  schedule:
+    # 12:00 PM EST (17:00 UTC) — midday update
+    - cron: '0 17 * * 1-5'
+    # 4:30 PM EST (21:30 UTC) — after market close
+    - cron: '30 21 * * 1-5'
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  update-prices:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout stock-research repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install requests
+        run: pip install requests
+
+      - name: Clone compass-score-site
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DEPLOY_TOKEN }}
+        run: |
+          if [ -z "$GH_TOKEN" ]; then
+            echo "SITE_DEPLOY_TOKEN not set"
+            exit 1
+          fi
+          git clone https://x-access-token:${GH_TOKEN}@github.com/pcheever2-cmd/stockbrowse-app.git compass-site
+
+      - name: Fetch bulk quotes and update prices
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: python scripts/update_prices.py compass-site/src/data
+
+      - name: Push updated prices to compass-score-site
+        env:
+          GH_TOKEN: ${{ secrets.SITE_DEPLOY_TOKEN }}
+        run: |
+          cd compass-site
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/stocks-public.json src/data/stocks.json
+          git diff --staged --quiet && echo "No price changes" && exit 0
+          git commit -m "Update stock prices $(date +%Y-%m-%d %H:%M)"
+          for i in 1 2 3; do git push && break || echo "Push attempt $i failed, retrying..." && sleep 15; done
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build and deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PUBLIC_SUPABASE_URL: https://jyadpvwxedqvqlrsghzy.supabase.co
+          PUBLIC_SUPABASE_ANON_KEY: sb_publishable_mWnsNqWDuUYfbdDJrr5u6w_bzFwgQDk
+        run: |
+          cd compass-site
+          npm ci
+          npm run build
+          npm install -g wrangler@4
+          wrangler pages deploy dist --project-name=stockbrowse-app-pages --commit-dirty=true
