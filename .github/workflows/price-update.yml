@@ -1,10 +1,9 @@
 name: Price Update
 on:
   schedule:
-    # 12:00 PM EST (17:00 UTC) — midday update
-    - cron: '0 17 * * 1-5'
-    # 4:30 PM EST (21:30 UTC) — after market close
-    - cron: '30 21 * * 1-5'
+    # Hourly 10 AM - 4 PM EST (15:00 - 21:00 UTC), weekdays
+    # Pre-market covered by daily pipeline (1 AM EST), post-close by 4:30 PM run
+    - cron: '0 15,16,17,18,19,20,21 * * 1-5'
   workflow_dispatch:  # Manual trigger
 
 jobs:
