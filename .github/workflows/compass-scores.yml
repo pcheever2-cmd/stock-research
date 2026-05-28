@@ -25,7 +25,7 @@ jobs:
           cache: 'pip'
 
       - name: Install dependencies
-        run: pip install pandas numpy
+        run: pip install pandas numpy aiohttp
 
       - name: Download databases from release
         env:
@@ -37,6 +37,11 @@ jobs:
 
       - name: Ensure database schema is up to date
         run: python setup_database.py
+
+      - name: Backfill recent historical prices
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: python scripts/backfill_recent_prices.py --lookback 7
 
       - name: Compute Compass Scores
         run: python compute_compass_scores.py     

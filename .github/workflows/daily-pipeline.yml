@@ -57,6 +57,11 @@ jobs:
           PYTHONUNBUFFERED: '1'
         run: python run_pipeline_OPTIMIZED.py
 
+      - name: Backfill recent historical prices
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: python scripts/backfill_recent_prices.py --lookback 7
+
       - name: Enrich stock data (Forward P/E, PEG, Financial Scores)
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
