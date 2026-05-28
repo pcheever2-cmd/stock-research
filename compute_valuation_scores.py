@@ -52,7 +52,29 @@ def load_price_data():
     prices['date'] = pd.to_datetime(prices['date'])
     conn.close()
 
-    print(f"  {len(prices):,} price records")
+    # Override latest price with current_price from stock_consensus (updated daily by batch quotes)
+    # This ensures valuation calculations use the same price as the website
+    main_conn = sqlite3.connect(DATABASE_NAME)
+    try:
+        current_prices = pd.read_sql_query("""
+            SELECT symbol, current_price FROM stock_consensus
+            WHERE current_price IS NOT NULL AND current_price > 0
+        """, main_conn)
+        overridden = 0
+        for _, row in current_prices.iterrows():
+            sym = row['symbol']
+            cp = row['current_price']
+            mask = prices['symbol'] == sym
+            if mask.any():
+                last_idx = prices[mask].index[-1]
+                prices.loc[last_idx, 'close'] = cp
+                overridden += 1
+        print(f"  {len(prices):,} price records, {overridden} overridden with current batch quotes")
+    except Exception as e:
+        print(f"  WARNING: Could not override prices from stock_consensus: {e}")
+    finally:
+        main_conn.close()
+
     sys.stdout.flush()
 
     return prices
