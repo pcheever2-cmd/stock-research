@@ -54,7 +54,7 @@ def load_price_data():
 
     # Override latest price with current_price from stock_consensus (updated daily by batch quotes)
     # This ensures valuation calculations use the same price as the website
-    main_conn = sqlite3.connect(DATABASE_NAME)
+    main_conn = sqlite3.connect(NASDAQ_DB)
     try:
         current_prices = pd.read_sql_query("""
             SELECT symbol, current_price FROM stock_consensus
