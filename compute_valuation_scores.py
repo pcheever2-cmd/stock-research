@@ -60,15 +60,13 @@ def load_price_data():
             SELECT symbol, current_price FROM stock_consensus
             WHERE current_price IS NOT NULL AND current_price > 0
         """, main_conn)
-        overridden = 0
-        for _, row in current_prices.iterrows():
-            sym = row['symbol']
-            cp = row['current_price']
-            mask = prices['symbol'] == sym
-            if mask.any():
-                last_idx = prices[mask].index[-1]
-                prices.loc[last_idx, 'close'] = cp
-                overridden += 1
+        # Find the last row index per symbol and override close price
+        last_idx = prices.groupby('symbol').tail(1).index
+        last_rows = prices.loc[last_idx, ['symbol']].copy()
+        merged = last_rows.merge(current_prices, on='symbol', how='left')
+        mask = merged['current_price'].notna()
+        prices.loc[last_idx[mask.values], 'close'] = merged.loc[mask, 'current_price'].values
+        overridden = mask.sum()
         print(f"  {len(prices):,} price records, {overridden} overridden with current batch quotes")
     except Exception as e:
         print(f"  WARNING: Could not override prices from stock_consensus: {e}")
