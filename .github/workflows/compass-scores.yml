@@ -41,7 +41,9 @@ jobs:
       - name: Backfill recent historical prices
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
-        run: python scripts/backfill_recent_prices.py --lookback 7
+        # Auto-detect mode: fills each symbol's actual gap, not a fixed 7-day window
+        # (a fixed lookback can't repair multi-week outages → eroded scored universe).
+        run: python scripts/backfill_recent_prices.py
 
       - name: Compute Compass Scores
         run: python compute_compass_scores.py     

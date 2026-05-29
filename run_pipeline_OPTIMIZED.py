@@ -46,6 +46,7 @@ def run_batch_price_update():
     log.info(f"Updating prices for {len(symbols)} stocks in batches of {PRICE_BATCH_SIZE}...")
     updated_count = 0
     backtest_count = 0
+    missing_symbols = []  # requested but NOT returned by batch-quote (no price written)
     today = datetime.now().strftime('%Y-%m-%d')
 
     BACKTEST_DB = str(Path(__file__).parent / 'backtest.db')
@@ -61,7 +62,13 @@ def run_batch_price_update():
 
             if not isinstance(data, list):
                 log.warning(f"Batch {i//PRICE_BATCH_SIZE + 1}: Unexpected response: {str(data)[:200]}")
+                missing_symbols.extend(batch)  # whole batch got no price this run
                 continue
+
+            # Track symbols FMP did NOT return (these get no price row → coverage erodes
+            # silently; after 90 days without >=30 prices they drop out of scoring).
+            returned_syms = {q.get('symbol') for q in data if q.get('symbol')}
+            missing_symbols.extend(s for s in batch if s not in returned_syms)
 
             # Update nasdaq_stocks.db (current prices)
             conn = sqlite3.connect(DATABASE_NAME)
@@ -106,6 +113,12 @@ def run_batch_price_update():
             log.error(f"  Batch {i//PRICE_BATCH_SIZE + 1} error: {e}")
 
     log.info(f"  ✓ Price update complete: {updated_count} stocks updated (+ {backtest_count} historical records)")
+    if missing_symbols:
+        sample = ', '.join(missing_symbols[:25])
+        log.warning(
+            f"  ⚠ {len(missing_symbols)}/{len(symbols)} symbols NOT returned by batch-quote "
+            f"(no price written this run): {sample}{'...' if len(missing_symbols) > 25 else ''}"
+        )
 
 async def run_analyst_update():
     """Step 1: Update analyst data"""

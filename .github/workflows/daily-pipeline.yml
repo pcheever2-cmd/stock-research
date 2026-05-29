@@ -60,7 +60,10 @@ jobs:
       - name: Backfill recent historical prices
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
-        run: python scripts/backfill_recent_prices.py --lookback 7
+        # Auto-detect mode: fills each symbol's ACTUAL gap (last_date+1 → today), not a
+        # fixed 7-day window. A fixed --lookback can't repair multi-week outages, which
+        # silently erodes the scored universe (stocks need >=30 prices in 90 days).
+        run: python scripts/backfill_recent_prices.py
 
       - name: Enrich stock data (Forward P/E, PEG, Financial Scores)
         env:
