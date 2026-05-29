@@ -257,7 +257,7 @@ def fetch_profile(symbol: str) -> dict:
                     'company_name': item.get('companyName'),
                     'sector': item.get('sector'),
                     'industry': item.get('industry'),
-                    'description': (item.get('description', '') or '')[:500],
+                    'description': (item.get('description', '') or '')[:6000],
                     'market_cap': item.get('mktCap') or item.get('marketCap'),
                     'exchange': item.get('exchange'),
                 }
@@ -301,13 +301,16 @@ def fill_missing_profiles():
 
     conn = sqlite3.connect(DATABASE_NAME)
 
-    # Get symbols missing profile data
+    # Get symbols missing profile data, OR whose description was truncated at the
+    # old 500-char cap (length exactly 500) so we backfill the full text once.
     symbols = [r[0] for r in conn.execute("""
         SELECT symbol FROM stock_consensus
         WHERE company_name IS NULL OR company_name = '' OR sector IS NULL
+           OR company_description IS NULL OR company_description = ''
+           OR LENGTH(company_description) = 500
     """).fetchall()]
 
-    print(f"Found {len(symbols)} stocks missing profile data")
+    print(f"Found {len(symbols)} stocks needing profile data (missing or truncated descriptions)")
 
     if not symbols:
         conn.close()
