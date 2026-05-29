@@ -186,8 +186,11 @@ def compute_raw_score(symbol, prices_df, fund_df):
         return None, None
     if factors['gp_assets'] < -0.5 or factors['gp_assets'] > 2.0:  # Extreme GP/Assets
         return None, None
-    if factors['asset_growth'] < -0.5 or factors['asset_growth'] > 5.0:  # Extreme asset growth
+    if factors['asset_growth'] < -0.5:  # Assets shrank >50% — genuine red flag, exclude
         return None, None
+    # High asset growth is NOT excluded: asset_growth is negatively weighted and z-capped
+    # at +3, so extreme growth (e.g. capital raises at IONQ/QUBT) yields a low score rather
+    # than a NULL. Excluding it dropped ~120 legit high-growth names from the site entirely.
 
     # Compute z-scores (capped at ±3.0 to prevent extreme outliers from dominating)
     z_scores = {}
