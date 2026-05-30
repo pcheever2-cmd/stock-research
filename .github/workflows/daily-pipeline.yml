@@ -102,6 +102,11 @@ jobs:
           STOCKS_JSON_OUTPUT: data/stocks.json
         run: python scripts/export_prices_kv.py --out-dir /tmp
 
+      - name: Export valuation-multiple overlays to KV bulk files
+        env:
+          STOCKS_JSON_OUTPUT: data/stocks.json
+        run: python scripts/export_overlays_kv.py --out-dir /tmp
+
       - name: Export movers data to parquet
         run: python export_movers_data.py
 
@@ -246,3 +251,28 @@ jobs:
             rm "$f"
           done
           echo "Price-history KV sync complete"
+
+      - name: Sync valuation overlays to Cloudflare KV
+        if: success()
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "CLOUDFLARE_API_TOKEN not set, skipping overlays KV sync"
+            exit 0
+          fi
+          npm install -g wrangler@4
+          shopt -s nullglob
+          files=(/tmp/overlays_kv_*.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No overlays bulk files found, skipping"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            echo "Uploading $f"
+            wrangler kv bulk put "$f" --namespace-id a16202c79b5b4372b3a686d6a4f8baf1 --remote
+            rm "$f"
+          done
+          echo "Overlays KV sync complete"
