@@ -13,6 +13,7 @@ import json
 import math
 import sqlite3
 import re
+from datetime import date
 from pathlib import Path
 
 # Paths
@@ -27,11 +28,82 @@ OUTPUT_FILE = Path(os.environ.get(
     str(PROJECT_ROOT.parent / 'compass-score-site' / 'src' / 'data' / 'stocks.json')
 ))
 
+# ============================================================
+# Catalyst signal (PREMIUM) — FROZEN, pre-registered 2026-06, forward-tracking from launch.
+# See validation/HONEST_NUMBERS.md §7. The 4 surviving big-winners catalyst vars (recent EPS
+# beats + analyst-upgrade momentum) lift P(+30%/12m) by +1.5–3pp vs vol/size-matched controls.
+#   catalystScore (0–100) = mean of within-live-universe percentile ranks of the 4 vars
+#                           (eps_surprise_pct, beat_streak, net_upgrades_180d[_norm]);
+#                           null if a stock has NO coverage on all 4 (never 0).
+#   catalystTag           = beatStreak >= 2 AND netUpgrades180d > 0 (PEAD persistence + upgrades).
+# These formulas are frozen so the live forward-track stays honest — do not tune to results.
+# ============================================================
+DEFAULT_CATALYST = {
+    'epsSurprisePct': None, 'beatStreak': None, 'netUpgrades180d': None,
+    'netUpgrades180dNorm': None, 'catalystScore': None,
+    'catalystTag': False, 'catalystLabel': None,
+}
+
+
+def compute_catalyst(symbols, backtest_db):
+    """Return {symbol: {7 catalyst fields}} computed as-of-today for the live universe.
+    Reuses validation/change_variables (attach_grades/attach_earnings). Degrades to {} on ANY
+    failure so the website export never aborts (catalyst is a non-critical premium overlay)."""
+    try:
+        if not backtest_db.exists():
+            print("  catalyst: backtest.db not found — catalyst fields null")
+            return {}
+        import sys
+        import numpy as np
+        sys.path.insert(0, str(PROJECT_ROOT))
+        from validation.change_variables import attach_grades, attach_earnings
+        today = pd.Timestamp(date.today())
+        panel = pd.DataFrame({'symbol': sorted(symbols), 'date': today})
+        panel['date'] = panel['date'].astype('datetime64[ns]')   # match earnings/grades dtype for merge_asof
+        # Independent guards: a missing grades table must not also null the earnings-based
+        # fields (and vice versa). Each block degrades only its own columns.
+        try:
+            panel = attach_grades(panel, db=str(backtest_db), window_days=180)
+        except Exception as e:
+            print(f"  catalyst: grades unavailable ({e}); upgrade fields null")
+            panel['net_upgrades_180d'] = np.nan
+            panel['net_upgrades_180d_norm'] = np.nan
+        try:
+            panel = attach_earnings(panel, db=str(backtest_db))
+        except Exception as e:
+            print(f"  catalyst: earnings unavailable ({e}); EPS fields null")
+            panel['eps_surprise_pct'] = np.nan
+            panel['beat_streak'] = np.nan
+        rank_src = ['eps_surprise_pct', 'beat_streak', 'net_upgrades_180d', 'net_upgrades_180d_norm']
+        ranks = pd.DataFrame({c: panel[c].rank(pct=True) for c in rank_src})
+        score = ranks.mean(axis=1, skipna=True) * 100      # NaN iff all 4 ranks are NaN (no coverage)
+        out = {}
+        for i, sym in enumerate(panel['symbol']):
+            eps, beat = panel['eps_surprise_pct'].iat[i], panel['beat_streak'].iat[i]
+            up, upn = panel['net_upgrades_180d'].iat[i], panel['net_upgrades_180d_norm'].iat[i]
+            sc = score.iat[i]
+            tag = bool(pd.notna(beat) and pd.notna(up) and beat >= 2 and up > 0)
+            out[sym] = {
+                'epsSurprisePct':      None if pd.isna(eps)  else round(float(eps) * 100, 1),
+                'beatStreak':          None if pd.isna(beat) else int(beat),
+                'netUpgrades180d':     None if pd.isna(up)   else int(up),
+                'netUpgrades180dNorm': None if pd.isna(upn)  else round(float(upn), 2),
+                'catalystScore':       None if pd.isna(sc)   else int(round(sc)),
+                'catalystTag':         tag,
+                'catalystLabel':       'Catalyst' if tag else None,
+            }
+        return out
+    except Exception as e:
+        print(f"  WARNING: catalyst computation failed, fields null: {e}")
+        return {}
+
+
 print(f"Loading data from {NASDAQ_DB}...")
 conn = sqlite3.connect(str(NASDAQ_DB))
 
 # Load analyst accuracy data from backtest.db (optional — may not exist in CI)
 analyst_sector_accuracy = {}
+analyst_overall_accuracy = {}
 sector_accuracy = {}
 
 if BACKTEST_DB.exists():
@@ -69,6 +141,16 @@ if BACKTEST_DB.exists():
             for _, row in sector_accuracy_df.iterrows()
         }
         print(f"  Loaded sector accuracy for {len(sector_accuracy)} sectors")
+
+        # Get overall analyst accuracy (across all sectors)
+        analyst_overall_df = pd.read_sql_query("""
+            SELECT grading_company, hit_rate, total_calls
+            FROM analyst_accuracy
+            WHERE total_calls >= 20
+        """, backtest_conn)
+        for _, row in analyst_overall_df.iterrows():
+            analyst_overall_accuracy[row['grading_company']] = round(row['hit_rate'] * 100, 1)
+        print(f"  Loaded {len(analyst_overall_accuracy)} overall analyst accuracy records")
     except (pd.errors.DatabaseError, sqlite3.OperationalError) as e:
         print(f"  WARNING: Could not load analyst accuracy data: {e}")
         print(f"  Continuing without analyst accuracy — run backtest pipeline to populate.")
@@ -130,6 +212,7 @@ def get_covering_analysts(recent_ratings_str, sector):
             covering.append({
                 'firm': firm,
                 'hitRate': analyst_sector_accuracy[key]['hitRate'],
+                'overallHitRate': analyst_overall_accuracy.get(firm),
                 'percentile': analyst_sector_accuracy[key]['percentile'],  # Rank vs other analysts in THIS sector
                 'totalCalls': analyst_sector_accuracy[key]['totalCalls']
             })
@@ -243,6 +326,12 @@ def safe_int(val):
         return int(val)
     return None
 
+# Catalyst signal (premium) — computed once for the live universe, fail-isolated
+catalyst_map = compute_catalyst(set(df['symbol']), BACKTEST_DB)
+_cat_scored = sum(1 for v in catalyst_map.values() if v.get('catalystScore') is not None)
+_cat_tagged = sum(1 for v in catalyst_map.values() if v.get('catalystTag'))
+print(f"  Catalyst computed for {_cat_scored} stocks ({_cat_tagged} tagged)")
+
 # Convert to JSON format expected by website
 stocks_list = []
 for _, row in df.iterrows():
@@ -329,6 +418,8 @@ for _, row in df.iterrows():
         # Special note for stocks where the score needs context
         'scoreNote': SCORE_NOTES.get(row['symbol']),
     }
+    # Catalyst signal (premium) — 7 keys, consistent shape even when computation degraded
+    stock.update(catalyst_map.get(row['symbol']) or DEFAULT_CATALYST)
     stocks_list.append(stock)
 
 def sanitize_nans(obj):

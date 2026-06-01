@@ -52,6 +52,14 @@ ANALYST_ENDPOINTS = {
     'price_target_summary': f'{FMP_BASE_URL}/stable/price-target-summary',
 }
 
+# FMP Catalyst Endpoints (big-winners change/catalyst research)
+# earnings_calendar: announcement-dated EPS+revenue actual/estimated (look-ahead safe,
+#   ~4000-row cap -> window narrowly). Preferred over earnings-surprises-bulk (period-end, EPS-only).
+CATALYST_ENDPOINTS = {
+    'earnings_calendar': f'{FMP_BASE_URL}/stable/earnings-calendar',
+    'analyst_estimates': f'{FMP_BASE_URL}/stable/analyst-estimates',  # snapshot -> forward-collect ledger
+}
+
 # Ensure directories exist (may fail on read-only filesystems like Streamlit Cloud)
 try:
     CACHE_DIR.mkdir(exist_ok=True)

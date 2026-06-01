@@ -92,6 +92,39 @@ jobs:
             echo "Skipping — only runs on Mondays (today is day $DOW)"
           fi
 
+      # --- Catalyst signal source data (non-critical; must run BEFORE the export so the
+      #     exporter computes catalyst off fresh tables). continue-on-error so a catalyst
+      #     collector failure can never block the price/score/export pipeline — the catalyst
+      #     fields just degrade to null. ---
+      - name: Refresh analyst grades for catalyst signal
+        continue-on-error: true
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          python collectors/collect_analyst_data.py --grades-only \
+            || echo "WARNING: grades refresh failed; catalyst upgrade fields degrade to null"
+
+      - name: Refresh earnings surprises for catalyst signal
+        continue-on-error: true
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          FROM=$(python3 -c "from datetime import date,timedelta;print((date.today()-timedelta(days=14)).isoformat())")
+          TO=$(python3 -c "from datetime import date;print(date.today().isoformat())")
+          python collectors/collect_earnings_surprises.py --from "$FROM" --to "$TO" \
+            || echo "WARNING: earnings refresh failed; catalyst EPS fields degrade to null"
+
+      # Append one dated layer of analyst consensus to estimate_ledger so an estimate-REVISION
+      # series accrues over time (FMP serves no point-in-time revision history to backfill).
+      # Groundwork for a future revision variable; not consumed by today's export.
+      - name: Snapshot analyst estimates (revision ledger)
+        continue-on-error: true
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          python collectors/snapshot_estimates.py \
+            || echo "WARNING: estimate-ledger snapshot failed (non-critical, groundwork only)"
+
       - name: Export website stocks.json
         env:
           STOCKS_JSON_OUTPUT: data/stocks.json
