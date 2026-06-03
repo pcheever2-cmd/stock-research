@@ -459,8 +459,9 @@ PUBLIC_FIELDS = {
     'industry', 'sector', 'marketCap', 'description',
     'numAnalysts', 'consensus',
     'scoreNote',
-    'catalystTag',  # PUBLIC binary "has a catalyst" flag (everyone can filter); catalystScore stays premium
-    # NOTE: isGolden + catalystScore are PREMIUM — intentionally NOT public.
+    # NOTE: isGolden + catalystTag + catalystScore are all PREMIUM — the Catalyst filter
+    # shows for everyone but only FUNCTIONS for premium (data hydrated at runtime), so the
+    # tag must NOT be public (else a free user could filter via ?catalyst=1).
 }
 
 public_list = []
