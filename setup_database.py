@@ -171,10 +171,6 @@ def ensure_database():
         ("factor_asset_growth", "REAL"),
         ("factor_volatility", "REAL"),
         ("factor_valuation", "REAL"),
-        # Moonshot Score
-        ("moonshot_score", "INTEGER"),
-        ("moonshot_grade", "TEXT"),
-        ("moonshot_updated_at", "TEXT"),
         # Valuation Score
         ("valuation_score", "INTEGER"),
         ("valuation_rating", "TEXT"),

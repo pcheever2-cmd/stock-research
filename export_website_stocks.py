@@ -4,8 +4,9 @@ Export stocks.json for website from nasdaq_stocks.db
 
 Exports:
 - Compass Score (Quality/Value): A-F grades based on profitability, efficiency, and value metrics
-- Moonshot Score (Quality/Growth): A-F grades based on growth metrics with quality filters
-- Golden Stocks: Stocks with A or B grade in BOTH Compass AND Moonshot (Quality GARP)
+- Catalyst Signal (premium): analyst upgrades + earnings beats (PEAD/revision drift)
+- Golden Stocks (premium): TOP-DECILE Compass quality AND TOP-DECILE Catalyst — an elite, selective
+  quality×catalyst list (replaces the old quality×Moonshot combo; Moonshot re-validated at ~0 edge)
 """
 
 import pandas as pd
@@ -219,7 +220,7 @@ def get_covering_analysts(recent_ratings_str, sector):
 
     return covering if covering else None
 
-# Get all stock data with compass scores, moonshot scores, and premium metrics
+# Get all stock data with compass scores and premium metrics
 df = pd.read_sql_query("""
     SELECT
         symbol,
@@ -236,8 +237,6 @@ df = pd.read_sql_query("""
         market_cap,
         compass_score,
         compass_grade,
-        moonshot_score,
-        moonshot_grade,
         country,
         -- Premium: Valuation metrics
         ev_ebitda,
@@ -332,13 +331,24 @@ _cat_scored = sum(1 for v in catalyst_map.values() if v.get('catalystScore') is 
 _cat_tagged = sum(1 for v in catalyst_map.values() if v.get('catalystTag'))
 print(f"  Catalyst computed for {_cat_scored} stocks ({_cat_tagged} tagged)")
 
+# Golden Stocks = TOP-DECILE quality AND TOP-DECILE catalyst (an elite, selective list — ~2% of the
+# universe, not a broad tier). Compass score is already a 0-100 percentile, so >=90 is its top decile;
+# the catalyst top-decile cutoff is computed from the live catalystScore distribution (it's a mean of
+# ranks, so not uniform — a fixed 90 wouldn't be the 10% point). Replaces the old quality×Moonshot combo
+# (Moonshot re-validated at ~0 edge). Backtest (descriptive, OOS 2020+): tightening past this broad-tier
+# point doesn't add measured lift, so size is chosen for an elite "best of" list, not performance.
+_cat_scores = [v['catalystScore'] for v in catalyst_map.values() if v.get('catalystScore') is not None]
+GOLDEN_COMPASS_MIN = 90
+GOLDEN_CATALYST_MIN = float(pd.Series(_cat_scores).quantile(0.90)) if _cat_scores else 999.0
+
 # Convert to JSON format expected by website
 stocks_list = []
 for _, row in df.iterrows():
-    # Determine if "golden" stock (high in both Compass AND Moonshot)
-    compass_grade = row.get('compass_grade', '')
-    moonshot_grade = row.get('moonshot_grade', '')
-    is_golden = (compass_grade in ['A', 'B']) and (moonshot_grade in ['A', 'B'])
+    # Golden = top-decile quality AND top-decile catalyst (see cutoffs above).
+    _comp = row.get('compass_score')
+    _cat = (catalyst_map.get(row['symbol']) or {}).get('catalystScore')
+    is_golden = (_comp is not None and _comp >= GOLDEN_COMPASS_MIN) and \
+                (_cat is not None and _cat >= GOLDEN_CATALYST_MIN)
 
     stock = {
         # Basic info (Free tier)
@@ -352,10 +362,8 @@ for _, row in df.iterrows():
         'marketCap': float(row['market_cap']) / 1_000_000_000 if pd.notna(row.get('market_cap')) and row['market_cap'] > 0 else 0.0,
         'description': row.get('company_description', '') or '',
 
-        # Moonshot Score (Quality Growth)
-        'moonshotScore': safe_int(row.get('moonshot_score')),
-        'moonshotGrade': row.get('moonshot_grade') if pd.notna(row.get('moonshot_grade')) else None,
-        'isGolden': is_golden,  # High in BOTH Compass and Moonshot
+        # Golden Stocks (premium): top-decile Compass AND top-decile catalyst (cutoffs above)
+        'isGolden': is_golden,
 
         # Analyst data (Partial: consensus free, details premium)
         'numAnalysts': safe_int(row.get('num_analysts')),
@@ -450,7 +458,8 @@ PUBLIC_FIELDS = {
     'compassScore', 'grade',
     'industry', 'sector', 'marketCap', 'description',
     'numAnalysts', 'consensus',
-    'moonshotGrade', 'isGolden', 'scoreNote',
+    'scoreNote',
+    # NOTE: isGolden is PREMIUM (catalyst-derived) — intentionally NOT public.
 }
 
 public_list = []
@@ -488,15 +497,12 @@ else:
     print(f"  ✓ split round-trips: public ({len(sample_public)} fields) + premium ({len(sample_premium)} fields) = full ({len(sample_full)} fields)")
 
 # Count stats
-moonshot_count = sum(1 for s in stocks_list if s['moonshotScore'] is not None)
 golden_count = sum(1 for s in stocks_list if s['isGolden'])
 
 print(f"\n✓ Successfully exported stocks.json (+ stocks-public.json + stocks-premium.json)")
 print(f"  Total stocks: {len(stocks_list)}")
-print(f"  With Moonshot score: {moonshot_count}")
-print(f"  Golden stocks (A/B in both): {golden_count}")
+print(f"  Golden stocks (top-decile: Compass ≥{GOLDEN_COMPASS_MIN} AND catalyst ≥{GOLDEN_CATALYST_MIN:.0f}): {golden_count}")
 print(f"\n  Top 5 by Compass:")
 for stock in stocks_list[:5]:
-    moonshot_info = f", Moonshot: {stock['moonshotGrade']}" if stock['moonshotGrade'] else ""
     golden_flag = " ⭐GOLDEN" if stock['isGolden'] else ""
-    print(f"    {stock['symbol']}: Compass {stock['compassScore']} ({stock['grade']}){moonshot_info}{golden_flag}")
+    print(f"    {stock['symbol']}: Compass {stock['compassScore']} ({stock['grade']}){golden_flag}")

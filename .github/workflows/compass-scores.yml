@@ -46,10 +46,7 @@ jobs:
         run: python scripts/backfill_recent_prices.py
 
       - name: Compute Compass Scores
-        run: python compute_compass_scores.py     
-        
-      - name: Compute Moonshot Scores
-        run: python compute_moonshot_scores.py
+        run: python compute_compass_scores.py
 
       - name: Compute Valuation Scores
         run: python compute_valuation_scores.py
