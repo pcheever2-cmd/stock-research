@@ -254,6 +254,12 @@ def attach_earnings(panel, db=BACKTEST_DB):
 
     p = panel.sort_values('date').copy()
     ev = ev.sort_values('asof_e')
+    # merge_asof requires IDENTICAL key dtypes. pandas 2.x can yield datetime64[us] from
+    # to_datetime/SQL while the panel date is [ns] — that mismatch silently disabled the catalyst
+    # EARNINGS half in CI ("incompatible merge keys [ns] vs [us]"), zeroing beat_streak/eps_surprise
+    # (and thus the catalyst tag). Force both keys to [ns] so it works regardless of pandas version.
+    p['date'] = pd.to_datetime(p['date']).astype('datetime64[ns]')
+    ev['asof_e'] = pd.to_datetime(ev['asof_e']).astype('datetime64[ns]')
     merged = pd.merge_asof(p, ev, left_on='date', right_on='asof_e', by='symbol',
                            direction='backward', allow_exact_matches=False,
                            tolerance=pd.Timedelta('400 days'))
