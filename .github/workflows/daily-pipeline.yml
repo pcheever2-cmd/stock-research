@@ -269,9 +269,21 @@ jobs:
           with open('data/stocks-premium.json') as f:
               data = json.load(f)
           pairs = [{'key': f'stock:{sym}', 'value': json.dumps(val)} for sym, val in data.items()]
+          # Compact whole-universe filter summary in ONE key, so the browse page hydrates the
+          # Catalyst/Golden/Valuation filters in a single request (not ~85 per-symbol round-trips).
+          # Kept in lockstep with the sharded stock:<SYM> keys by writing it in the same bulk put.
+          summary = {}
+          for sym, v in data.items():
+              e = {}
+              if v.get('catalystTag'): e['catalystTag'] = True
+              if v.get('catalystScore') is not None: e['catalystScore'] = v['catalystScore']
+              if v.get('isGolden'): e['isGolden'] = True
+              if v.get('valuationRating'): e['valuationRating'] = v['valuationRating']
+              if e: summary[sym] = e
+          pairs.append({'key': 'summary:premium-filters', 'value': json.dumps(summary, separators=(',', ':'))})
           with open('/tmp/kv_bulk.json', 'w') as f:
               json.dump(pairs, f)
-          print(f'Prepared {len(pairs)} KV entries')
+          print(f'Prepared {len(pairs)} KV entries (incl. summary:premium-filters with {len(summary)} stocks)')
           "
           wrangler kv bulk put /tmp/kv_bulk.json --namespace-id a16202c79b5b4372b3a686d6a4f8baf1 --remote
           rm /tmp/kv_bulk.json
