@@ -4203,7 +4203,7 @@
     "sector": "Consumer Cyclical",
     "marketCap": 0.70540621228,
     "description": "Build-A-Bear Workshop, Inc. operates as a multi-channel retailer of plush animals and related products. The company operates through three segments: Direct-to-Consumer, Commercial, and International Franchising. Its merchandise comprises various styles of plush products to be stuffed, pre-stuffed plush products, and sounds and scents that can be added to the stuffed animals, as well as range of clothing, shoes, accessories, and other toy and novelty items. The company operates its stores under the Build-A-Bear Workshop brand name; and sells its products through its e-commerce sites. As of January 29, 2022, it operated 346 stores, including 305 stores in the United States and Canada; and 41 stores in the United Kingdom and Ireland, as well as 72 franchised stores internationally. The company was founded in 1997 and is headquartered in St. Louis, Missouri.",
-    "isGolden": true,
+    "isGolden": false,
     "numAnalysts": 1,
     "consensus": "A",
     "avgPriceTarget": 60.0,
@@ -4252,11 +4252,11 @@
       "assetGrowth": 16.8
     },
     "scoreNote": null,
-    "epsSurprisePct": 90.8,
+    "epsSurprisePct": 35.5,
     "beatStreak": 8,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 76,
+    "catalystScore": 73,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -6718,7 +6718,7 @@
   {
     "symbol": "ASCCY",
     "name": "ASICS Corporation",
-    "price": 28.01,
+    "price": 28.12,
     "compassScore": 98,
     "grade": "A",
     "industry": "Apparel - Footwear & Accessories",
@@ -12617,7 +12617,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 32,
+    "catalystScore": 31,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -12712,7 +12712,7 @@
     "beatStreak": 4,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 48,
+    "catalystScore": 49,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -17265,7 +17265,7 @@
     "beatStreak": 5,
     "netUpgrades180d": -5,
     "netUpgrades180dNorm": -0.71,
-    "catalystScore": 46,
+    "catalystScore": 45,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -17772,7 +17772,7 @@
     "beatStreak": 3,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 64,
+    "catalystScore": 63,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -21215,7 +21215,7 @@
     "beatStreak": 5,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 82,
+    "catalystScore": 83,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -29053,7 +29053,7 @@
   {
     "symbol": "CLPBY",
     "name": "Coloplast A/S",
-    "price": 5.93,
+    "price": 5.95,
     "compassScore": 92,
     "grade": "A",
     "industry": "Medical - Devices",
@@ -29064,7 +29064,7 @@
     "numAnalysts": 9,
     "consensus": "B-",
     "avgPriceTarget": 14.45,
-    "upside": 144,
+    "upside": 143,
     "recentRatings": "No recent rating changes",
     "analystPriceTargets": "2025-04-25|Bernstein|14.45|11.07",
     "evEbitda": 9.6,
@@ -35995,7 +35995,7 @@
   {
     "symbol": "ADDYY",
     "name": "adidas AG",
-    "price": 93.75,
+    "price": 93.83,
     "compassScore": 90,
     "grade": "A",
     "industry": "Apparel - Footwear & Accessories",
@@ -36348,7 +36348,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 53,
+    "catalystScore": 52,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -40462,7 +40462,7 @@
   {
     "symbol": "VXRT",
     "name": "Vaxart, Inc.",
-    "price": 0.6001,
+    "price": 0.6,
     "compassScore": 89,
     "grade": "A",
     "industry": "Biotechnology",
@@ -42087,7 +42087,7 @@
     "beatStreak": 6,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 44,
+    "catalystScore": 43,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -43136,7 +43136,7 @@
     "beatStreak": 11,
     "netUpgrades180d": -2,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 43,
+    "catalystScore": 42,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -43890,11 +43890,11 @@
       "assetGrowth": -8.2
     },
     "scoreNote": null,
-    "epsSurprisePct": -26.9,
+    "epsSurprisePct": -1900.0,
     "beatStreak": 0,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 18,
+    "catalystScore": 10,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -48175,7 +48175,7 @@
     "beatStreak": 20,
     "netUpgrades180d": 1,
     "netUpgrades180dNorm": 0.33,
-    "catalystScore": 72,
+    "catalystScore": 71,
     "catalystTag": true,
     "catalystLabel": "Catalyst"
   },
@@ -48344,7 +48344,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 2,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 58,
+    "catalystScore": 57,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -50555,7 +50555,7 @@
     "beatStreak": 3,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 68,
+    "catalystScore": 69,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -51025,7 +51025,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 53,
+    "catalystScore": 52,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -51627,7 +51627,7 @@
     "beatStreak": 19,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 70,
+    "catalystScore": 69,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -54637,7 +54637,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 31,
+    "catalystScore": 30,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -55172,13 +55172,13 @@
       "assetGrowth": 14.4
     },
     "scoreNote": null,
-    "epsSurprisePct": -23.5,
-    "beatStreak": 0,
+    "epsSurprisePct": 7.3,
+    "beatStreak": 3,
     "netUpgrades180d": 2,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 53,
-    "catalystTag": false,
-    "catalystLabel": null
+    "catalystScore": 75,
+    "catalystTag": true,
+    "catalystLabel": "Catalyst"
   },
   {
     "symbol": "ENS",
@@ -57065,7 +57065,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 30,
+    "catalystScore": 29,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -60410,7 +60410,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 52,
+    "catalystScore": 51,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -61746,7 +61746,7 @@
     "beatStreak": 20,
     "netUpgrades180d": 1,
     "netUpgrades180dNorm": 0.33,
-    "catalystScore": 72,
+    "catalystScore": 71,
     "catalystTag": true,
     "catalystLabel": "Catalyst"
   },
@@ -65985,7 +65985,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 31,
+    "catalystScore": 30,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -68809,7 +68809,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 32,
+    "catalystScore": 31,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -71495,7 +71495,7 @@
       "assetGrowth": 19.2
     },
     "scoreNote": null,
-    "epsSurprisePct": 6.9,
+    "epsSurprisePct": 7.2,
     "beatStreak": 6,
     "netUpgrades180d": 1,
     "netUpgrades180dNorm": 1.0,
@@ -72358,7 +72358,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 29,
+    "catalystScore": 28,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -73486,7 +73486,7 @@
     "beatStreak": 10,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 79,
+    "catalystScore": 78,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -78755,7 +78755,7 @@
     "beatStreak": 7,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 74,
+    "catalystScore": 75,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -80117,11 +80117,11 @@
       "assetGrowth": 1.6
     },
     "scoreNote": null,
-    "epsSurprisePct": 15.8,
-    "beatStreak": 19,
+    "epsSurprisePct": 11.7,
+    "beatStreak": 20,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 49,
+    "catalystScore": 48,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -82868,7 +82868,7 @@
   {
     "symbol": "PREKF",
     "name": "PrairieSky Royalty Ltd.",
-    "price": 24.79,
+    "price": 24.785,
     "compassScore": 76,
     "grade": "B",
     "industry": "Oil & Gas Exploration & Production",
@@ -82935,7 +82935,7 @@
     "beatStreak": 2,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 60,
+    "catalystScore": 59,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -93205,7 +93205,7 @@
     "beatStreak": 0,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 18,
+    "catalystScore": 17,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -95617,7 +95617,7 @@
     "beatStreak": 3,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 53,
+    "catalystScore": 52,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -98763,7 +98763,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 1,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 67,
+    "catalystScore": 66,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -102289,7 +102289,7 @@
       "assetGrowth": 106.9
     },
     "scoreNote": null,
-    "epsSurprisePct": 35.7,
+    "epsSurprisePct": 39.4,
     "beatStreak": 1,
     "netUpgrades180d": 2,
     "netUpgrades180dNorm": 1.0,
@@ -104526,7 +104526,7 @@
     "beatStreak": 0,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 23,
+    "catalystScore": 22,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -105608,11 +105608,11 @@
       "assetGrowth": 27.3
     },
     "scoreNote": null,
-    "epsSurprisePct": 7.7,
-    "beatStreak": 6,
+    "epsSurprisePct": 25.4,
+    "beatStreak": 7,
     "netUpgrades180d": 1,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 77,
+    "catalystScore": 83,
     "catalystTag": true,
     "catalystLabel": "Catalyst"
   },
@@ -107750,7 +107750,7 @@
     "beatStreak": 0,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 21,
+    "catalystScore": 20,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -110457,7 +110457,7 @@
     "beatStreak": 2,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 61,
+    "catalystScore": 60,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -111749,7 +111749,7 @@
     "beatStreak": 2,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 64,
+    "catalystScore": 65,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -113821,7 +113821,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 55,
+    "catalystScore": 54,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -114380,7 +114380,7 @@
     "beatStreak": 3,
     "netUpgrades180d": 2,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 76,
+    "catalystScore": 75,
     "catalystTag": true,
     "catalystLabel": "Catalyst"
   },
@@ -116347,7 +116347,7 @@
     "beatStreak": 2,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 53,
+    "catalystScore": 52,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -119810,7 +119810,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 30,
+    "catalystScore": 29,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -123112,7 +123112,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 3,
     "netUpgrades180dNorm": 0.6,
-    "catalystScore": 65,
+    "catalystScore": 64,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -126383,7 +126383,7 @@
     "beatStreak": 4,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": 0.0,
-    "catalystScore": 67,
+    "catalystScore": 68,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -128564,9 +128564,9 @@
     "scoreNote": null,
     "epsSurprisePct": -2.5,
     "beatStreak": 0,
-    "netUpgrades180d": -2,
+    "netUpgrades180d": -3,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 18,
+    "catalystScore": 17,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -135826,7 +135826,7 @@
     "beatStreak": 2,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 52,
+    "catalystScore": 51,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -137179,7 +137179,7 @@
     "beatStreak": 1,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 53,
+    "catalystScore": 52,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -139600,7 +139600,7 @@
     "beatStreak": 1,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 44,
+    "catalystScore": 43,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -143637,9 +143637,9 @@
     "scoreNote": null,
     "epsSurprisePct": 12.5,
     "beatStreak": 2,
-    "netUpgrades180d": 0,
-    "netUpgrades180dNorm": 0.0,
-    "catalystScore": 56,
+    "netUpgrades180d": -1,
+    "netUpgrades180dNorm": -0.33,
+    "catalystScore": 45,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -143787,7 +143787,7 @@
     "beatStreak": 16,
     "netUpgrades180d": 2,
     "netUpgrades180dNorm": 0.5,
-    "catalystScore": 81,
+    "catalystScore": 80,
     "catalystTag": true,
     "catalystLabel": "Catalyst"
   },
@@ -145564,7 +145564,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 34,
+    "catalystScore": 33,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -146508,7 +146508,7 @@
     "beatStreak": 2,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 54,
+    "catalystScore": 53,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -153742,7 +153742,7 @@
     "beatStreak": 0,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 18,
+    "catalystScore": 17,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -157547,7 +157547,7 @@
     "beatStreak": 4,
     "netUpgrades180d": -2,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 41,
+    "catalystScore": 40,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -159883,7 +159883,7 @@
     "beatStreak": 0,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 20,
+    "catalystScore": 19,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -167592,7 +167592,7 @@
   {
     "symbol": "JETMF",
     "name": "Global Crossing Airlines Group Inc.",
-    "price": 0.8548,
+    "price": 0.855,
     "compassScore": 50,
     "grade": "C",
     "industry": "Airlines, Airports & Air Services",
@@ -168329,7 +168329,7 @@
     "beatStreak": 3,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 72,
+    "catalystScore": 71,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -176055,7 +176055,7 @@
     "beatStreak": 0,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 21,
+    "catalystScore": 20,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -180103,7 +180103,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 53,
+    "catalystScore": 52,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -180251,7 +180251,7 @@
     "beatStreak": 9,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 67,
+    "catalystScore": 66,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -181958,7 +181958,7 @@
     "beatStreak": 2,
     "netUpgrades180d": 1,
     "netUpgrades180dNorm": 0.33,
-    "catalystScore": 63,
+    "catalystScore": 62,
     "catalystTag": true,
     "catalystLabel": "Catalyst"
   },
@@ -182437,7 +182437,7 @@
     "beatStreak": 2,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 70,
+    "catalystScore": 69,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -185033,9 +185033,9 @@
     "scoreNote": null,
     "epsSurprisePct": 700.0,
     "beatStreak": 2,
-    "netUpgrades180d": 2,
+    "netUpgrades180d": 3,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 84,
+    "catalystScore": 85,
     "catalystTag": true,
     "catalystLabel": "Catalyst"
   },
@@ -194714,7 +194714,7 @@
     "beatStreak": 8,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 44,
+    "catalystScore": 43,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -199831,7 +199831,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 32,
+    "catalystScore": 31,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -201709,7 +201709,7 @@
     "beatStreak": 4,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 67,
+    "catalystScore": 66,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -212706,7 +212706,7 @@
   {
     "symbol": "IPCFF",
     "name": "International Petroleum Corporation",
-    "price": 26.0365,
+    "price": 26.037,
     "compassScore": 36,
     "grade": "D",
     "industry": "Oil & Gas Exploration & Production",
@@ -213480,7 +213480,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 34,
+    "catalystScore": 33,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -213539,7 +213539,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 66,
+    "catalystScore": 65,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -215165,7 +215165,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 2,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 71,
+    "catalystScore": 70,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -223803,7 +223803,7 @@
     "beatStreak": 2,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 58,
+    "catalystScore": 57,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -226777,11 +226777,11 @@
       "assetGrowth": -4.4
     },
     "scoreNote": null,
-    "epsSurprisePct": -35.2,
+    "epsSurprisePct": -120.0,
     "beatStreak": 0,
     "netUpgrades180d": 2,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 53,
+    "catalystScore": 51,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -228403,7 +228403,7 @@
       "assetGrowth": -0.1
     },
     "scoreNote": null,
-    "epsSurprisePct": 1472.9,
+    "epsSurprisePct": 297.9,
     "beatStreak": 5,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
@@ -228790,7 +228790,7 @@
     "beatStreak": 0,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 18,
+    "catalystScore": 17,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -229613,7 +229613,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 57,
+    "catalystScore": 56,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -233425,7 +233425,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 4,
     "netUpgrades180dNorm": 0.67,
-    "catalystScore": 76,
+    "catalystScore": 75,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -235369,11 +235369,11 @@
       "assetGrowth": -9.3
     },
     "scoreNote": null,
-    "epsSurprisePct": 166.7,
-    "beatStreak": 3,
+    "epsSurprisePct": 21.2,
+    "beatStreak": 4,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 72,
+    "catalystScore": 66,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -244529,11 +244529,11 @@
       "assetGrowth": 23.8
     },
     "scoreNote": null,
-    "epsSurprisePct": 2.5,
+    "epsSurprisePct": 11.9,
     "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 46,
+    "catalystScore": 53,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -248763,7 +248763,7 @@
     "beatStreak": 5,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 63,
+    "catalystScore": 62,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -251134,7 +251134,7 @@
     "beatStreak": 2,
     "netUpgrades180d": 3,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 73,
+    "catalystScore": 72,
     "catalystTag": true,
     "catalystLabel": "Catalyst"
   },
@@ -258938,7 +258938,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 33,
+    "catalystScore": 32,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -265801,7 +265801,7 @@
   {
     "symbol": "NSARP",
     "name": "NSTAR Electric Company PFD 4.25%",
-    "price": 69.695,
+    "price": 69.7,
     "compassScore": 19,
     "grade": "F",
     "industry": "Regulated Electric",
@@ -268897,7 +268897,7 @@
     "beatStreak": 1,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 51,
+    "catalystScore": 50,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -271922,7 +271922,7 @@
     "beatStreak": 0,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 25,
+    "catalystScore": 24,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -272982,7 +272982,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 2,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 58,
+    "catalystScore": 57,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -276409,7 +276409,7 @@
     "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 54,
+    "catalystScore": 53,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -280687,7 +280687,7 @@
   {
     "symbol": "FNMA",
     "name": "Federal National Mortgage Association",
-    "price": 6.34,
+    "price": 6.35,
     "compassScore": 14,
     "grade": "F",
     "industry": "Financial - Mortgages",
@@ -283727,11 +283727,11 @@
       "assetGrowth": -11.8
     },
     "scoreNote": null,
-    "epsSurprisePct": -78.1,
-    "beatStreak": 0,
+    "epsSurprisePct": 33.3,
+    "beatStreak": 1,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 26,
+    "catalystScore": 59,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -284408,7 +284408,7 @@
   {
     "symbol": "RECAF",
     "name": "Reconnaissance Energy Africa Ltd.",
-    "price": 0.8501,
+    "price": 0.85,
     "compassScore": 13,
     "grade": "F",
     "industry": "Oil & Gas Exploration & Production",
@@ -294551,7 +294551,7 @@
   {
     "symbol": "SBDS",
     "name": "Solo Brands, Inc.",
-    "price": 4.235,
+    "price": 4.233,
     "compassScore": 10,
     "grade": "F",
     "industry": "Specialty Retail",
@@ -294562,7 +294562,7 @@
     "numAnalysts": 1,
     "consensus": "C",
     "avgPriceTarget": 20.98,
-    "upside": 395,
+    "upside": 396,
     "recentRatings": "\u2b07\ufe0f 2025-03-13: Canaccord Genuity \u2192 Hold\n\u25fe 2024-11-19: Canaccord Genuity \u2192 Buy\n\u25fe 2024-09-30: Canaccord Genuity \u2192 Buy\n\u25fe 2024-08-08: Citigroup \u2192 Neutral\n\u25fe 2024-08-08: Canaccord Genuity \u2192 Buy",
     "analystPriceTargets": "2025-08-13|Telsey Advisory|65|19.55\n2025-08-13|Needham|62|19.55\n2024-09-12|Canaccord Genuity|3|1.49\n2024-08-08|Citigroup|1.35|1.09\n2024-08-07|Jefferies|1.53|1.09\n2024-03-15|Piper Sandler|3|2.34\n2024-03-14|Jefferies|3.05|2.12\n2024-03-13|Canaccord Genuity|5|2.41\n2022-11-17|Canaccord Genuity|7|4.67\n2022-08-12|Credit Suisse|11|5.6791",
     "evEbitda": -32.6,
@@ -296347,11 +296347,11 @@
       "assetGrowth": -15.1
     },
     "scoreNote": null,
-    "epsSurprisePct": -37.9,
-    "beatStreak": 0,
+    "epsSurprisePct": 13.2,
+    "beatStreak": 1,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 16,
+    "catalystScore": 36,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -296608,7 +296608,7 @@
     "beatStreak": 1,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 54,
+    "catalystScore": 53,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -296735,7 +296735,7 @@
   {
     "symbol": "BLAGF",
     "name": "Blue Lagoon Resources Inc.",
-    "price": 0.57,
+    "price": 0.56,
     "compassScore": 9,
     "grade": "F",
     "industry": "Gold",
@@ -300161,7 +300161,7 @@
     "beatStreak": 2,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 62,
+    "catalystScore": 61,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -301200,7 +301200,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 1,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 51,
+    "catalystScore": 50,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -307883,7 +307883,7 @@
     "beatStreak": 0,
     "netUpgrades180d": -1,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 14,
+    "catalystScore": 15,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -309230,7 +309230,7 @@
     "beatStreak": 3,
     "netUpgrades180d": 0,
     "netUpgrades180dNorm": null,
-    "catalystScore": 58,
+    "catalystScore": 57,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -310468,7 +310468,7 @@
     "beatStreak": 1,
     "netUpgrades180d": -5,
     "netUpgrades180dNorm": -1.0,
-    "catalystScore": 35,
+    "catalystScore": 34,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -310616,7 +310616,7 @@
     "beatStreak": 0,
     "netUpgrades180d": 2,
     "netUpgrades180dNorm": 1.0,
-    "catalystScore": 58,
+    "catalystScore": 57,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -318227,7 +318227,7 @@
     "beatStreak": 1,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 74,
+    "catalystScore": 73,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -318352,7 +318352,7 @@
   {
     "symbol": "BKYI",
     "name": "BIO-key International, Inc.",
-    "price": 4.29,
+    "price": 4.43,
     "compassScore": 2,
     "grade": "F",
     "industry": "Security & Protection Services",
@@ -318684,7 +318684,7 @@
     "beatStreak": 0,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 23,
+    "catalystScore": 22,
     "catalystTag": false,
     "catalystLabel": null
   },
@@ -319384,7 +319384,7 @@
     "beatStreak": 0,
     "netUpgrades180d": null,
     "netUpgrades180dNorm": null,
-    "catalystScore": 22,
+    "catalystScore": 21,
     "catalystTag": false,
     "catalystLabel": null
   },
