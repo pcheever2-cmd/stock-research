@@ -112,10 +112,24 @@ jobs:
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         run: |
-          FROM=$(python3 -c "from datetime import date,timedelta;print((date.today()-timedelta(days=14)).isoformat())")
+          # beat_streak (a catalyst-tag gate) is a CONSECUTIVE-quarter streak, so it needs
+          # deep per-symbol earnings history — a 14-day window alone never lets a streak >=2
+          # form. Self-heal: if earnings_surprises is shallow (earliest date < ~18mo old, or
+          # empty), backfill 5y once; otherwise just refresh the trailing 14d. The collector is
+          # INSERT OR REPLACE + ~1 API call/week, so a 5y backfill is ~260 calls (a few min).
+          EARLIEST=$(sqlite3 backtest.db "SELECT MIN(date) FROM earnings_surprises" 2>/dev/null || echo "")
+          CUTOFF=$(python3 -c "from datetime import date,timedelta;print((date.today()-timedelta(days=540)).isoformat())")
+          if [[ -z "$EARLIEST" || "$EARLIEST" > "$CUTOFF" ]]; then
+            FROM=$(python3 -c "from datetime import date,timedelta;print((date.today()-timedelta(days=1825)).isoformat())")
+            echo "earnings_surprises shallow (earliest='$EARLIEST'); one-time 5y backfill from $FROM"
+          else
+            FROM=$(python3 -c "from datetime import date,timedelta;print((date.today()-timedelta(days=14)).isoformat())")
+          fi
           TO=$(python3 -c "from datetime import date;print(date.today().isoformat())")
           python collectors/collect_earnings_surprises.py --from "$FROM" --to "$TO" \
             || echo "WARNING: earnings refresh failed; catalyst EPS fields degrade to null"
+          # Guard: surface earnings depth so a shallow table (-> beat_streak capped at 1) is visible.
+          echo "earnings_surprises now: $(sqlite3 backtest.db 'SELECT COUNT(*) FROM earnings_surprises') rows, earliest $(sqlite3 backtest.db 'SELECT MIN(date) FROM earnings_surprises')"
 
       # Append one dated layer of analyst consensus to estimate_ledger so an estimate-REVISION
       # series accrues over time (FMP serves no point-in-time revision history to backfill).
