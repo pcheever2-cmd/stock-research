@@ -34,7 +34,7 @@ ENDPOINTS = {
     'profile': f'{BASE_URL}/stable/profile',
     'quote': f'{BASE_URL}/stable/quote',
     'target': f'{BASE_URL}/stable/price-target-consensus',
-    'price_targets': f'{BASE_URL}/stable/price-target',  # Individual analyst price targets
+    'price_targets': f'{BASE_URL}/stable/price-target-news',  # Individual analyst price targets (FMP retired /stable/price-target → 404; price-target-news returns the same fields: publishedDate, analystCompany, priceTarget, priceWhenPosted)
     'estimates': f'{BASE_URL}/stable/analyst-estimates',
     'rating': f'{BASE_URL}/stable/ratings-snapshot',
     'grades': f'{BASE_URL}/stable/grades',

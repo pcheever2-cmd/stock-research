@@ -105,13 +105,17 @@ def save_grades_batch(symbols_data: Dict[str, list]) -> int:
                 r.get('newGrade') or r.get('new_grade', ''),
                 r.get('action', ''),
             ))
+    inserted = 0
     if rows:
+        before = conn.total_changes
         cur.executemany("""
             INSERT OR IGNORE INTO historical_grades
             (symbol, date, grading_company, previous_grade, new_grade, action)
             VALUES (?, ?, ?, ?, ?, ?)
         """, rows)
-        # Backfill price_at_rating for newly inserted grades
+        inserted = conn.total_changes - before   # actual new rows (IGNORE skips existing dups)
+        # Backfill price_at_rating for newly inserted grades only (WHERE-pruned, so cheap in
+        # steady state even when re-fetching the full universe daily).
         cur.execute("""
             UPDATE historical_grades
             SET price_at_rating = (
@@ -125,7 +129,7 @@ def save_grades_batch(symbols_data: Dict[str, list]) -> int:
         """)
     conn.commit()
     conn.close()
-    return len(rows)
+    return inserted
 
 
 def save_estimates_batch(symbols_data: Dict[str, list]) -> int:
@@ -323,6 +327,10 @@ async def main():
     parser.add_argument('--symbols', type=str, help='Comma-separated symbols (e.g. AAPL,MSFT)')
     parser.add_argument('--status', action='store_true', help='Show collection progress')
     parser.add_argument('--retry-failed', action='store_true', help='Retry previously failed symbols')
+    parser.add_argument('--refresh-grades', action='store_true',
+                        help="Re-fetch grades for ALL symbols (clears the 'grades' completed-markers). "
+                             "Idempotent: historical_grades PK + INSERT OR IGNORE only appends new grades. "
+                             "Use daily to keep net_upgrades_180d fresh for the catalyst signal.")
     args = parser.parse_args()
 
     if args.status:
@@ -338,6 +346,19 @@ async def main():
         return
 
     tracker = ProgressTracker(BACKTEST_DB)
+
+    # Refresh mode: clear only the 'grades' completed-markers so collect_data_type re-fetches
+    # every symbol through the normal path (mirrors the --retry-failed DELETE idiom below).
+    # historical_grades PK is (symbol, date, grading_company) and save_grades_batch uses
+    # INSERT OR IGNORE, so re-fetching is idempotent — it appends newly-issued grades only.
+    # Without this, grades are collect-once and net_upgrades_180d decays to 0 as the 180d
+    # window slides past the frozen grade dates, silently zeroing the catalyst tag.
+    if args.refresh_grades:
+        conn = sqlite3.connect(BACKTEST_DB)
+        n = conn.execute("DELETE FROM collection_progress WHERE data_type = 'grades'").rowcount
+        conn.commit()
+        conn.close()
+        log.info(f"Refresh-grades: cleared {n} 'grades' progress markers; re-fetching all symbols")
 
     # Retry mode
     if args.retry_failed:

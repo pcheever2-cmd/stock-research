@@ -101,8 +101,11 @@ jobs:
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
         run: |
-          python collectors/collect_analyst_data.py --grades-only \
+          python collectors/collect_analyst_data.py --grades-only --refresh-grades \
             || echo "WARNING: grades refresh failed; catalyst upgrade fields degrade to null"
+          # Regression guard: the catalyst tag needs grades fresh within the trailing 180d.
+          # Surface the newest grade date so a silently-stale refresh is visible in the log.
+          echo "historical_grades max date: $(sqlite3 backtest.db 'SELECT MAX(date) FROM historical_grades')"
 
       - name: Refresh earnings surprises for catalyst signal
         continue-on-error: true
