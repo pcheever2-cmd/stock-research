@@ -12,10 +12,93 @@
 
 ---
 
-## 🟢 STATUS: Phase 0 ✅ · 1 (harness) ✅ · 2 (Compass) ✅ GREEN · 3 (Moonshot) ✅ HONEST-NULL · 5 (factor search) ✅ NULL · 6 (jump screen) ✅ NO-GO · 7 (big-winners/catalyst) ✅ SHIPPED · **Phase 4 (Valuation) = SOLE REMAINING TODO**
+## 🟢 STATUS: Phase 0 ✅ · 1 (harness) ✅ · 2 (Compass) ✅ GREEN · 3 (Moonshot) ✅ HONEST-NULL · 4 (Valuation) ✅ HONEST-NEGATIVE · 5 (factor search) ✅ NULL · 6 (jump screen) ✅ NO-GO · 7 (big-winners/catalyst) ✅ SHIPPED · **ALL PHASES DONE — technical core complete**
 
-> **NEXT CHAT: do Phase 4 — honestly re-validate the Valuation score.** Everything else in the
-> re-validation is done; Phase 4 is the last open piece. Details in the Phase 4 section below.
+> **The technical re-validation is COMPLETE.** All four scores have run through the one
+> survivorship-clean harness. Remaining work is the GATED follow-on (rewrite papers, re-anchor the
+> live site figures, relabel cards, legal) — NOT part of this pass. See "gated follow-on" below.
+>
+> **➡️ SINCE THEN (through 2026-06-04):** acted on the findings — shipped Golden Stocks, removed
+> Moonshot, shipped the Catalyst Signal, fixed a chain of catalyst data/ops + browse-filter bugs,
+> reframed the home + methodology pages. **See "📦 SHIPPED + OPS LOG" below.**
+>
+> **🎯 NEW WINDOW STARTS HERE:** make the **Valuation score predictive** — see "🎯 NEXT" below.
+
+> ⚠️ **SIGNIFICANCE CORRECTION (2026-06-01, see HONEST_NUMBERS §9).** Independent review found the
+> per-date spread series was effectively DAILY (symbols sampled monthly but on staggered calendar dates →
+> overlapping 12-mo returns), so the published HAC/cohort t-stats were inflated ~3–4×. Fixed: estimators
+> now collapse to a MONTHLY grid (`harness._to_monthly`, maxlags=12). **Corrected: NO score clears t≥2 at
+> ANY window** — Compass HAC OOS +1.04 / full-sample(30y) +1.71; Value +0.78 / +1.58; Moonshot +0.88 /
+> −0.10; SMA −0.47 / +1.14. **Spreads + rank-ordering UNCHANGED, only confidence.** Our crude quintile/
+> sector-neutral/12m-overlap composites are too blunt to certify in-house; the value/quality basis is the
+> **published literature** (FF value ~4–5%; Novy-Marx/AQR quality ~3–6% — our point estimates match in
+> sign+magnitude), NOT any in-house t-stat. **Make zero in-house significance claims.**
+
+---
+
+## 📦 SHIPPED + OPS LOG (post-technical-core, through 2026-06-04)
+The technical core (above) was the *honest re-validation*. Since then we acted on the findings and
+shipped product, then chased the resulting data/ops bugs to ground. Done:
+
+- **Golden Stocks shipped, Moonshot removed site-wide.** Golden = **top-decile Compass × top-decile
+  catalyst** (premium flag `isGolden`, ~71 names live). Moonshot deleted end-to-end (score ~0); old
+  `/moonshot-methodology` 301→`/golden-methodology`. See [[project_golden_stocks]].
+- **Catalyst Signal shipped** as a PREMIUM per-stock signal (⚡ chip shows for everyone, *functions*
+  for Plus+; ⚡+score on the card for premium). `catalystScore`/`catalystTag` premium-gated.
+- **Catalyst data-staleness saga (3 distinct bugs, all fixed) — now 367 tagged / 71 Golden live:**
+  1. `attach_earnings` merge_asof **dtype crash** (`<M8[ns]` vs `<M8[us]`) → forced both keys to `[ns]`.
+  2. Analyst grades were **collect-once** → `net_upgrades_180d` decayed to 0 → added
+     `collect_analyst_data.py --refresh-grades` (clears the 'grades' progress markers; idempotent via
+     PK + INSERT OR IGNORE), wired into `daily-pipeline.yml`.
+  3. Earnings history was a **14-day window** → `beat_streak` capped at 1 → made the earnings step
+     **self-healing**: backfill 5y once when `earnings_surprises` is shallow, else 14d.
+  - Also: **FMP retired `/stable/price-target`** (404 for all 6,678) → `price-target-news` (same fields).
+  - See [[project_catalyst_grade_freshness]].
+- **Browse-filter front-end bugs (the "only 8 catalyst stocks" saga):** (a) Golden+Catalyst hydration
+  was gated behind the **Pro** `valuation_score` feature → Plus users got nothing → re-gated at **Plus**
+  (`golden_stocks`); (b) hydration was ~85 **sequential** `/api/stocks/premium` calls (slow, showed a
+  partial count) → replaced with **one** `GET /api/stocks/premium-summary` served from a single KV key
+  (`summary:premium-filters`) → near-instant; (c) closed a leak (premium API now strips `valuationRating`
+  for non-Pro). **Verified live KV = 367 tagged via wrangler.**
+- **Home page reframe** toward the target market (find quality + understand why; removed trust-bar
+  counts). **Methodology pages:** valuation rewritten honest (no perf claim), Compass wording verified,
+  catalyst page linked in nav/footer.
+- **DEPLOY GOTCHA (cost us a cycle):** `stockbrowse-app-pages` does **NOT** auto-deploy on git push —
+  must `npx wrangler pages deploy dist --project-name=stockbrowse-app-pages --commit-dirty=true`. Premium
+  data is served from **KV**, not the repo JSON. See [[reference_pages_deploy]].
+
+---
+
+## 🎯 NEXT (start here in the new window) — make the Valuation score PREDICTIVE
+**Goal:** the current "Valuation Score" ships as *descriptive-only* (no performance claim). Build a
+valuation read that actually **predicts returns** — honestly, under the same guardrails.
+
+**What we already know (don't re-discover):**
+- The **SMA-based "Valuation Score" is a dead end** for prediction: negative / regime-flipping, it's a
+  short-momentum signature (§4). Do NOT try to rescue it.
+- The **FUNDAMENTAL value score is the real predictive base and ALREADY WORKS** (§8): equal-weight
+  earnings-yield (E/P) + fcf_yield + ebitda/EV + book_yield, sector-relative, built from TTM flows +
+  CLEAN market cap. Binding sn non-overlap net 12m OOS 2020+ = **+4.85% (HAC t +2.6)**, FF6α **+4.15%/yr**.
+  Run: `python3 validation/value_fundamental.py` (~4 min). Spec = `VALUE_SPEC` in `harness.py`.
+- **Known failure modes to design around:** value **inverts on megacaps / analyst-covered names**
+  (cheap large-caps = value traps, expensive = AI/quality compounders) (§10); naive 50/50 with Compass
+  **dilutes** quality (§4b); forward P/E & PEG are **NOT backtestable** (no point-in-time data) — only
+  the forward-accruing `estimate_ledger` (seeded 2026-06-01) will enable revision tests later.
+
+**Candidate directions to test (pre-register first, theory-first):**
+1. **Value-trap avoidance** — condition value on quality/size/sector so the megacap inversion doesn't
+   drag it (value within quality buckets, or quality-gated value, not a 50/50 blend).
+2. **Smarter quality×value integration** than the failed 50/50 (e.g., double-sort, or value only in the
+   high-quality tertile).
+3. **Sector/size-relative refinements** of the composite; check the value-trap/survivorship leg.
+4. **Revision-based value** (forward, once `estimate_ledger` has enough history — not yet).
+
+**Guardrails (NON-NEGOTIABLE, from §9):** monthly-grid t-stats only (`harness._to_monthly`, maxlags=12);
+**zero in-house significance claims** — lean on published literature (FF value, AQR/Novy-Marx quality);
+**find the true number, not the big one**; always test vs **vol/size/quality-matched controls** (value is
+often a beta/HML mirage — see jump-screen §6 and big-winners §7 methodology). Don't burn the 2020+ OOS seal.
+
+---
 
 ### How to run
 ```
@@ -23,10 +106,10 @@ python validation/run_validation.py --compass            # staged Compass contro
 python validation/run_validation.py --moonshot           # Moonshot honest run (~6 min)
 python validation/run_validation.py --search-moonshot    # factor search dry-run (Phase 5)
 python validation/big_winners.py                         # big-winners catalyst eval (Phase 7)
-# Phase 4: NO --valuation flag exists yet — it must be built (see Phase 4 section).
+python validation/run_validation.py --valuation          # Valuation honest run (Phase 4, ~7 min)
 ```
 Results append to `validation/HONEST_NUMBERS.md` (which opens with the FROZEN pre-registration; §3 Moonshot,
-§5 factor search, §6 jump screen, §7 big-winners/catalyst are already written).
+§4 Valuation, §5 factor search, §6 jump screen, §7 big-winners/catalyst are all written).
 
 ### Key files
 - `validation/harness.py` — the shared harness (vectorized). Loads panel, scores, computes spreads.
@@ -114,30 +197,58 @@ methodology page). See [[project_big_winners_pivot]].
 
 ---
 
-## ⏭️ NEXT — Phase 4 (Valuation): the only remaining piece
+## ✅ Phase 4 — Valuation (DONE, HONEST-NEGATIVE) — see HONEST_NUMBERS.md §4
+Built `VALUATION_SPEC` (price-derived: SMA200 0.50 / SMA50 0.25 / 52w-position 0.25, inverted) + `--valuation`
+in the harness, mirroring Moonshot. **The live "+37pp / 86%" does NOT survive — the honest spread is NEGATIVE.**
+Binding cell (real-sector-neutral, non-overlap, net, 12m, OOS 2020+) = **−3.23% (HAC t −1.5, 12 cohorts)**;
+per-date raw V0 (vs-universe, no-surv) −5.50% → V1 (+survivorship) −7.37% (bankruptcies fill the undervalued
+long leg, as expected). **FAILS the frozen ≥+2.0pp & t≥2.0 bar → ships as a purely descriptive technical/trend
+read-out with ZERO performance claim** (no matched control needed — the conditional jump_screen control runs
+only to *kill* a passing claim, never to rescue a fail). The negative spread is the **short-momentum signature**
+(MOM β −0.61 OOS / −0.76 full); OOS reduced-factor α = −15%/yr (t −7.7), full-sample FF6α +2.5%/yr (t 1.0, a
+factor-neutral wash). The site's +37pp was a survivorship + look-ahead + favorable-window (post-COVID rebound:
+GFC +41, COVID +9; but 2022 −6, 2024–26 −7) artifact. **Validation NOT a cousin:** harness-vs-live ranking
+Spearman **0.9997**, Q5 membership overlap **100%**. Sign + no-look-ahead confirmed empirically.
 
-**Goal:** honestly re-validate the Valuation score through the same harness, just like Compass/Moonshot.
-The site claims **+37–44pp / 86%** for it (`compass-score-site/src/pages/valuation-methodology.astro`).
+**Phase 4b — Valuation as a QUALITY OVERLAY (the site's actual claim): also FAILS.** The score is sold only
+as a 50/50 blend with Compass ("low consistency alone → 86% hit rate combined w/ quality, maintaining
+returns"). Built `validation/valuation_combined.py` to test the increment vs **Compass ALONE** (the right
+benchmark) on the OOS-2020+ survivorship panel. Result: Compass-alone +7.10% sn-spread / 78% consistency /
+56% hit(>median); **Combined 50/50 +6.52% / 72% / 52%** — the overlay moves EVERY metric the wrong way
+(return −0.57pp, consistency −6pp, hit −4pp). The "86%" was a rising-tape base rate + the same inflation,
+not an overlay gain. (Combined HAC t +6.7 > Compass +3.6 is only a variance/diversification artifact —
+higher t on LOWER mean + lower consistency, not an improvement.) **Conclusion across both lenses:**
+standalone it's negatively-predictive / regime-flipping; as a quality overlay it DILUTES quality. Ship as a
+descriptive technical read-out only; do NOT present it as improving a quality screen. See HONEST_NUMBERS §4b.
 
-**What the live score actually is:** `compute_valuation_scores.py` = **Price-vs-SMA200 / SMA50 / 52w-position
-only** — a technical/trend read-out, no fundamentals. (Separately, `value_score_v2` in
-`score_long_term_OPTIMIZED.py` is a fundamentals composite — validate the SMA-based one the site claims are about;
-note the distinction.)
+## ✅ Phase 8 — FUNDAMENTAL VALUE score (NEW, the honest "cheap vs peers" idea) — see HONEST_NUMBERS.md §8
+The SMA score isn't valuation; a fundamental sector-relative cheapness read IS. Pre-registered theory-first
+`VALUE_SPEC` (equal-weight earnings_yield E/P + fcf_yield + ebitda_to_ev + book_yield B/P; built from TTM
+flows + CLEAN market cap, never key_metrics' corrupt ratios) in `harness.py`; orchestrated by
+`validation/value_fundamental.py`. **It WORKS (unlike SMA):** binding (sn non-overlap net 12m OOS 2020+)
+**+4.85% HAC t +2.6**, full-sample FF6α **+4.15%/yr t 2.5** — a real, modest **value premium**. Caveats:
+(1) lead with ~+4%, NOT the +9.99% OOS HML-controlled alpha (window-specific, leans on the 2022 rate-shock
+value rebound: regimes +15 in 2022 vs −4.3 in 2020-21 growth melt-up); (2) "survives HML" mostly = our
+composite is better-built value than pure-B/P HML (degraded post-2020), not proprietary alpha;
+(3) regime-dependent (value droughts); (4) value-trap/survivorship effect small here (+0.25pp). **Forward
+P/E / PEG: NOT backtestable** — FMP `/stable/analyst-estimates` probed directly = ~10 fiscal years
+(recent+forward), no as-of field, from/to ignored; only the forward-accruing `estimate_ledger` (seeded
+2026-06-01) will enable revision tests later. Product: ship a descriptive "cheap/fair/expensive vs peers"
+label (forward P/E/PEG display-only); a modest, caveated value-premium note is defensible. Run:
+`python3 validation/value_fundamental.py` (~4 min).
 
-**How to build it (mirror Phase 3):**
-1. Add a `VALUATION_SPEC` in `validation/harness.py` next to `MOONSHOT_SPEC`, encoding the live SMA/52w rule
-   (per-date cross-sectional ranking; these are price-derived, so use trailing/formation-date prices — no
-   fundamentals, no filing-date lag needed). Wire a `--valuation` flag in `validation/run_validation.py`
-   (it only has `--compass`/`--moonshot` today).
-2. Run it through the binding cell (12m, sector-neutral, non-overlap, HAC/Newey-West, net-of-cost), 2016+.
-3. If any parameter sweep is tempting, **IS holdout: fit 1995–2012, confirm 2013–2019, before 2020+.**
+## ✅ §10 — Value × analyst-revision (descriptive exploration) — see HONEST_NUMBERS §10
+Asked (descriptively, NO sig claim): does "cheap + improving analyst sentiment" beat value alone? **NO
+synergy.** On the analyst-COVERED universe (large/liquid, 17% of panel): value-alone sn **−3.35%** (vs
++4.69% full universe — value lives in small/mid-caps; megacap "cheap" = value-traps in 2020+, "expensive"
+= AI/quality compounders, so value INVERTS there); analyst-revision alone +1.70%; combined 50/50 −0.28%
+(WORSE than analyst alone → value tilt DRAGS). Keep value + analyst-revision SEPARATE; don't build a
+combined "cheap+upgrading" score. **Product implication:** value's "cheap=good" is weakest exactly on the
+megacaps users search for → descriptive label OK, but value-trap-caution any return wording for large caps.
+`validation/value_analyst.py`. (Auto-verdict mis-fired "+3.07pp lift"; overridden on review — the base was
+negative.)
 
-**Pre-committed failure branch (frozen):** if the honest binding spread < **+2.0pp OR HAC t < 2.0**, it ships as
-a purely descriptive **technical/trend** read-out with **ZERO performance claim** — reframe, don't pit it against
-fundamentals. (A trend signal beating a vol/size-matched control is the real bar; expect the lottery/beta caveat.)
-Append results to HONEST_NUMBERS.md as §4 (or §8), honest-null friendly.
-
-### Then (gated follow-on, NOT required for Phase 4 itself)
+### Gated follow-on (NOT part of the technical core — all four scores now validated)
 - Compile the HONEST_NUMBERS.md final report across all four scores (raw + sector-neutral + non-overlap + regime
   + HAC, units declared).
 - Re-anchor the public site figures (+58/86/+37 in `valuation-methodology.astro`, +6.79 in `index.astro`, +23 in
