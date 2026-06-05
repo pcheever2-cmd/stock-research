@@ -142,6 +142,10 @@ jobs:
           python collectors/snapshot_estimates.py \
             || echo "WARNING: estimate-ledger snapshot failed (non-critical, groundwork only)"
 
+      - name: Compute per-share Fair Value (Pro-only, descriptive) → stock_consensus
+        continue-on-error: true
+        run: python compute_fair_value_v2.py --write
+
       - name: Export website stocks.json
         env:
           STOCKS_JSON_OUTPUT: data/stocks.json
@@ -278,7 +282,7 @@ jobs:
               if v.get('catalystTag'): e['catalystTag'] = True
               if v.get('catalystScore') is not None: e['catalystScore'] = v['catalystScore']
               if v.get('isGolden'): e['isGolden'] = True
-              if v.get('valuationRating'): e['valuationRating'] = v['valuationRating']
+              if v.get('fairValue', {}).get('verdict'): e['fairValueVerdict'] = v['fairValue']['verdict']
               if e: summary[sym] = e
           pairs.append({'key': 'summary:premium-filters', 'value': json.dumps(summary, separators=(',', ':'))})
           with open('/tmp/kv_bulk.json', 'w') as f:

@@ -184,6 +184,14 @@ def ensure_database():
         ("long_term_score", "REAL"),
         ("scored_at", "TEXT"),
         ("price_updated_at", "TEXT"),
+        # Fundamental per-share Fair Value (compute_fair_value_v2.py) — descriptive $ range; upside%/verdict
+        # are DERIVED at export time from current_price so they never disagree with the displayed price.
+        ("fair_value_low", "REAL"),
+        ("fair_value_mid", "REAL"),
+        ("fair_value_high", "REAL"),
+        ("fair_value_n_methods", "INTEGER"),
+        ("fair_value_basis", "TEXT"),
+        ("fair_value_computed_at", "TEXT"),
     ]
 
     cur.execute("PRAGMA table_info(stock_consensus)")

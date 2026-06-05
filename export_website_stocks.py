@@ -256,13 +256,12 @@ df = pd.read_sql_query("""
         -- Premium: Additional scores
         value_score_v2,
         long_term_score,
-        -- Premium: Valuation rating + supporting data
-        valuation_rating,
-        price_vs_sma200,
-        price_vs_sma50,
-        position_52w,
-        high_52w,
-        low_52w,
+        -- Premium: Fundamental per-share Fair Value (replaces the old SMA valuation score)
+        fair_value_low,
+        fair_value_mid,
+        fair_value_high,
+        fair_value_n_methods,
+        fair_value_basis,
         -- Factor values for Score Breakdown
         factor_roa,
         factor_ocf_assets,
@@ -324,6 +323,22 @@ def safe_int(val):
     if pd.notna(val):
         return int(val)
     return None
+
+def fair_value_obj(row):
+    """Premium per-share fair value: stored $ range + upside%/verdict DERIVED here from the live
+    current_price (so the badge never disagrees with the displayed price). Descriptive, not a forecast."""
+    low, mid, high = row.get('fair_value_low'), row.get('fair_value_mid'), row.get('fair_value_high')
+    price = row.get('current_price')
+    if not (pd.notna(mid) and pd.notna(price) and price > 0):
+        return None
+    upside = round((float(mid) / float(price) - 1) * 100, 1)
+    verdict = 'Undervalued' if upside >= 15 else 'Overvalued' if upside <= -15 else 'Fair Value'
+    return {
+        'low': safe_float(low, 2), 'mid': safe_float(mid, 2), 'high': safe_float(high, 2),
+        'upsidePct': upside, 'verdict': verdict,
+        'basis': row.get('fair_value_basis') if pd.notna(row.get('fair_value_basis')) else None,
+        'nMethods': safe_int(row.get('fair_value_n_methods')),
+    }
 
 # Catalyst signal (premium) — computed once for the live universe, fail-isolated
 catalyst_map = compute_catalyst(set(df['symbol']), BACKTEST_DB)
@@ -398,16 +413,9 @@ for _, row in df.iterrows():
         'valueScore': safe_int(row.get('value_score_v2')),
         'longTermScore': safe_float(row.get('long_term_score'), 1),
 
-        # Premium: Valuation rating (Undervalued / Fair Value / Overvalued) + supporting data
-        'valuationScore': safe_int(row.get('value_score_v2')),
-        'valuationRating': row.get('valuation_rating') if pd.notna(row.get('valuation_rating')) else None,
-        'valuationData': {
-            'vsSma200': safe_float(row.get('price_vs_sma200'), 1),
-            'vsSma50': safe_float(row.get('price_vs_sma50'), 1),
-            'position52w': safe_float(row.get('position_52w'), 1),
-            'high52w': safe_float(row.get('high_52w'), 2),
-            'low52w': safe_float(row.get('low_52w'), 2),
-        } if pd.notna(row.get('valuation_rating')) else None,
+        # Premium: Fundamental per-share Fair Value (replaces the old SMA "Valuation Score").
+        # A descriptive $ range + derived Under/Fair/Over verdict — NOT a forecast.
+        'fairValue': fair_value_obj(row),
 
         # Premium: Analyst accuracy (sector-specific)
         'sectorAnalystAccuracy': sector_accuracy.get(row.get('sector')),
