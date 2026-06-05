@@ -481,39 +481,51 @@ async def process_ticker(ticker: str, fetcher: AsyncFMPFetcher) -> Optional[Dict
         return None
 
 def save_batch_to_db(results: List[Dict]):
-    """Bulk upsert to database - preserves columns not in the update (e.g. scores)"""
+    """Bulk upsert to database - preserves columns not in the update (e.g. scores).
+
+    Rows may be HETEROGENEOUS (the bulk path pops detail columns for non-rotation stocks, so
+    different rows carry different key sets). We therefore group rows by their exact key set and
+    run one INSERT…ON CONFLICT per group, with each statement touching ONLY that group's columns —
+    so a column a row doesn't provide is never inserted/clobbered. (Deriving columns from
+    results[0] alone would silently drop the rotation columns for every other row.)"""
     if not results:
         return
 
     conn = sqlite3.connect(DATABASE_NAME)
     cur = conn.cursor()
 
-    # Ensure all columns exist in the table (handles schema drift between local and remote DBs)
+    # Ensure every column present across ALL rows exists in the table (schema-drift safe)
     existing_cols = {row[1] for row in cur.execute("PRAGMA table_info(stock_consensus)").fetchall()}
-    columns = list(results[0].keys())
-    for col in columns:
+    all_cols = set()
+    for r in results:
+        all_cols.update(r.keys())
+    for col in sorted(all_cols):
         if col not in existing_cols:
-            col_type = 'TEXT' if isinstance(results[0].get(col), str) else 'REAL'
+            sample = next((r[col] for r in results if r.get(col) is not None), None)
+            col_type = 'TEXT' if isinstance(sample, str) else 'REAL'
             cur.execute(f"ALTER TABLE stock_consensus ADD COLUMN {col} {col_type}")
             log.info(f"  Added missing column: {col} ({col_type})")
-    placeholders = ', '.join(['?'] * len(columns))
-    cols_str = ', '.join(columns)
 
-    # Build ON CONFLICT clause that only updates the columns we're providing
-    # This preserves score columns and other data we're not touching
-    update_cols = [c for c in columns if c != 'symbol']
-    update_clause = ', '.join(f'{c} = excluded.{c}' for c in update_cols)
-
-    sql = (f"INSERT INTO stock_consensus ({cols_str}) VALUES ({placeholders}) "
-           f"ON CONFLICT(symbol) DO UPDATE SET {update_clause}")
-
+    # Group by key set so each statement's column list matches every row it writes
+    from collections import defaultdict
+    groups = defaultdict(list)
     for row in results:
-        values = tuple(row.get(col) for col in columns)
-        cur.execute(sql, values)
+        groups[tuple(sorted(row.keys()))].append(row)
+
+    for cols_tuple, group in groups.items():
+        columns = list(cols_tuple)
+        placeholders = ', '.join(['?'] * len(columns))
+        cols_str = ', '.join(columns)
+        # ON CONFLICT updates only the columns this group provides → untouched columns preserved
+        update_cols = [c for c in columns if c != 'symbol']
+        update_clause = ', '.join(f'{c} = excluded.{c}' for c in update_cols)
+        sql = (f"INSERT INTO stock_consensus ({cols_str}) VALUES ({placeholders}) "
+               f"ON CONFLICT(symbol) DO UPDATE SET {update_clause}")
+        cur.executemany(sql, [tuple(row.get(col) for col in columns) for row in group])
 
     conn.commit()
     conn.close()
-    log.info(f"  ✓ Saved {len(results)} stocks to database")
+    log.info(f"  ✓ Saved {len(results)} stocks to database ({len(groups)} column-set group(s))")
 
 # ==================== BULK CSV FETCH (whole-universe) ====================
 def _to_float(v):
@@ -605,7 +617,7 @@ def _is_tradable(profile: dict) -> bool:
             and not truthy(profile.get('isFund')))
 
 
-def _load_existing(symbols: List[str]) -> Dict[str, dict]:
+def _load_existing() -> Dict[str, dict]:
     """Pull the columns the bulk path must read (current_price, freshness, existing targets/details)."""
     conn = sqlite3.connect(DATABASE_NAME)
     conn.row_factory = sqlite3.Row
@@ -666,9 +678,13 @@ async def run_bulk():
     conn = sqlite3.connect(DATABASE_NAME)
     tracked = [r[0] for r in conn.execute("SELECT symbol FROM stock_consensus").fetchall()]
     conn.close()
-    existing = _load_existing(tracked)
+    existing = _load_existing()
     universe = [s for s in tracked if s in profiles and _is_tradable(profiles[s])]
-    log.info(f"Universe: {len(universe)} tradable symbols (of {len(tracked)} tracked)")
+    # M2: surface tracked symbols that bulk no longer covers (foreign/ADR/delisted/non-tradable) —
+    # they keep their existing columns (not nulled) but no longer refresh via STEP 1.
+    not_in_bulk = [s for s in tracked if s not in profiles]
+    log.info(f"Universe: {len(universe)} tradable symbols (of {len(tracked)} tracked; "
+             f"{len(not_in_bulk)} not in profile-bulk → not refreshed)")
 
     # Rotation slice: detail NULL or older than ROTATION_DAYS (oldest first)
     cutoff = (datetime.utcnow() - timedelta(days=ROTATION_DAYS)).isoformat()
@@ -707,11 +723,16 @@ async def run_bulk():
                 log.info(f"  residual {min(i+BATCH_SIZE, len(rotation))}/{len(rotation)}")
 
     now_iso = datetime.utcnow().isoformat()
-    rows, rotation_attempted = [], []
+    rows, rotation_attempted, stale_price = [], [], 0
     for sym in universe:
         profile = profiles[sym]
         ex = existing.get(sym, {})
         quote = _bulk_quote(profile, ex)
+        # I1: if STEP 0 didn't price this symbol today, still refresh the bulk fields (profile,
+        # rating, metrics, estimates) — just don't gate on / write current_price + upside.
+        price_fresh = quote.get('price') is not None
+        if not price_fresh:
+            stale_price += 1
         rating = bulk['rating'].get(sym) or {}
         metrics = _coerce_metrics(bulk['metrics'].get(sym))
         ratios = _coerce_ratios(bulk['ratios'].get(sym))
@@ -740,9 +761,13 @@ async def run_bulk():
 
         row = assemble_row(sym, profile, quote, target, estimates, rating, grades,
                            price_targets, metrics, ratios,
-                           require_quote=True, require_target=True)
+                           require_quote=price_fresh, require_target=True)
         if row is None:
             continue
+        if not price_fresh:
+            # No fresh price → don't clobber the existing current_price/upside with None
+            row.pop('current_price', None)
+            row.pop('upside_percent', None)
         if in_rotation:
             row['analyst_detail_updated_at'] = now_iso
         else:
@@ -771,7 +796,7 @@ async def run_bulk():
 
     log.info("\n" + "=" * 60)
     log.info(f"✓ STEP 1 bulk complete: {len(rows)} rows written, "
-             f"{len(rotation)} detail-refreshed")
+             f"{len(rotation)} detail-refreshed, {stale_price} kept existing price (STEP 0 miss)")
     log.info("=" * 60)
 
 
