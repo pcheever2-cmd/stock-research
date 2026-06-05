@@ -192,6 +192,11 @@ def ensure_database():
         ("fair_value_n_methods", "INTEGER"),
         ("fair_value_basis", "TEXT"),
         ("fair_value_computed_at", "TEXT"),
+        # STEP 1 bulk rewrite: tracks when the per-symbol analyst DETAIL (price-target consensus,
+        # individual targets, grade changes) was last refreshed. The bulk fields refresh daily for
+        # the whole universe; these detail fields rotate weekly. Drives the rotation slice in
+        # update_analyst_OPTIMIZED.run_bulk().
+        ("analyst_detail_updated_at", "TEXT"),
     ]
 
     cur.execute("PRAGMA table_info(stock_consensus)")
@@ -201,6 +206,12 @@ def ensure_database():
         if col_name not in existing_columns:
             print(f"Adding new column to stock_consensus: {col_name}")
             cur.execute(f"ALTER TABLE stock_consensus ADD COLUMN {col_name} {col_type}")
+            # Cold-start seed: on first add, backfill analyst_detail_updated_at from last_updated
+            # so the weekly rotation is spread out instead of pulling the whole universe into the
+            # per-symbol residual phase on day 1.
+            if col_name == "analyst_detail_updated_at":
+                cur.execute("UPDATE stock_consensus SET analyst_detail_updated_at = last_updated "
+                            "WHERE analyst_detail_updated_at IS NULL AND last_updated IS NOT NULL")
 
     # 3. CREATE INDEXES (IF NOT EXISTS)
     cur.execute("CREATE INDEX IF NOT EXISTS idx_article_symbol_date ON article_sentiment(symbol, date)")
