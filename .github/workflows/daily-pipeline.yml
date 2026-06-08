@@ -282,7 +282,7 @@ jobs:
               if v.get('catalystTag'): e['catalystTag'] = True
               if v.get('catalystScore') is not None: e['catalystScore'] = v['catalystScore']
               if v.get('isGolden'): e['isGolden'] = True
-              if v.get('fairValue', {}).get('verdict'): e['fairValueVerdict'] = v['fairValue']['verdict']
+              if (v.get('fairValue') or {}).get('verdict'): e['fairValueVerdict'] = v['fairValue']['verdict']
               if e: summary[sym] = e
           pairs.append({'key': 'summary:premium-filters', 'value': json.dumps(summary, separators=(',', ':'))})
           with open('/tmp/kv_bulk.json', 'w') as f:
