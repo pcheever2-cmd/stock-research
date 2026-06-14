@@ -86,11 +86,13 @@ def _ttm_panel():
     return last
 
 
-def _own_history():
-    """Per-symbol current trailing P/E & EV/EBITDA + own winsorized 5yr median + history breadth.
-    Ported from compute_fair_value.py (raw-close x shares / TTM, filing-date aligned)."""
+def _own_history(adr_factors):
+    """Per-symbol own winsorized 5yr median P/E & EV/EBITDA + history breadth, on the same
+    currency-consistent market_cap basis as comps. Historical market cap = close * adr_factor, where
+    adr_factor = market_cap/current_price (= share count for US names; ADR-ratio x FX for foreign ADRs),
+    so the historical multiples are correct for ADRs instead of mixing USD price with foreign EPS."""
     conn = sqlite3.connect(BACKTEST_DB)
-    inc = pd.read_sql_query("""SELECT symbol,date,eps_diluted,ebitda,weighted_avg_shares_diluted AS shares,
+    inc = pd.read_sql_query("""SELECT symbol,date,net_income,ebitda,
         filing_date FROM historical_income_statements WHERE period LIKE 'Q%'""", conn)
     bal = pd.read_sql_query("SELECT symbol,date,net_debt FROM historical_balance_sheets WHERE period LIKE 'Q%'", conn)
     cutoff = (pd.Timestamp.utcnow().tz_localize(None) - pd.Timedelta(days=YEARS * 365)).strftime('%Y-%m-%d')
@@ -98,20 +100,23 @@ def _own_history():
     conn.close()
     for d in (inc, bal, prices):
         d['symbol'] = d['symbol'].str.upper()
+    af = adr_factors.copy()
+    af['symbol'] = af['symbol'].str.upper()
     df = inc.merge(bal, on=['symbol', 'date'], how='left')
     df['asof'] = pd.to_datetime(df['filing_date'], errors='coerce').fillna(
         pd.to_datetime(df['date'], errors='coerce') + pd.Timedelta(days=75))
     df = df.dropna(subset=['asof']).sort_values(['symbol', 'date'])
     g = df.groupby('symbol', group_keys=False)
-    df['ttm_eps'] = g['eps_diluted'].apply(lambda s: s.rolling(4, min_periods=4).sum())
+    df['ttm_ni'] = g['net_income'].apply(lambda s: s.rolling(4, min_periods=4).sum())
     df['ttm_ebitda'] = g['ebitda'].apply(lambda s: s.rolling(4, min_periods=4).sum())
-    fund = df[['symbol', 'date', 'asof', 'ttm_eps', 'ttm_ebitda', 'shares', 'net_debt']].rename(
+    fund = df[['symbol', 'date', 'asof', 'ttm_ni', 'ttm_ebitda', 'net_debt']].rename(
         columns={'date': 'period_end'}).dropna(subset=['asof']).sort_values('asof')
     prices['dt'] = pd.to_datetime(prices['date'], errors='coerce')
     prices = prices.dropna(subset=['dt', 'close']).sort_values('dt')
     m = pd.merge_asof(prices, fund, left_on='dt', right_on='asof', by='symbol', direction='backward')
-    mc = m['close'] * m['shares']
-    m['pe'] = (m['close'] / m['ttm_eps']).where(m['ttm_eps'] > 0)
+    m = m.merge(af, on='symbol', how='left')
+    mc = m['close'] * m['adr_factor']                       # currency-consistent historical market cap
+    m['pe'] = (mc / m['ttm_ni']).where(m['ttm_ni'] > 0)
     m['ev'] = ((mc + m['net_debt']) / m['ttm_ebitda']).where(m['ttm_ebitda'] > 0)
     m = m[((m['pe'] > 0) & (m['pe'] < 500)) | ((m['ev'] > 0) & (m['ev'] < 200))]
 
@@ -138,7 +143,9 @@ def add_peer_multiples(df):
     df = df.copy()
     ev = df['mktcap'] + df['net_debt'].fillna(0)
     df['m_ev_ebitda'] = (ev / df['ttm_ebitda']).where(df['ttm_ebitda'] > 0)
-    df['m_pe'] = (df['price'] / df['ttm_eps_diluted']).where(df['ttm_eps_diluted'] > 0)
+    # market_cap-based P/E (currency-consistent for ADRs) — NOT price/eps, which mixes USD price with
+    # foreign-currency EPS and produced garbage peer medians (e.g. Consumer Electronics P/E -> 0.27).
+    df['m_pe'] = (df['mktcap'] / df['ttm_net_income']).where(df['ttm_net_income'] > 0)
     df['m_ps'] = (df['mktcap'] / df['ttm_revenue']).where(df['ttm_revenue'] > 0)
     df['m_pb'] = (df['mktcap'] / df['total_equity']).where(df['total_equity'] > 0)
     df['m_pfcf'] = (df['mktcap'] / df['ttm_free_cash_flow']).where(df['ttm_free_cash_flow'] > 0)
@@ -156,32 +163,46 @@ def add_peer_multiples(df):
 
 
 def comps_value(r):
-    """Implied $/share from each peer multiple applied to the stock's own TTM fundamental."""
-    sh = r['shares']
+    """Implied $/share = peer multiple applied to the stock's own TTM fundamental, computed as a fair
+    EQUITY value (in the financials' currency) and converted to a USD share price via price/market_cap.
+    market_cap and the financials share one currency (the company's reporting currency), so every ratio
+    is currency-consistent; price is the USD (ADR) quote. This keeps foreign ADRs correct — e.g. Toyota's
+    JPY financials and JPY market_cap cancel, and price/market_cap carries the FX + ADR-ratio conversion."""
+    mc = r['mktcap']
+    p = r['price']
+    if not (mc and mc > 0 and p and p > 0):
+        return {}
+    conv = p / mc                                            # fair equity (any currency) -> USD price/share
+    nd = r['net_debt'] if pd.notna(r['net_debt']) else 0
     out = {}
-    if sh and sh > 0:
-        if r['ttm_ebitda'] > 0 and pd.notna(r['peer_m_ev_ebitda']):
-            out['EV/EBITDA'] = (r['peer_m_ev_ebitda'] * r['ttm_ebitda'] - r['net_debt']) / sh
-        if r['ttm_eps_diluted'] > 0 and pd.notna(r['peer_m_pe']):
-            out['P/E'] = r['peer_m_pe'] * r['ttm_eps_diluted']
-        if r['ttm_revenue'] > 0 and pd.notna(r['peer_m_ps']):
-            out['P/S'] = r['peer_m_ps'] * r['ttm_revenue'] / sh
-        if r['total_equity'] > 0 and pd.notna(r['peer_m_pb']):
-            out['P/B'] = r['peer_m_pb'] * r['total_equity'] / sh
-        if r['ttm_free_cash_flow'] > 0 and pd.notna(r['peer_m_pfcf']):
-            out['P/FCF'] = r['peer_m_pfcf'] * r['ttm_free_cash_flow'] / sh
+    if r['ttm_ebitda'] > 0 and pd.notna(r['peer_m_ev_ebitda']):
+        out['EV/EBITDA'] = (r['peer_m_ev_ebitda'] * r['ttm_ebitda'] - nd) * conv
+    if r['ttm_net_income'] > 0 and pd.notna(r['peer_m_pe']):
+        out['P/E'] = r['peer_m_pe'] * r['ttm_net_income'] * conv
+    if r['ttm_revenue'] > 0 and pd.notna(r['peer_m_ps']):
+        out['P/S'] = r['peer_m_ps'] * r['ttm_revenue'] * conv
+    if r['total_equity'] > 0 and pd.notna(r['peer_m_pb']):
+        out['P/B'] = r['peer_m_pb'] * r['total_equity'] * conv
+    if r['ttm_free_cash_flow'] > 0 and pd.notna(r['peer_m_pfcf']):
+        out['P/FCF'] = r['peer_m_pfcf'] * r['ttm_free_cash_flow'] * conv
     return {k: v for k, v in out.items() if pd.notna(v) and v > 0}
 
 
 def own_history_value(r):
-    """Implied $/share from the stock's own 5yr median multiple (EV/EBITDA primary, P/E confirm)."""
+    """Implied $/share from the stock's own 5yr median multiple (EV/EBITDA primary, P/E confirm).
+    Same currency-consistent market_cap basis as comps_value (own_med_* are market_cap-based medians)."""
     if not (r['n_qtrs'] >= MIN_QTRS and r['span_days'] >= MIN_SPAN_DAYS):
         return {}
-    sh, out = r['shares'], {}
-    if sh and sh > 0 and r['ttm_ebitda'] > 0 and pd.notna(r['own_med_ev']):
-        out['own EV/EBITDA'] = (r['own_med_ev'] * r['ttm_ebitda'] - r['net_debt']) / sh
-    if r['ttm_eps_diluted'] > 0 and pd.notna(r['own_med_pe']):
-        out['own P/E'] = r['own_med_pe'] * r['ttm_eps_diluted']
+    mc, p = r['mktcap'], r['price']
+    if not (mc and mc > 0 and p and p > 0):
+        return {}
+    conv = p / mc
+    nd = r['net_debt'] if pd.notna(r['net_debt']) else 0
+    out = {}
+    if r['ttm_ebitda'] > 0 and pd.notna(r['own_med_ev']):
+        out['own EV/EBITDA'] = (r['own_med_ev'] * r['ttm_ebitda'] - nd) * conv
+    if r['ttm_net_income'] > 0 and pd.notna(r['own_med_pe']):
+        out['own P/E'] = r['own_med_pe'] * r['ttm_net_income'] * conv
     return {k: v for k, v in out.items() if pd.notna(v) and v > 0}
 
 
@@ -251,6 +272,17 @@ def value_one(r):
         core.update(own)                                # own EV/EBITDA, own P/E
     core = {k: v for k, v in core.items() if 0.1 * p <= v <= 10 * p}
     if len(core) < 2:
+        # Fallback: top up from the remaining in-range relative comps so a stock isn't dropped just
+        # because its primary anchors are unavailable (own-history gated off, or one comp out of range).
+        # Keeps coverage robust without resorting to the discount-rate-sensitive intrinsic methods.
+        extra = ('P/B', 'P/S') if is_fin else ('P/S', 'P/B', 'P/FCF', 'EV/EBITDA', 'P/E')
+        for k in extra:
+            ck = f'comps {k}'
+            if ck not in core and k in comps and 0.1 * p <= comps[k] <= 10 * p:
+                core[ck] = comps[k]
+            if len(core) >= 2:
+                break
+    if len(core) < 2:
         return None
     vals = np.array(list(core.values()))
     lo, mid, hi = np.percentile(vals, 25), np.median(vals), np.percentile(vals, 75)
@@ -297,14 +329,20 @@ def main():
     ap.add_argument('--write', action='store_true', help='persist fair-value range to nasdaq_stocks.db')
     args = ap.parse_args()
     print("Loading TTM fundamentals + own-history multiples + peers...")
-    df = _ttm_panel()
-    oh = _own_history()
     conn = sqlite3.connect(NASDAQ_DB)
-    cons = pd.read_sql_query("SELECT symbol, sector, industry FROM stock_consensus", conn)
+    cons = pd.read_sql_query("SELECT symbol, sector, industry, market_cap, current_price FROM stock_consensus", conn)
     conn.close()
     cons['symbol'] = cons['symbol'].str.upper()
+    # market_cap is in each company's REPORTING currency (matches its financials); current_price is the
+    # USD (ADR) quote. Valuing off market_cap keeps every multiple currency-consistent; adr_factor
+    # reconstructs a currency-consistent market cap from a historical USD price for own-history.
+    cons['adr_factor'] = (cons['market_cap'] / cons['current_price']).where(cons['current_price'] > 0)
+    df = _ttm_panel()
+    oh = _own_history(cons[['symbol', 'adr_factor']])
     df = df.merge(cons, on='symbol', how='left').merge(oh, on='symbol', how='left')
     df['sector'] = df['sector'].fillna('Unknown'); df['industry'] = df['industry'].fillna(df['sector'])
+    # Currency-consistent market cap; fall back to price*shares only when market_cap is missing.
+    df['mktcap'] = df['market_cap'].where(df['market_cap'] > 0, df['price'] * df['shares'])
     df = add_peer_multiples(df)
 
     res = {}
