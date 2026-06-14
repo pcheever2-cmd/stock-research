@@ -283,6 +283,8 @@ def setup_backtest_tables():
             eps REAL,
             eps_diluted REAL,
             weighted_avg_shares_diluted REAL,
+            rd_expense REAL,
+            sga_expense REAL,
             filing_date TEXT,
             accepted_date TEXT,
             PRIMARY KEY (symbol, date, period)
@@ -302,6 +304,10 @@ def setup_backtest_tables():
             total_debt REAL,
             net_debt REAL,
             cash_and_equivalents REAL,
+            total_current_assets REAL,
+            total_current_liabilities REAL,
+            goodwill REAL,
+            intangible_assets REAL,
             filing_date TEXT,
             accepted_date TEXT,
             PRIMARY KEY (symbol, date, period)
@@ -318,6 +324,8 @@ def setup_backtest_tables():
             operating_cash_flow REAL,
             capital_expenditure REAL,
             free_cash_flow REAL,
+            dividends_paid REAL,
+            common_stock_repurchased REAL,
             filing_date TEXT,
             accepted_date TEXT,
             PRIMARY KEY (symbol, date, period)
@@ -483,6 +491,21 @@ def setup_backtest_tables():
             print(f"Added value_score_v2 column to {table}")
         except sqlite3.OperationalError:
             pass  # Column already exists
+
+    # Fundamentals columns required by compute_fair_value_v2.py (_ttm_panel). Older release DBs
+    # predate these; add them so the Fair Value compute doesn't crash on 'no such column' (safe migration).
+    for table, cols in {
+        'historical_income_statements': ['rd_expense', 'sga_expense'],
+        'historical_cash_flows': ['dividends_paid', 'common_stock_repurchased'],
+        'historical_balance_sheets': ['total_current_assets', 'total_current_liabilities',
+                                      'goodwill', 'intangible_assets'],
+    }.items():
+        for col in cols:
+            try:
+                cur.execute(f"ALTER TABLE {table} ADD COLUMN {col} REAL")
+                print(f"Added {col} column to {table}")
+            except sqlite3.OperationalError:
+                pass  # Column already exists
 
     # Indexes for efficient querying
     cur.execute("CREATE INDEX IF NOT EXISTS idx_hp_symbol ON historical_prices(symbol)")
