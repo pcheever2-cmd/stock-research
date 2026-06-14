@@ -142,6 +142,26 @@ jobs:
           python collectors/snapshot_estimates.py \
             || echo "WARNING: estimate-ledger snapshot failed (non-critical, groundwork only)"
 
+      # Refresh quarterly fundamentals (income/balance/cash-flow) so Fair Value & scores reflect
+      # newly-reported quarters. Incremental: only symbols whose latest earnings announcement is
+      # newer than our stored filing (a missing quarter); they self-correct out once collected.
+      # Weekly (Mondays) since fundamentals are quarterly. Must run AFTER the earnings-surprises
+      # refresh (feeds the selector) and BEFORE the Fair Value compute + DB upload. continue-on-error
+      # so a collector hiccup can never block the pipeline — Fair Value just uses existing data.
+      - name: Refresh fundamentals (weekly, Mondays only)
+        continue-on-error: true
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        run: |
+          DOW=$(date -u +%u)
+          if [ "$DOW" = "1" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            python collectors/collect_historical_data.py --financials-only --recent-earnings-days 45 \
+              || echo "WARNING: fundamentals refresh failed; Fair Value uses existing data"
+            echo "income latest filing: $(sqlite3 backtest.db 'SELECT MAX(filing_date) FROM historical_income_statements')"
+          else
+            echo "Skipping — only runs on Mondays (today is day $DOW)"
+          fi
+
       - name: Compute per-share Fair Value (Pro-only, descriptive) → stock_consensus
         continue-on-error: true
         run: python compute_fair_value_v2.py --write

@@ -20,7 +20,7 @@ import sqlite3
 import argparse
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, List, Optional
 from pathlib import Path
 
@@ -323,6 +323,8 @@ def save_income_batch(symbols_data: Dict[str, list]):
                 _to_float(r.get('eps')),
                 _to_float(r.get('epsdiluted') or r.get('epsDiluted')),
                 _to_float(r.get('weightedAverageShsOutDil') or r.get('weightedAverageSharesDiluted')),
+                _to_float(r.get('researchAndDevelopmentExpenses')),
+                _to_float(r.get('sellingGeneralAndAdministrativeExpenses')),
                 r.get('filingDate'),
                 r.get('acceptedDate'),
             ))
@@ -330,8 +332,8 @@ def save_income_batch(symbols_data: Dict[str, list]):
         INSERT OR IGNORE INTO historical_income_statements
         (symbol, date, period, fiscal_year, revenue, gross_profit, operating_income,
          net_income, ebitda, eps, eps_diluted, weighted_avg_shares_diluted,
-         filing_date, accepted_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         rd_expense, sga_expense, filing_date, accepted_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
     conn.commit()
     conn.close()
@@ -356,6 +358,10 @@ def save_balance_batch(symbols_data: Dict[str, list]):
                 _to_float(r.get('totalDebt')),
                 _to_float(r.get('netDebt')),
                 _to_float(r.get('cashAndCashEquivalents') or r.get('cashAndShortTermInvestments')),
+                _to_float(r.get('totalCurrentAssets')),
+                _to_float(r.get('totalCurrentLiabilities')),
+                _to_float(r.get('goodwill')),
+                _to_float(r.get('intangibleAssets')),
                 r.get('filingDate'),
                 r.get('acceptedDate'),
             ))
@@ -363,8 +369,9 @@ def save_balance_batch(symbols_data: Dict[str, list]):
         INSERT OR IGNORE INTO historical_balance_sheets
         (symbol, date, period, fiscal_year, total_assets, total_liabilities,
          total_equity, total_debt, net_debt, cash_and_equivalents,
+         total_current_assets, total_current_liabilities, goodwill, intangible_assets,
          filing_date, accepted_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
     conn.commit()
     conn.close()
@@ -386,14 +393,18 @@ def save_cashflow_batch(symbols_data: Dict[str, list]):
                 _to_float(r.get('operatingCashFlow')),
                 _to_float(r.get('capitalExpenditure')),
                 _to_float(r.get('freeCashFlow')),
+                # FMP /stable cash-flow uses netDividendsPaid (no 'dividendsPaid' key); fall back to common.
+                _to_float(r.get('netDividendsPaid') or r.get('commonDividendsPaid')),
+                _to_float(r.get('commonStockRepurchased')),
                 r.get('filingDate'),
                 r.get('acceptedDate'),
             ))
     cur.executemany("""
         INSERT OR IGNORE INTO historical_cash_flows
         (symbol, date, period, fiscal_year, operating_cash_flow,
-         capital_expenditure, free_cash_flow, filing_date, accepted_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         capital_expenditure, free_cash_flow, dividends_paid, common_stock_repurchased,
+         filing_date, accepted_date)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, rows)
     conn.commit()
     conn.close()
@@ -563,6 +574,36 @@ def get_symbols(specific_symbols: str = None) -> List[str]:
     return [r[0] for r in df_symbols]
 
 
+def get_recent_earnings_symbols(days: int) -> List[str]:
+    """Incremental selection: universe symbols that announced a quarter we DON'T yet have stored.
+
+    Signal = earnings_surprises (announcement-dated, refreshed every pipeline run). A symbol is
+    selected only when its latest announcement (within the last `days`) is newer than the latest
+    income-statement filing_date we've stored — i.e. a genuinely missing quarter. Once that
+    quarter is collected, filing_date catches up and the symbol drops out next run, so this stays
+    small in steady state and self-corrects across weekly runs while FMP lags in filing the 10-Q."""
+    universe = set(get_symbols())
+    cutoff = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+    try:
+        conn = sqlite3.connect(BACKTEST_DB)
+        rows = conn.execute("""
+            SELECT es.symbol
+            FROM (SELECT symbol, MAX(date) AS announced
+                  FROM earnings_surprises WHERE date >= ? GROUP BY symbol) es
+            LEFT JOIN (SELECT symbol, MAX(filing_date) AS filed
+                       FROM historical_income_statements GROUP BY symbol) inc
+              ON es.symbol = inc.symbol
+            WHERE inc.filed IS NULL OR es.announced > inc.filed
+        """, (cutoff,)).fetchall()
+        conn.close()
+    except sqlite3.OperationalError:
+        log.warning("earnings_surprises table missing — no incremental symbols selected.")
+        return []
+    recent = sorted({r[0].upper() for r in rows} & universe)
+    log.info(f"Incremental: {len(recent)} symbols have a quarter newer than stored (announced since {cutoff})")
+    return recent
+
+
 # ==================== STATUS DISPLAY ====================
 
 def show_status():
@@ -612,6 +653,9 @@ async def main():
     parser.add_argument('--prices-only', action='store_true', help='Only collect price data')
     parser.add_argument('--financials-only', action='store_true', help='Only collect financial statements')
     parser.add_argument('--symbols', type=str, help='Comma-separated symbols (e.g. AAPL,MSFT)')
+    parser.add_argument('--recent-earnings-days', type=int, default=None,
+                        help='Incremental: only collect symbols that announced earnings in the last N days '
+                             '(uses earnings_surprises). Implies --force for the selected subset.')
     parser.add_argument('--status', action='store_true', help='Show collection progress')
     parser.add_argument('--retry-failed', action='store_true', help='Retry previously failed symbols')
     args = parser.parse_args()
@@ -624,8 +668,15 @@ async def main():
     # Ensure backtest tables exist
     setup_backtest_tables()
 
-    # Get symbols
-    symbols = get_symbols(args.symbols)
+    # Get symbols — incremental (recent earnings) selection takes precedence over the full universe.
+    if args.recent_earnings_days is not None and not args.symbols:
+        symbols = get_recent_earnings_symbols(args.recent_earnings_days)
+        if not symbols:
+            log.info("No symbols announced earnings in the window — nothing to collect.")
+            return
+        args.force = True  # recent reporters have a new quarter; re-fetch even if previously collected
+    else:
+        symbols = get_symbols(args.symbols)
     if not symbols:
         log.error("No symbols found. Run the main pipeline first.")
         return
