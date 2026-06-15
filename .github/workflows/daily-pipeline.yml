@@ -65,6 +65,15 @@ jobs:
         # silently erodes the scored universe (stocks need >=30 prices in 90 days).
         run: python scripts/backfill_recent_prices.py
 
+      - name: Split-adjust price series across recent splits
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+        # Backfill appends post-split EOD rows at the new basis while pre-split rows
+        # keep the old one -> a cliff in adjusted_close. Rescale pre-split rows so the
+        # continuous series stays smooth for the price chart + return-based scorers.
+        # Idempotent via applied_splits; must run AFTER backfill, BEFORE export_prices_kv.
+        run: python scripts/adjust_splits.py
+
       - name: Enrich stock data (Forward P/E, PEG, Financial Scores)
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}

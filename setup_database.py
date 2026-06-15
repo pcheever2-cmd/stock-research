@@ -268,6 +268,19 @@ def setup_backtest_tables():
         )
     """)
 
+    # Splits already applied to adjusted_close by scripts/adjust_splits.py.
+    # PK (symbol, date) makes the daily rescale idempotent (no double-adjusting).
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS applied_splits (
+            symbol TEXT NOT NULL,
+            date TEXT NOT NULL,
+            numerator REAL,
+            denominator REAL,
+            applied_at TEXT,
+            PRIMARY KEY (symbol, date)
+        )
+    """)
+
     # Quarterly income statements
     cur.execute("""
         CREATE TABLE IF NOT EXISTS historical_income_statements (
