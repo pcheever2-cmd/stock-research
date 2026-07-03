@@ -44,13 +44,27 @@ def update_json_prices(file_path: Path, prices: dict[str, float], is_public: boo
         data = json.load(f)
 
     updated = 0
+    skipped_suspect = []
     if is_public:
         # Public file is a list of stock objects
         for stock in data:
             sym = stock.get('symbol')
             if sym in prices:
-                stock['price'] = prices[sym]
+                # Same sanity guard as the daily pipeline: one garbage hourly
+                # quote (0.0 halt, decimal shift) must not hit the live site.
+                # Compare vs the price already in the JSON. A legit split-day
+                # move gets skipped here for the day and heals on the next
+                # daily-pipeline run (which checks FMP's restated previousClose).
+                old = stock.get('price')
+                new = prices[sym]
+                if old and old > 0 and not (0.5 <= new / old <= 2.0):
+                    skipped_suspect.append((sym, old, new))
+                    continue
+                stock['price'] = new
                 updated += 1
+        if skipped_suspect:
+            print(f"  WARNING: skipped {len(skipped_suspect)} suspect quotes (>2x/<0.5x vs current): "
+                  + ', '.join(f"{s}({o}->{n})" for s, o, n in skipped_suspect[:10]))
     else:
         # Premium file is a dict keyed by symbol
         # Premium doesn't have price field, but valuationData uses price-relative metrics
@@ -108,19 +122,12 @@ def main():
     updated = update_json_prices(public_file, prices, is_public=True)
     print(f"Updated {updated} prices in stocks-public.json")
 
-    # Also update the full stocks.json if it exists
+    # Also update the full stocks.json if it exists — same list format, so it
+    # goes through the same guarded path (a suspect quote must be skipped in
+    # BOTH files or they diverge until the next daily run).
     full_file = public_file.parent / 'stocks.json'
     if full_file.exists():
-        with open(full_file) as f:
-            full_data = json.load(f)
-        count = 0
-        for stock in full_data:
-            sym = stock.get('symbol')
-            if sym in prices:
-                stock['price'] = prices[sym]
-                count += 1
-        with open(full_file, 'w') as f:
-            json.dump(full_data, f, indent=2)
+        count = update_json_prices(full_file, prices, is_public=True)
         print(f"Updated {count} prices in stocks.json")
 
     print("Done!")

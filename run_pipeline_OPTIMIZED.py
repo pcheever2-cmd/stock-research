@@ -11,6 +11,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timezone
 import sys
+from contextlib import closing
 from pathlib import Path
 
 # Import the optimized modules
@@ -59,24 +60,31 @@ def run_batch_price_update():
     # historical-price-eod endpoint (INSERT OR IGNORE fills the gap), so a rare
     # legit >2x mover is stale for at most one run, never corrupted.
     last_close = {}
-    try:
-        bt = sqlite3.connect(BACKTEST_DB)
-        rows = bt.execute(
-            "SELECT symbol, MAX(date), close FROM historical_prices WHERE date < ? GROUP BY symbol",
-            (today,)).fetchall()
-        bt.close()
-        last_close = {r[0]: r[2] for r in rows if r[2]}
-    except sqlite3.OperationalError:
-        pass  # fresh DB — guard degrades to the price>0 check only
+    if Path(BACKTEST_DB).exists():   # don't let connect() create an empty DB file
+        try:
+            with closing(sqlite3.connect(BACKTEST_DB)) as bt:
+                rows = bt.execute(
+                    "SELECT symbol, MAX(date), close FROM historical_prices WHERE date < ? GROUP BY symbol",
+                    (today,)).fetchall()
+            last_close = {r[0]: r[2] for r in rows if r[2]}
+        except sqlite3.OperationalError:
+            pass  # fresh DB — guard degrades to the price>0 check only
 
     suspect_quotes = []
 
-    def price_ok(symbol, price):
+    def price_ok(symbol, price, quote_prev=None):
         if price is None or price <= 0:
             suspect_quotes.append((symbol, last_close.get(symbol), price))
             return False
         prev = last_close.get(symbol)
         if prev and prev > 0 and not (0.5 <= price / prev <= 2.0):
+            # Split days: OUR stored close is still at the old basis (adjust_splits
+            # rescales adjusted_close only), so a legit post-split quote fails the
+            # band vs our close. Accept when the quote is consistent with FMP's OWN
+            # restated previousClose — splits pass immediately; a decimal-shifted
+            # garbage price disagrees with BOTH references and still fails.
+            if quote_prev and quote_prev > 0 and 0.5 <= price / quote_prev <= 2.0:
+                return True
             suspect_quotes.append((symbol, prev, price))
             return False
         return True
@@ -106,7 +114,7 @@ def run_batch_price_update():
             for quote in data:
                 symbol = quote.get('symbol')
                 price = quote.get('price')
-                if symbol and price is not None and price_ok(symbol, price):
+                if symbol and price is not None and price_ok(symbol, price, quote.get('previousClose')):
                     cur.execute(
                         "UPDATE stock_consensus SET current_price = ?, price_updated_at = ? WHERE symbol = ?",
                         (price, datetime.now(timezone.utc).isoformat(), symbol)

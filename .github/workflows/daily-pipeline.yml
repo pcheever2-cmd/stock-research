@@ -230,7 +230,8 @@ jobs:
                 gh release upload data nasdaq_stocks.db
               }
             else
-              echo "WARNING: Skipping nasdaq_stocks.db upload — only $SCORED_COUNT scored stocks. Protecting release data."
+              echo "::error::Skipping nasdaq_stocks.db upload — only $SCORED_COUNT scored stocks. Protecting release data."
+              NASDAQ_SKIPPED=1
             fi
             # Upload backtest.db only if it has fundamental data (protects against clobbering)
             FUND_COUNT=$(sqlite3 backtest.db "SELECT COUNT(*) FROM historical_income_statements" 2>/dev/null || echo "0")
@@ -253,6 +254,12 @@ jobs:
           else
             echo "Release 'data' does not exist, creating it..."
             gh release create data nasdaq_stocks.db --title "Pipeline Data" --notes "Auto-updated stock database"
+          fi
+          # A skipped nasdaq upload means the DB is suspect — fail the job here
+          # (after backtest/mock uploads) so the commit/site-push/deploy steps
+          # below don't ship a stocks.json exported from that same suspect DB.
+          if [ "${NASDAQ_SKIPPED:-0}" = "1" ]; then
+            exit 1
           fi
       - name: Commit updated parquet data
         run: |

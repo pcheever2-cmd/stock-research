@@ -68,7 +68,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Uploading updated nasdaq_stocks.db..."
-          gh release upload data nasdaq_stocks.db --clobber
+          # Same scored-universe floor as daily-pipeline — this uploader shares
+          # the release-db concurrency group and must never clobber the good
+          # release copy with an empty/broken DB (e.g. a scorer wipe).
+          SCORED_COUNT=$(sqlite3 nasdaq_stocks.db "SELECT COUNT(*) FROM stock_consensus WHERE compass_score IS NOT NULL" 2>/dev/null || echo "0")
+          echo "nasdaq_stocks.db has $SCORED_COUNT scored stocks"
+          if [ "$SCORED_COUNT" -gt 2000 ]; then
+            gh release upload data nasdaq_stocks.db --clobber
+          else
+            echo "::error::Skipping upload AND failing the job — only $SCORED_COUNT scored stocks. Protecting release data and blocking the site push."
+            exit 1
+          fi
 
       - name: Push stock data to compass-score-site
         env:
