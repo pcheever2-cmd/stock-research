@@ -9,6 +9,13 @@ on:
 permissions:
   contents: write
 
+# Shared with daily-pipeline.yml — see the note there. The 07:00 cron here can
+# overlap daily's 06:00 run (up to 4h); without this group the two clobber each
+# other's nasdaq_stocks.db release upload.
+concurrency:
+  group: release-db
+  cancel-in-progress: false
+
 jobs:
   compute-scores:
     runs-on: ubuntu-latest

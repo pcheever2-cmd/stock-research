@@ -51,6 +51,36 @@ def run_batch_price_update():
 
     BACKTEST_DB = str(Path(__file__).parent / 'backtest.db')
 
+    # Price sanity guard: one bad FMP quote (0.0 on a halt, a decimal-shifted
+    # value) would otherwise flow into current_price AND historical_prices and
+    # poison upside/Fair Value/volatility site-wide. Compare each quote to our
+    # own last stored close and skip garbage. Skipped rows SELF-HEAL: the
+    # backfill step later this run re-fetches them from the authoritative
+    # historical-price-eod endpoint (INSERT OR IGNORE fills the gap), so a rare
+    # legit >2x mover is stale for at most one run, never corrupted.
+    last_close = {}
+    try:
+        bt = sqlite3.connect(BACKTEST_DB)
+        rows = bt.execute(
+            "SELECT symbol, MAX(date), close FROM historical_prices WHERE date < ? GROUP BY symbol",
+            (today,)).fetchall()
+        bt.close()
+        last_close = {r[0]: r[2] for r in rows if r[2]}
+    except sqlite3.OperationalError:
+        pass  # fresh DB — guard degrades to the price>0 check only
+
+    suspect_quotes = []
+
+    def price_ok(symbol, price):
+        if price is None or price <= 0:
+            suspect_quotes.append((symbol, last_close.get(symbol), price))
+            return False
+        prev = last_close.get(symbol)
+        if prev and prev > 0 and not (0.5 <= price / prev <= 2.0):
+            suspect_quotes.append((symbol, prev, price))
+            return False
+        return True
+
     for i in range(0, len(symbols), PRICE_BATCH_SIZE):
         batch = symbols[i:i + PRICE_BATCH_SIZE]
         batch_str = ','.join(batch)
@@ -76,7 +106,7 @@ def run_batch_price_update():
             for quote in data:
                 symbol = quote.get('symbol')
                 price = quote.get('price')
-                if symbol and price is not None:
+                if symbol and price is not None and price_ok(symbol, price):
                     cur.execute(
                         "UPDATE stock_consensus SET current_price = ?, price_updated_at = ? WHERE symbol = ?",
                         (price, datetime.now(timezone.utc).isoformat(), symbol)
@@ -89,6 +119,7 @@ def run_batch_price_update():
             # Also store in backtest.db (historical prices for SMA calculations)
             bt_conn = sqlite3.connect(BACKTEST_DB)
             bt_cur = bt_conn.cursor()
+            suspect_syms = {s for s, _, _ in suspect_quotes}
             for quote in data:
                 symbol = quote.get('symbol')
                 price = quote.get('price')
@@ -96,7 +127,9 @@ def run_batch_price_update():
                 day_low = quote.get('dayLow', price)
                 day_open = quote.get('open', price) or quote.get('previousClose', price)
                 volume = quote.get('volume', 0)
-                if symbol and price is not None:
+                # price_ok already flagged bad quotes in the nasdaq loop above;
+                # skip those here too so historical_prices stays clean.
+                if symbol and price is not None and price > 0 and symbol not in suspect_syms:
                     bt_cur.execute(
                         """INSERT OR REPLACE INTO historical_prices
                            (symbol, date, open, high, low, close, volume, adjusted_close)
@@ -119,6 +152,19 @@ def run_batch_price_update():
             f"  ⚠ {len(missing_symbols)}/{len(symbols)} symbols NOT returned by batch-quote "
             f"(no price written this run): {sample}{'...' if len(missing_symbols) > 25 else ''}"
         )
+    if suspect_quotes:
+        log.warning(f"  ⚠ {len(suspect_quotes)} SUSPECT quotes rejected by the price sanity guard "
+                    f"(will self-heal via EOD backfill):")
+        for sym, prev, px in suspect_quotes[:20]:
+            log.warning(f"      {sym}: quote={px} last_close={prev}")
+
+    # A total vendor outage must FAIL the run, not flow through as a "successful"
+    # publish of yesterday's prices. Per-batch excepts above swallow errors by
+    # design (one bad batch shouldn't kill 4.5k symbols) — this is the backstop.
+    if symbols and updated_count == 0:
+        raise RuntimeError(
+            f"Price update wrote 0 of {len(symbols)} symbols — treating as FMP outage; "
+            "failing the pipeline so stale data is not exported/uploaded/deployed.")
 
 async def run_analyst_update():
     """Step 1: Update analyst data"""
@@ -264,10 +310,15 @@ def validate_data_freshness():
             analysts_str = str(analysts) if analysts else "N/A"
             log.warning(f"    {symbol}: last_updated={last_updated}, analysts={analysts_str}")
 
-    # Validation threshold - warn if less than 50% updated
+    # Validation threshold — below 50% coverage the run must HARD-FAIL. This
+    # gate used to be log-only, which meant an FMP outage published yesterday's
+    # data as today's (export/upload/deploy all ran). SystemExit propagates past
+    # main()'s `except Exception` on purpose.
     if freshness_pct < 50:
         log.error(f"\n❌ CRITICAL: Only {freshness_pct:.1f}% of stocks updated today!")
         log.error("   Check API key, rate limits, or network connectivity.")
+        log.error("   HARD-FAILING the pipeline so stale data is not published.")
+        sys.exit(1)
     elif stale_count > 0:
         log.warning(f"\n⚠️  {stale_count} stocks have stale data. This may be normal if:")
         log.warning("   - Some stocks have no analyst coverage")

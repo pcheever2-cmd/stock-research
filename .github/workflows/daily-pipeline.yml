@@ -9,6 +9,14 @@ on:
 permissions:
   contents: write  # Required to upload to releases and push commits
 
+# Shared with compass-scores.yml: both download + re-upload the release DBs
+# (--clobber). Overlapping runs are last-writer-wins — one silently erases the
+# other's day of prices or scores. Queue instead of racing; never cancel a
+# running pipeline.
+concurrency:
+  group: release-db
+  cancel-in-progress: false
+
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
@@ -211,11 +219,19 @@ jobs:
           # Check if release exists
           if gh release view data > /dev/null 2>&1; then
             echo "Release 'data' exists, uploading with --clobber..."
-            # Upload nasdaq_stocks.db
-            gh release upload data nasdaq_stocks.db --clobber || {
-              gh release delete-asset data nasdaq_stocks.db --yes 2>/dev/null || true
-              gh release upload data nasdaq_stocks.db
-            }
+            # Upload nasdaq_stocks.db only if the scored universe looks sane
+            # (same protection pattern as backtest.db below — never clobber the
+            # good release copy with an empty/broken DB).
+            SCORED_COUNT=$(sqlite3 nasdaq_stocks.db "SELECT COUNT(*) FROM stock_consensus WHERE compass_score IS NOT NULL" 2>/dev/null || echo "0")
+            echo "nasdaq_stocks.db has $SCORED_COUNT scored stocks"
+            if [ "$SCORED_COUNT" -gt 2000 ]; then
+              gh release upload data nasdaq_stocks.db --clobber || {
+                gh release delete-asset data nasdaq_stocks.db --yes 2>/dev/null || true
+                gh release upload data nasdaq_stocks.db
+              }
+            else
+              echo "WARNING: Skipping nasdaq_stocks.db upload — only $SCORED_COUNT scored stocks. Protecting release data."
+            fi
             # Upload backtest.db only if it has fundamental data (protects against clobbering)
             FUND_COUNT=$(sqlite3 backtest.db "SELECT COUNT(*) FROM historical_income_statements" 2>/dev/null || echo "0")
             echo "backtest.db has $FUND_COUNT fundamental records"
