@@ -180,6 +180,16 @@ jobs:
           STOCKS_JSON_OUTPUT: data/stocks.json
         run: python export_website_stocks.py
 
+      # Recently-IPO'd names can't be Compass-scored yet, so the export above drops
+      # them. Collect them separately (score-pending) so a search for e.g. SPCX/SpaceX
+      # returns the real company. Best-effort: keep the prior seed if FMP hiccups.
+      - name: Collect recently-IPO'd stocks (score-pending search results)
+        continue-on-error: true
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          STOCKS_JSON_OUTPUT: data/stocks.json
+        run: python collectors/collect_ipos.py
+
       - name: Export 5yr daily price history to KV bulk files
         env:
           STOCKS_JSON_OUTPUT: data/stocks.json
@@ -236,6 +246,9 @@ jobs:
           git pull --rebase origin main || true
           git stash pop || true
           git add data/dashboard_data.parquet data/movers_data.parquet data/stocks.json
+          # Guarded: the IPO collector is continue-on-error; a missing file must not
+          # abort this commit (git add exits 128 on a pathspec matching nothing).
+          [ -f data/recent-ipos.json ] && git add data/recent-ipos.json
           git diff --staged --quiet || git commit -m "Update dashboard data $(date +%Y-%m-%d)"
           for i in 1 2 3; do git push && break || echo "Push attempt $i failed, retrying..." && sleep 15; done
 
@@ -251,10 +264,12 @@ jobs:
           cp data/stocks.json compass-site/src/data/stocks.json
           cp data/stocks-public.json compass-site/src/data/stocks-public.json
           cp data/stocks-premium.json compass-site/src/data/stocks-premium.json
+          [ -f data/recent-ipos.json ] && cp data/recent-ipos.json compass-site/src/data/recent-ipos.json
           cd compass-site
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src/data/stocks.json src/data/stocks-public.json src/data/stocks-premium.json
+          [ -f src/data/recent-ipos.json ] && git add src/data/recent-ipos.json
           git diff --staged --quiet || git commit -m "Update stock data $(date +%Y-%m-%d)"
           for i in 1 2 3; do git push && break || echo "Push attempt $i failed, retrying..." && sleep 10; done
 
