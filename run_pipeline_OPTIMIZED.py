@@ -55,10 +55,13 @@ def run_batch_price_update():
     # Price sanity guard: one bad FMP quote (0.0 on a halt, a decimal-shifted
     # value) would otherwise flow into current_price AND historical_prices and
     # poison upside/Fair Value/volatility site-wide. Compare each quote to our
-    # own last stored close and skip garbage. Skipped rows SELF-HEAL: the
-    # backfill step later this run re-fetches them from the authoritative
-    # historical-price-eod endpoint (INSERT OR IGNORE fills the gap), so a rare
-    # legit >2x mover is stale for at most one run, never corrupted.
+    # own last stored close (previousClose escape hatch for split days) and
+    # skip garbage. Recovery semantics of a skip: current_price heals on the
+    # NEXT run (the new quote passes vs its own previousClose), but the skipped
+    # historical_prices row becomes a permanent one-day hole — backfill's
+    # MAX(date) gap detector never revisits interior holes once a newer row
+    # lands. Accepted trade-off: a rare one-day chart gap beats a corrupted
+    # series feeding every scorer.
     last_close = {}
     if Path(BACKTEST_DB).exists():   # don't let connect() create an empty DB file
         try:

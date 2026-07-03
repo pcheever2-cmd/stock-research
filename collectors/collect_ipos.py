@@ -125,6 +125,11 @@ def enrich(sym: str, ipo_date: str) -> dict | None:
     p = prof[0] if isinstance(prof, list) and prof else {}
     if not p or p.get('isEtf') or p.get('isFund'):
         return None
+    # Re-check the ACTUAL listing exchange from the profile — the ipos-calendar
+    # row carries the *intended* exchange, and OTC/Pink names (pre-uplisting
+    # shells) slip through the calendar filter while actually trading OTC.
+    if not is_us(p.get('exchangeShortName') or p.get('exchange')):
+        return None
     price = p.get('price') or 0
     mcap = p.get('marketCap') or 0
     sector = p.get('sector') or ''

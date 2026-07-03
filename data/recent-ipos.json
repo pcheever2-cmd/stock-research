@@ -1,18 +1,5 @@
 [
   {
-    "symbol": "COPR",
-    "name": "Idaho Copper Corporation",
-    "ipoDate": "2026-07-02",
-    "daysPublic": 1,
-    "price": 4.15,
-    "marketCap": 0.057888,
-    "sector": "Basic Materials",
-    "industry": "Other Precious Metals",
-    "description": "Idaho Copper Corporation is a pre-revenue mineral exploration and development company focused on its CuMo Project in Boise County, Idaho, a large copper-molybdenum-silver porphyry deposit. The company is currently quoted on the OTC market and is in the process of uplisting to the NYSE American exchange.",
-    "exchange": "OTC",
-    "scoreStatus": "pending"
-  },
-  {
     "symbol": "BSP",
     "name": "Bending Spoons S.p.A.",
     "ipoDate": "2026-07-01",
@@ -49,19 +36,6 @@
     "industry": "Other Precious Metals",
     "description": "Sinda Ltd. operates as an exploration stage company, engages in designing, operating and developing mining exploration projects in Mexico. Its projects include Guanajuato epithermal silver belt. The company was founded on November 8, 2012 and is headquartered in Mexico.",
     "exchange": "NYSE",
-    "scoreStatus": "pending"
-  },
-  {
-    "symbol": "LAZR",
-    "name": "Luminar Technologies, Inc.",
-    "ipoDate": "2026-06-30",
-    "daysPublic": 3,
-    "price": 42.14,
-    "marketCap": 3.075651,
-    "sector": "Consumer Cyclical",
-    "industry": "Auto - Parts",
-    "description": "Luminar Technologies, Inc. is an automotive technology firm that supplies advanced sensor systems and complementary software for both passenger vehicles and commercial trucks. The company's reach extends across North America, the Asia Pacific region, Europe, and the Middle East. Its operations are structured into two primary divisions: Autonomy Solutions and Components. The Autonomy Solutions segm",
-    "exchange": "OTC",
     "scoreStatus": "pending"
   },
   {
@@ -234,19 +208,6 @@
     "scoreStatus": "pending"
   },
   {
-    "symbol": "ELOX",
-    "name": "Eloxx Pharmaceuticals, Inc.",
-    "ipoDate": "2026-06-09",
-    "daysPublic": 24,
-    "price": 12.56,
-    "marketCap": 0.095154,
-    "sector": "Healthcare",
-    "industry": "Biotechnology",
-    "description": "Eloxx Pharmaceuticals is a clinical-stage biopharmaceutical firm that specializes in developing therapeutic solutions through ribosome modulation. Its primary objective is to address rare and ultra-rare genetic diseases that arise from premature stop codons. The company's most advanced investigational compound, ELX-02, is currently progressing through Phase 2 clinical trials. This candidate is bei",
-    "exchange": "OTC",
-    "scoreStatus": "pending"
-  },
-  {
     "symbol": "WHK",
     "name": "WhiteHawk Minerals Corp",
     "ipoDate": "2026-06-09",
@@ -351,19 +312,6 @@
     "scoreStatus": "pending"
   },
   {
-    "symbol": "INFX",
-    "name": "Infinex Ventures, Inc.",
-    "ipoDate": "2026-05-28",
-    "daysPublic": 36,
-    "price": 9.09,
-    "marketCap": 0.230432,
-    "sector": "Basic Materials",
-    "industry": "Other Precious Metals",
-    "description": "Infinex Ventures, Inc. is an early-stage mining firm dedicated to acquiring and exploring mineral assets across Canada and Chile. Its operations notably include eight land parcels situated on Texada Island in British Columbia, Canada. The company was established in 1998 and has its principal office in Las Vegas, Nevada.",
-    "exchange": "OTC",
-    "scoreStatus": "pending"
-  },
-  {
     "symbol": "PWRL",
     "name": "Powerlaw Corp. Common Stock",
     "ipoDate": "2026-05-27",
@@ -374,19 +322,6 @@
     "industry": "Shell Companies",
     "description": "Powerlaw Corp. operates as a venture capital firm primarily focused on making direct investments. Its investment strategy particularly favors ventures requiring growth capital.",
     "exchange": "NASDAQ",
-    "scoreStatus": "pending"
-  },
-  {
-    "symbol": "OCTVV",
-    "name": "Octavia Wellness Inc.",
-    "ipoDate": "2026-05-21",
-    "daysPublic": 43,
-    "price": 17.48,
-    "marketCap": 4.692293,
-    "sector": "Healthcare",
-    "industry": "Drug Manufacturers - Specialty & Generic",
-    "description": "Octavia Wellness is a health and wellness company which is engaged in the development and sale of CBD based products in California.",
-    "exchange": "PNK",
     "scoreStatus": "pending"
   },
   {

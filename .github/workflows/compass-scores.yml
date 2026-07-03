@@ -58,6 +58,21 @@ jobs:
       - name: Compute Valuation Scores
         run: python compute_valuation_scores.py
 
+      - name: Verify price data is fresh before publishing
+        # This workflow doesn't fetch prices itself — it scores whatever the
+        # release DB holds. If daily-pipeline hard-failed (FMP outage), the DB
+        # is yesterday's; exporting/pushing would republish exactly the stale
+        # state daily just refused to ship. Gate on price freshness.
+        run: |
+          LATEST=$(sqlite3 nasdaq_stocks.db "SELECT MAX(price_updated_at) FROM stock_consensus" 2>/dev/null || echo "")
+          echo "Latest price update in DB: $LATEST"
+          FRESH=$(sqlite3 nasdaq_stocks.db "SELECT COUNT(*) FROM stock_consensus WHERE price_updated_at >= datetime('now','-48 hours')" 2>/dev/null || echo "0")
+          echo "Stocks with prices <48h old: $FRESH"
+          if [ "$FRESH" -lt 1000 ]; then
+            echo "::error::Price data is stale (only $FRESH stocks <48h) — refusing to export/publish scores on stale prices."
+            exit 1
+          fi
+
       - name: Export website stocks.json
         env:
           STOCKS_JSON_OUTPUT: data/stocks.json
@@ -97,7 +112,11 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src/data/stocks.json src/data/stocks-public.json src/data/stocks-premium.json
           git diff --staged --quiet || git commit -m "Update stock data $(date +%Y-%m-%d)"
-          git push
+          # Rebase+retry like every other site push — a concurrent push from
+          # daily-pipeline or price-update otherwise fails this outright.
+          for i in 1 2 3; do
+            git push && break || { echo "Push attempt $i failed, rebasing and retrying..."; git pull --rebase origin main || true; sleep 10; }
+          done
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
