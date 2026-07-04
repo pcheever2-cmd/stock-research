@@ -65,10 +65,35 @@ def load_current_fwd_pe() -> dict:
 
 def load_quarterly_fundamentals(conn, symbols: set[str]) -> pd.DataFrame:
     """Per-quarter TTM EPS/EBITDA + shares + net debt, keyed by filing date."""
+    # Standalone-safe: setup_database.py owns the canonical schema, but this
+    # guard keeps the LEFT JOIN below working on a fresh/partial DB.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS data_quality_flags (
+            symbol TEXT NOT NULL, table_name TEXT NOT NULL, date TEXT NOT NULL,
+            field TEXT NOT NULL, reported REAL, computed REAL, flagged_at TEXT,
+            PRIMARY KEY (symbol, table_name, date, field)
+        )
+    """)
+    # Exclude rows flagged by the EPS consistency guard (data_quality_flags):
+    # a quarter whose reported EPS disagrees >10x with net_income/shares would
+    # poison four TTM windows of the P/E line (OPFI charted P/E 0.2x for
+    # months off one bad vendor row). NULLing eps_diluted keeps the quarter
+    # for EBITDA but gaps the P/E honestly — a gap beats a lie.
+    # A flag can't tell WHICH side of the eps-vs-NI/shares mismatch is wrong
+    # (eps, or the shares field EV/EBITDA's market cap also uses) — so a
+    # flagged quarter gaps BOTH overlay series, not just P/E.
     inc = pd.read_sql_query(
-        """SELECT symbol, date, eps_diluted, ebitda, weighted_avg_shares_diluted AS shares,
-                  filing_date
-           FROM historical_income_statements WHERE period LIKE 'Q%'""", conn)
+        """SELECT i.symbol, i.date,
+                  CASE WHEN f.symbol IS NULL THEN i.eps_diluted ELSE NULL END AS eps_diluted,
+                  CASE WHEN f.symbol IS NULL THEN i.ebitda ELSE NULL END AS ebitda,
+                  i.weighted_avg_shares_diluted AS shares,
+                  i.filing_date
+           FROM historical_income_statements i
+           LEFT JOIN data_quality_flags f
+             ON f.symbol = i.symbol AND f.date = i.date
+            AND f.table_name = 'historical_income_statements'
+            AND f.field = 'eps_diluted'
+           WHERE i.period LIKE 'Q%'""", conn)
     bal = pd.read_sql_query(
         """SELECT symbol, date, net_debt FROM historical_balance_sheets WHERE period LIKE 'Q%'""",
         conn)

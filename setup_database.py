@@ -268,6 +268,22 @@ def setup_backtest_tables():
         )
     """)
 
+    # Data-quality flags: rows whose reported values fail internal-consistency
+    # checks (e.g. EPS vs net_income/shares). Written by collect_historical_data;
+    # flagged symbols are re-fetched (upserted) on the next fundamentals refresh.
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS data_quality_flags (
+            symbol TEXT NOT NULL,
+            table_name TEXT NOT NULL,
+            date TEXT NOT NULL,
+            field TEXT NOT NULL,
+            reported REAL,
+            computed REAL,
+            flagged_at TEXT,
+            PRIMARY KEY (symbol, table_name, date, field)
+        )
+    """)
+
     # Splits already applied to adjusted_close by scripts/adjust_splits.py.
     # PK (symbol, date) makes the daily rescale idempotent (no double-adjusting).
     cur.execute("""

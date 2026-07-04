@@ -303,13 +303,84 @@ def save_prices_batch(symbols_data: Dict[str, list]):
     return len(rows)
 
 
+# Insert semantics: IGNORE for backfills (never clobber history); true UPSERT
+# when we deliberately re-fetch (--recent-earnings-days / --force / --symbols)
+# so vendor CORRECTIONS propagate. FMP fixes bad rows upstream (OPFI's Q3-2025
+# eps_diluted was served as 45.73, later corrected to 0.77) — with IGNORE the
+# first value we ever saw was frozen forever and poisoned TTM P/E site-wide.
+# NOT `INSERT OR REPLACE`: that deletes+reinserts and NULLs every column not in
+# the insert list — the statement tables carry ~19 populated enrichment columns
+# (cost_of_revenue, retained_earnings, stock_based_comp...) that a REPLACE
+# would silently erode out of the canonical release DB on every refresh.
+REPLACE_MODE = False
+
+
+def _insert_sql(table: str, cols) -> str:
+    placeholders = ', '.join('?' for _ in cols)
+    col_list = ', '.join(cols)
+    if not REPLACE_MODE:
+        return f"INSERT OR IGNORE INTO {table} ({col_list}) VALUES ({placeholders})"
+    key = ('symbol', 'date', 'period')
+    updates = ', '.join(f"{c} = excluded.{c}" for c in cols if c not in key)
+    return (f"INSERT INTO {table} ({col_list}) VALUES ({placeholders}) "
+            f"ON CONFLICT(symbol, date, period) DO UPDATE SET {updates}")
+
+
+def _eps_inconsistent(reported, computed):
+    """True only when as-reported EPS disagrees with net_income/shares by a
+    MAGNITUDE no accounting explains — the OPFI signature (45.73 vs 1.56, 29x)
+    or EPS fields holding whole net-income figures (millions). Deliberately
+    tolerant below 10x: preferred dividends, minority interests, and diluted
+    adjustments legitimately move GAAP EPS several-fold (and can flip its
+    sign) relative to naive NI/shares — those must NEVER be 'corrected'.
+    Known blind spots (accepted): tiny values (<0.02) never flag, so a
+    too-SMALL vendor error (0.01 vs true 1.50) passes; 2-10x errors pass;
+    and rows where eps AND net_income are wrong together look consistent."""
+    if reported is None or computed is None:
+        return False
+    r, c = abs(reported), abs(computed)
+    if r < 0.02 or c < 0.02:
+        return False
+    return max(r, c) / min(r, c) >= 10.0
+
+
+def _ensure_flags_table(conn):
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS data_quality_flags (
+            symbol TEXT NOT NULL,
+            table_name TEXT NOT NULL,
+            date TEXT NOT NULL,
+            field TEXT NOT NULL,
+            reported REAL,
+            computed REAL,
+            flagged_at TEXT,
+            PRIMARY KEY (symbol, table_name, date, field)
+        )
+    """)
+
+
 def save_income_batch(symbols_data: Dict[str, list]):
-    """Bulk insert income statement data"""
+    """Bulk insert income statement data (with EPS internal-consistency guard)."""
     conn = sqlite3.connect(BACKTEST_DB)
+    _ensure_flags_table(conn)
     cur = conn.cursor()
-    rows = []
+    rows, flags = [], []
+    now = datetime.now(timezone.utc).isoformat()
     for symbol, records in symbols_data.items():
         for r in records:
+            eps = _to_float(r.get('eps'))
+            eps_dil = _to_float(r.get('epsdiluted') or r.get('epsDiluted'))
+            net_income = _to_float(r.get('netIncome'))
+            shares = _to_float(r.get('weightedAverageShsOutDil') or r.get('weightedAverageSharesDiluted'))
+            # Guard: EPS must be within 10x of net_income / shares. When it
+            # isn't, FLAG the row — never rewrite it. The detector can't know
+            # WHICH side is wrong (OPFI: eps was garbage, computed right;
+            # BRK-A: the shares field is the bad one and computed is garbage),
+            # so downstream TTM consumers exclude flagged rows instead.
+            computed = (net_income / shares) if (net_income is not None and shares and shares > 1000) else None
+            for field, val in (('eps', eps), ('eps_diluted', eps_dil)):
+                if computed is not None and _eps_inconsistent(val, computed):
+                    flags.append((symbol, 'historical_income_statements', r.get('date'), field, val, round(computed, 4), now))
             rows.append((
                 symbol,
                 r.get('date'),
@@ -318,23 +389,44 @@ def save_income_batch(symbols_data: Dict[str, list]):
                 _to_float(r.get('revenue')),
                 _to_float(r.get('grossProfit')),
                 _to_float(r.get('operatingIncome')),
-                _to_float(r.get('netIncome')),
+                net_income,
                 _to_float(r.get('ebitda')),
-                _to_float(r.get('eps')),
-                _to_float(r.get('epsdiluted') or r.get('epsDiluted')),
-                _to_float(r.get('weightedAverageShsOutDil') or r.get('weightedAverageSharesDiluted')),
+                eps,
+                eps_dil,
+                shares,
                 _to_float(r.get('researchAndDevelopmentExpenses')),
                 _to_float(r.get('sellingGeneralAndAdministrativeExpenses')),
                 r.get('filingDate'),
                 r.get('acceptedDate'),
             ))
-    cur.executemany("""
-        INSERT OR IGNORE INTO historical_income_statements
-        (symbol, date, period, fiscal_year, revenue, gross_profit, operating_income,
-         net_income, ebitda, eps, eps_diluted, weighted_avg_shares_diluted,
-         rd_expense, sga_expense, filing_date, accepted_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, rows)
+    INCOME_COLS = ('symbol', 'date', 'period', 'fiscal_year', 'revenue', 'gross_profit',
+                   'operating_income', 'net_income', 'ebitda', 'eps', 'eps_diluted',
+                   'weighted_avg_shares_diluted', 'rd_expense', 'sga_expense',
+                   'filing_date', 'accepted_date')
+    cur.executemany(_insert_sql('historical_income_statements', INCOME_COLS), rows)
+    # Flag maintenance only when stored rows actually changed (upsert mode).
+    # In IGNORE mode the payload doesn't touch stored rows, so payload-derived
+    # flags would desync from what's actually in the table.
+    if REPLACE_MODE:
+        # Clear flags for EXACTLY the (symbol, date) pairs this payload
+        # re-checked — never a range: vendors drop/re-date quarters, and a
+        # range delete would clear flags on stored rows the fetch never saw.
+        pairs = sorted({(symbol, r.get('date'))
+                        for symbol, records in symbols_data.items()
+                        for r in records if r.get('date')})
+        cur.executemany(
+            "DELETE FROM data_quality_flags WHERE symbol = ? AND table_name = 'historical_income_statements' AND date = ?",
+            pairs)
+        cur.executemany("""
+            INSERT OR REPLACE INTO data_quality_flags
+            (symbol, table_name, date, field, reported, computed, flagged_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, flags)
+    if flags and REPLACE_MODE:
+        log.warning(f"  ⚠ EPS consistency guard: {len(flags)} field(s) disagree >10x with "
+                    f"net_income/shares — flagged in data_quality_flags (TTM consumers "
+                    f"exclude these rows): "
+                    + ', '.join(sorted({f'{f[0]} {f[2]}' for f in flags})[:8]))
     conn.commit()
     conn.close()
     return len(rows)
@@ -365,14 +457,7 @@ def save_balance_batch(symbols_data: Dict[str, list]):
                 r.get('filingDate'),
                 r.get('acceptedDate'),
             ))
-    cur.executemany("""
-        INSERT OR IGNORE INTO historical_balance_sheets
-        (symbol, date, period, fiscal_year, total_assets, total_liabilities,
-         total_equity, total_debt, net_debt, cash_and_equivalents,
-         total_current_assets, total_current_liabilities, goodwill, intangible_assets,
-         filing_date, accepted_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, rows)
+    cur.executemany(_insert_sql('historical_balance_sheets', ('symbol', 'date', 'period', 'fiscal_year', 'total_assets', 'total_liabilities', 'total_equity', 'total_debt', 'net_debt', 'cash_and_equivalents', 'total_current_assets', 'total_current_liabilities', 'goodwill', 'intangible_assets', 'filing_date', 'accepted_date')), rows)
     conn.commit()
     conn.close()
     return len(rows)
@@ -399,13 +484,7 @@ def save_cashflow_batch(symbols_data: Dict[str, list]):
                 r.get('filingDate'),
                 r.get('acceptedDate'),
             ))
-    cur.executemany("""
-        INSERT OR IGNORE INTO historical_cash_flows
-        (symbol, date, period, fiscal_year, operating_cash_flow,
-         capital_expenditure, free_cash_flow, dividends_paid, common_stock_repurchased,
-         filing_date, accepted_date)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, rows)
+    cur.executemany(_insert_sql('historical_cash_flows', ('symbol', 'date', 'period', 'fiscal_year', 'operating_cash_flow', 'capital_expenditure', 'free_cash_flow', 'dividends_paid', 'common_stock_repurchased', 'filing_date', 'accepted_date')), rows)
     conn.commit()
     conn.close()
     return len(rows)
@@ -434,13 +513,7 @@ def save_metrics_batch(symbols_data: Dict[str, list]):
                 _to_float(r.get('netIncomePerShare')),
                 _to_float(r.get('operatingCashFlowPerShare')),
             ))
-    cur.executemany("""
-        INSERT OR IGNORE INTO historical_key_metrics
-        (symbol, date, period, fiscal_year, enterprise_value, ev_to_ebitda,
-         market_cap, pe_ratio, pb_ratio, debt_to_equity, roe,
-         revenue_per_share, net_income_per_share, operating_cash_flow_per_share)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, rows)
+    cur.executemany(_insert_sql('historical_key_metrics', ('symbol', 'date', 'period', 'fiscal_year', 'enterprise_value', 'ev_to_ebitda', 'market_cap', 'pe_ratio', 'pb_ratio', 'debt_to_equity', 'roe', 'revenue_per_share', 'net_income_per_share', 'operating_cash_flow_per_share')), rows)
     conn.commit()
     conn.close()
     return len(rows)
@@ -604,6 +677,52 @@ def get_recent_earnings_symbols(days: int) -> List[str]:
     return recent
 
 
+def scan_eps_inconsistencies() -> List[str]:
+    """Find EXISTING stored income rows whose EPS wildly disagrees with
+    net_income/shares (frozen vendor errors, e.g. OPFI's 45.73 vs 1.56), flag
+    them in data_quality_flags, and return their symbols so the incremental
+    refresh re-fetches (and, via the upsert, heals) them."""
+    try:
+        conn = sqlite3.connect(BACKTEST_DB)
+        _ensure_flags_table(conn)
+        rows = conn.execute("""
+            SELECT symbol, date, eps_diluted, eps,
+                   net_income / weighted_avg_shares_diluted AS computed
+            FROM historical_income_statements
+            WHERE period LIKE 'Q%'
+              AND net_income IS NOT NULL
+              AND weighted_avg_shares_diluted > 1000
+        """).fetchall()
+        now = datetime.now(timezone.utc).isoformat()
+        flags = []
+        for symbol, date, eps_dil, eps, computed in rows:
+            for field, val in (('eps_diluted', eps_dil), ('eps', eps)):
+                if _eps_inconsistent(val, computed):
+                    flags.append((symbol, 'historical_income_statements', date, field, val, round(computed, 4), now))
+        conn.executemany("""
+            INSERT OR REPLACE INTO data_quality_flags
+            (symbol, table_name, date, field, reported, computed, flagged_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, flags)
+        conn.commit()
+        conn.close()
+        # Only symbols with flags INSIDE the ~5y fetch horizon are worth
+        # re-fetching (a refresh can't touch older rows; their flags persist
+        # for the exporter's exclusion join). Vendor-corrected rows converge
+        # and drop out; never-corrected in-horizon rows keep re-fetching —
+        # bounded by the horizon and cheap relative to the weekly run.
+        horizon = (datetime.now() - timedelta(days=5 * 365)).strftime('%Y-%m-%d')
+        symbols = sorted({f[0] for f in flags if (f[2] or '') >= horizon})
+        if flags:
+            log.warning(f"EPS consistency scan: {len(flags)} inconsistent field(s); "
+                        f"{len(symbols)} symbols have in-horizon flags eligible for re-fetch: "
+                        f"{', '.join(symbols[:15])}" + ('...' if len(symbols) > 15 else ''))
+        return symbols
+    except sqlite3.OperationalError as e:
+        log.warning(f"EPS consistency scan skipped: {e}")
+        return []
+
+
 # ==================== STATUS DISPLAY ====================
 
 def show_status():
@@ -668,11 +787,31 @@ async def main():
     # Ensure backtest tables exist
     setup_backtest_tables()
 
+    # Deliberate re-fetch modes UPSERT so vendor corrections propagate
+    # (see the _insert_sql note — never INSERT OR REPLACE, which would NULL
+    # the enrichment columns outside the insert list). Backfills keep IGNORE.
+    global REPLACE_MODE
+    if args.recent_earnings_days is not None or args.force or args.symbols:
+        REPLACE_MODE = True
+        log.info("Re-fetch mode: UPSERT (vendor corrections overwrite the fetched columns only)")
+
     # Get symbols — incremental (recent earnings) selection takes precedence over the full universe.
     if args.recent_earnings_days is not None and not args.symbols:
-        symbols = get_recent_earnings_symbols(args.recent_earnings_days)
+        recent = get_recent_earnings_symbols(args.recent_earnings_days)
+        # Union in symbols whose STORED rows fail the EPS consistency check —
+        # frozen vendor errors heal on the next refresh instead of never.
+        # Intersect with the ACTIVE universe: the backtest DB holds thousands of
+        # delisted names with bad old rows; re-fetching those weekly forever
+        # would bloat the run without helping the site. Vendor-corrected rows
+        # converge and their flags clear; never-corrected in-horizon rows stay
+        # flagged (exporters exclude them) and re-fetch weekly, bounded by the
+        # 5y horizon filter in scan_eps_inconsistencies.
+        flagged = set(scan_eps_inconsistencies()) & set(get_symbols())
+        if flagged:
+            log.info(f"Including {len(flagged)} flagged universe symbols for correction re-fetch")
+        symbols = sorted(set(recent) | flagged)
         if not symbols:
-            log.info("No symbols announced earnings in the window — nothing to collect.")
+            log.info("No symbols announced earnings in the window and none flagged — nothing to collect.")
             return
         args.force = True  # recent reporters have a new quarter; re-fetch even if previously collected
     else:
