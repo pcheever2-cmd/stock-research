@@ -40,6 +40,12 @@ PREMIUM_FILE = STOCKS_JSON.parent / 'stocks-premium.json'
 MAX_CHUNK_BYTES = 80_000_000
 MAX_CHUNK_KEYS = 5_000
 
+# Valuation-history summary gates: a series must be deep enough to rank against
+# (~1 trading year) and end recently — a series that stopped (e.g. earnings went
+# negative and the multiple gapped) must not rank a months-old point as "current".
+MIN_SUMMARY_POINTS = 252
+MAX_SUMMARY_STALENESS_DAYS = 30
+
 
 def load_published_symbols() -> set[str]:
     path = PUBLIC_FILE if PUBLIC_FILE.exists() else STOCKS_JSON
@@ -152,6 +158,49 @@ def build_overlays(conn, symbols: set[str], cutoff: str, fwd_pe: dict) -> dict:
     return overlays
 
 
+def build_valuation_summary(overlays: dict) -> dict:
+    """Where does today's multiple sit in the stock's own 5-yr distribution?
+
+    Per symbol, per series (pe / evEbitda): current value, 5-yr median, percentile
+    rank of the current value within the series (0-100), and % premium/discount
+    vs the median. Unqualified series (short or stale per the gates above) emit
+    nulls — never a guess. Symbols with neither series qualified are omitted.
+    Consumed by export_screener_kv.py, which joins it into the screener:index KV.
+    """
+    today = datetime.utcnow().date()
+    out: dict[str, dict] = {}
+    for sym, o in overlays.items():
+        row: dict = {}
+        qualified = False
+        for key, prefix in (('pe', 'pe'), ('evEbitda', 'ev')):
+            series = o[key]
+            n = len(series)
+            row[f'{prefix}N'] = n
+            now = med = pctile = vs_med = None
+            if n >= MIN_SUMMARY_POINTS:
+                try:
+                    last_dt = datetime.strptime(series[-1]['time'], '%Y-%m-%d').date()
+                except ValueError:
+                    last_dt = None
+                if last_dt and (today - last_dt).days <= MAX_SUMMARY_STALENESS_DAYS:
+                    values = [p['value'] for p in series]
+                    cur = values[-1]
+                    median = float(pd.Series(values).median())
+                    now = round(cur, 2)
+                    med = round(median, 2)
+                    pctile = round(100 * sum(1 for v in values if v <= cur) / n)
+                    if median > 0:
+                        vs_med = round((cur / median - 1) * 100, 1)
+                    qualified = True
+            row[f'{prefix}Now'] = now
+            row[f'{prefix}5yMedian'] = med
+            row[f'{prefix}Pctile'] = pctile
+            row[f'{prefix}VsMedPct'] = vs_med
+        if qualified:
+            out[sym] = row
+    return out
+
+
 def write_chunks(overlays: dict, out_dir: Path) -> list[Path]:
     pairs = [{'key': f'overlays:{sym}', 'value': json.dumps(o, separators=(',', ':'))}
              for sym, o in sorted(overlays.items())]
@@ -182,6 +231,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--out-dir', default='/tmp')
     ap.add_argument('--years', type=int, default=5)
+    ap.add_argument('--summary-out', default=None,
+                    help='valuation-history summary JSON path (default <out-dir>/valuation_history.json)')
     args = ap.parse_args()
 
     if not BACKTEST_DB.exists():
@@ -199,6 +250,18 @@ def main():
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     files = write_chunks(overlays, out_dir)
+
+    # Best-effort side output: its only consumer is the (continue-on-error)
+    # screener-index export. It must NEVER fail this step — this step gates the
+    # DB release upload, and losing a day's data costs more than null valuation
+    # fields (export_screener_kv.py degrades to nulls when the file is absent).
+    try:
+        summary = build_valuation_summary(overlays)
+        summary_path = Path(args.summary_out) if args.summary_out else out_dir / 'valuation_history.json'
+        summary_path.write_text(json.dumps(summary, separators=(',', ':')))
+        print(f"✓ Valuation-history summary: {len(summary)} symbols → {summary_path}")
+    except Exception as e:  # noqa: BLE001 — deliberately broad, see above
+        print(f"::warning::valuation-history summary failed ({e}); screener index will carry nulls")
 
     pe_pts = sum(len(o['pe']) for o in overlays.values())
     ev_pts = sum(len(o['evEbitda']) for o in overlays.values())

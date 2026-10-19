@@ -39,7 +39,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Downloading databases from 'data' release..."
-          gh release download data --pattern "backtest.db" --dir . || echo "backtest.db not found"
+          # backtest.db ships zstd-compressed (GitHub's 2 GiB asset cap);
+          # fall back to a legacy raw asset if the .zst isn't there. A download
+          # failure of a LISTED asset is transient, not absence — fail loudly.
+          if gh release view data --json assets -q '.assets[].name' | grep -qx "backtest.db.zst"; then
+            if ! gh release download data --pattern "backtest.db.zst" --dir .; then
+              echo "::error::backtest.db.zst is in the release but the download failed"
+              exit 1
+            fi
+            echo "Decompressing backtest.db.zst..."
+            zstd -d --force backtest.db.zst -o backtest.db
+            rm -f backtest.db.zst
+          else
+            gh release download data --pattern "backtest.db" --dir . || echo "backtest.db not found"
+          fi
           gh release download data --pattern "nasdaq_stocks.db" --dir . || echo "nasdaq_stocks.db not found"
 
       - name: Ensure database schema is up to date

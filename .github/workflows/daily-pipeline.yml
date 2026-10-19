@@ -43,7 +43,21 @@ jobs:
           if gh release view data > /dev/null 2>&1; then
             echo "Downloading databases from 'data' release..."
             gh release download data --pattern "nasdaq_stocks.db" --dir . 2>/dev/null || echo "nasdaq_stocks.db not found in release."
-            gh release download data --pattern "backtest.db" --dir . 2>/dev/null || echo "backtest.db not found in release."
+            # backtest.db ships zstd-compressed (GitHub's 2 GiB asset cap);
+            # fall back to a legacy raw asset if the .zst isn't there. A download
+            # failure of a LISTED asset is a transient error, not absence — fail
+            # loudly rather than silently rebuilding from an empty DB.
+            if gh release view data --json assets -q '.assets[].name' | grep -qx "backtest.db.zst"; then
+              if ! gh release download data --pattern "backtest.db.zst" --dir .; then
+                echo "::error::backtest.db.zst is in the release but the download failed — aborting rather than starting from an empty DB"
+                exit 1
+              fi
+              echo "Decompressing backtest.db.zst..."
+              zstd -d --force backtest.db.zst -o backtest.db
+              rm -f backtest.db.zst
+            else
+              gh release download data --pattern "backtest.db" --dir . 2>/dev/null || echo "backtest.db not found in release."
+            fi
             gh release download data --pattern "mock_portfolio.db" --dir . 2>/dev/null || echo "mock_portfolio.db not found in release."
           else
             echo "No 'data' release found. Will create fresh databases."
@@ -206,7 +220,15 @@ jobs:
       - name: Export valuation-multiple overlays to KV bulk files
         env:
           STOCKS_JSON_OUTPUT: data/stocks.json
-        run: python scripts/export_overlays_kv.py --out-dir /tmp
+        run: python scripts/export_overlays_kv.py --out-dir /tmp --summary-out /tmp/valuation_history.json
+
+      - name: Export assistant screener index to KV bulk file
+        # Best-effort: a screener-export failure must never block the DB
+        # release upload below (the sync step nullglobs an absent bulk file).
+        continue-on-error: true
+        env:
+          STOCKS_JSON_OUTPUT: data/stocks.json
+        run: python scripts/export_screener_kv.py --out-dir /tmp --valuation-summary /tmp/valuation_history.json
 
       - name: Export movers data to parquet
         run: python export_movers_data.py
@@ -225,31 +247,54 @@ jobs:
             SCORED_COUNT=$(sqlite3 nasdaq_stocks.db "SELECT COUNT(*) FROM stock_consensus WHERE compass_score IS NOT NULL" 2>/dev/null || echo "0")
             echo "nasdaq_stocks.db has $SCORED_COUNT scored stocks"
             if [ "$SCORED_COUNT" -gt 2000 ]; then
-              gh release upload data nasdaq_stocks.db --clobber || {
-                gh release delete-asset data nasdaq_stocks.db --yes 2>/dev/null || true
-                gh release upload data nasdaq_stocks.db
-              }
+              # Retry WITHOUT delete-asset: that fallback destroyed backtest.db
+              # on 2026-10-18 (delete succeeded, re-upload failed).
+              if ! gh release upload data nasdaq_stocks.db --clobber; then
+                echo "nasdaq_stocks.db upload failed; retrying once..."
+                sleep 15
+                gh release upload data nasdaq_stocks.db --clobber || {
+                  echo "::error::nasdaq_stocks.db upload failed twice"
+                  NASDAQ_SKIPPED=1
+                }
+              fi
             else
               echo "::error::Skipping nasdaq_stocks.db upload — only $SCORED_COUNT scored stocks. Protecting release data."
               NASDAQ_SKIPPED=1
             fi
-            # Upload backtest.db only if it has fundamental data (protects against clobbering)
+            # Upload backtest.db COMPRESSED. GitHub caps release assets at 2 GiB;
+            # the raw DB crossed that on 2026-10-18: --clobber is delete-then-upload
+            # (NOT atomic), so the failed upload destroyed the release copy. Two
+            # defenses now: (a) zstd keeps us ~4x under the cap, (b) the size guard
+            # below refuses to START an upload that would deterministically fail —
+            # a --clobber that never begins never deletes the existing asset.
+            # Transient failures are covered by the retry; the old asset survives a
+            # deleted-then-failed attempt only until the retry, so the guard matters.
             FUND_COUNT=$(sqlite3 backtest.db "SELECT COUNT(*) FROM historical_income_statements" 2>/dev/null || echo "0")
             echo "backtest.db has $FUND_COUNT fundamental records"
             if [ "$FUND_COUNT" -gt 1000 ]; then
-              gh release upload data backtest.db --clobber || {
-                gh release delete-asset data backtest.db --yes 2>/dev/null || true
-                gh release upload data backtest.db
-              }
+              zstd -T0 -8 --force backtest.db -o backtest.db.zst
+              ls -lh backtest.db.zst
+              ZST_SIZE=$(stat -c%s backtest.db.zst 2>/dev/null || stat -f%z backtest.db.zst)
+              if [ "$ZST_SIZE" -ge 2147483648 ]; then
+                echo "::error::backtest.db.zst is ${ZST_SIZE} bytes (>= 2 GiB release cap) — NOT uploading; existing release asset preserved. Prune the DB."
+                BACKTEST_FAILED=1
+              elif ! gh release upload data backtest.db.zst --clobber; then
+                echo "backtest.db.zst upload failed; retrying once..."
+                sleep 15
+                gh release upload data backtest.db.zst --clobber || {
+                  echo "::error::backtest.db.zst upload failed twice — the release asset may have been deleted by the failed clobber; investigate before the next run"
+                  BACKTEST_FAILED=1
+                }
+              fi
+              rm -f backtest.db.zst
             else
               echo "WARNING: Skipping backtest.db upload — too few fundamental records ($FUND_COUNT). Protecting release data."
             fi
-            # Upload mock_portfolio.db if it has data
+            # Upload mock_portfolio.db if it has data (best-effort, no delete-asset)
             if [ -s mock_portfolio.db ]; then
-              gh release upload data mock_portfolio.db --clobber || {
-                gh release delete-asset data mock_portfolio.db --yes 2>/dev/null || true
-                gh release upload data mock_portfolio.db
-              }
+              gh release upload data mock_portfolio.db --clobber \
+                || gh release upload data mock_portfolio.db --clobber \
+                || echo "WARNING: mock_portfolio.db upload failed (non-critical)"
             fi
           else
             echo "Release 'data' does not exist, creating it..."
@@ -259,6 +304,12 @@ jobs:
           # (after backtest/mock uploads) so the commit/site-push/deploy steps
           # below don't ship a stocks.json exported from that same suspect DB.
           if [ "${NASDAQ_SKIPPED:-0}" = "1" ]; then
+            exit 1
+          fi
+          # A failed backtest upload is loud but non-destructive (old asset kept);
+          # fail the run so it gets human attention — a persistent failure would
+          # otherwise silently cost a day of accumulated history per run.
+          if [ "${BACKTEST_FAILED:-0}" = "1" ]; then
             exit 1
           fi
       - name: Commit updated parquet data
@@ -409,3 +460,28 @@ jobs:
             rm "$f"
           done
           echo "Overlays KV sync complete"
+
+      - name: Sync assistant screener index to Cloudflare KV
+        if: success()
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "CLOUDFLARE_API_TOKEN not set, skipping screener index KV sync"
+            exit 0
+          fi
+          npm install -g wrangler@4
+          shopt -s nullglob
+          files=(/tmp/screener_kv_*.json)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No screener index bulk file found, skipping"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            echo "Uploading $f"
+            wrangler kv bulk put "$f" --namespace-id a16202c79b5b4372b3a686d6a4f8baf1 --remote
+            rm "$f"
+          done
+          echo "Screener index KV sync complete"
