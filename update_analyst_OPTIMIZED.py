@@ -422,7 +422,7 @@ def assemble_row(ticker: str, profile_data, quote_data, target_data, estimates,
                 'Large Cap (>$10B)'
             )
 
-        return {
+        row = {
             'symbol': ticker,
             'current_price': current_price,
             'avg_price_target': mean_target,
@@ -450,6 +450,14 @@ def assemble_row(ticker: str, profile_data, quote_data, target_data, estimates,
             'projected_ebitda_growth': ebitda_growth,
             'last_updated': datetime.utcnow().isoformat(),
         }
+        # market_cap in the row only when we have a fresh value: the keyset-grouped
+        # upsert then refreshes it daily. (It was silently frozen for months — only
+        # enrich_stock_data's one-time profile gap-fill ever wrote the column, while
+        # this path used marketCap solely to derive cap_category. Same FMP profile
+        # source as the enricher, so ADR reporting-currency semantics are unchanged.)
+        if market_cap:
+            row['market_cap'] = market_cap
+        return row
 
     except Exception as e:
         log.error(f"Error assembling {ticker}: {e}")

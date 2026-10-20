@@ -262,6 +262,8 @@ df = pd.read_sql_query("""
         fair_value_high,
         fair_value_n_methods,
         fair_value_basis,
+        fair_value_methods,
+        price_updated_at,
         -- Factor values for Score Breakdown
         factor_roa,
         factor_ocf_assets,
@@ -333,11 +335,21 @@ def fair_value_obj(row):
         return None
     upside = round((float(mid) / float(price) - 1) * 100, 1)
     verdict = 'Undervalued' if upside >= 15 else 'Overvalued' if upside <= -15 else 'Fair Value'
+    # Per-method transparency (core/intrinsic/supplementary per-share values),
+    # stored as JSON by compute_fair_value_v2 — passed through for the private API.
+    methods = None
+    raw_methods = row.get('fair_value_methods')
+    if pd.notna(raw_methods) and raw_methods:
+        try:
+            methods = json.loads(raw_methods)
+        except (ValueError, TypeError):
+            methods = None
     return {
         'low': safe_float(low, 2), 'mid': safe_float(mid, 2), 'high': safe_float(high, 2),
         'upsidePct': upside, 'verdict': verdict,
         'basis': row.get('fair_value_basis') if pd.notna(row.get('fair_value_basis')) else None,
         'nMethods': safe_int(row.get('fair_value_n_methods')),
+        'methods': methods,
     }
 
 # Catalyst signal (premium) — computed once for the live universe, fail-isolated
@@ -416,6 +428,9 @@ for _, row in df.iterrows():
         # Premium: Fundamental per-share Fair Value (replaces the old SMA "Valuation Score").
         # A descriptive $ range + derived Under/Fair/Over verdict — NOT a forecast.
         'fairValue': fair_value_obj(row),
+        # When the current_price was last written (STEP 0 quote or hourly update) —
+        # the private API surfaces this so consumers know price freshness.
+        'priceAsOf': row.get('price_updated_at') if pd.notna(row.get('price_updated_at')) else None,
 
         # Premium: Analyst accuracy (sector-specific)
         'sectorAnalystAccuracy': sector_accuracy.get(row.get('sector')),

@@ -26,6 +26,7 @@ Print-only (no DB/site writes). Run AFTER backfill_statement_extras.py.
 Run:  python3 compute_fair_value_v2.py
 """
 import argparse
+import json
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
@@ -306,17 +307,37 @@ def value_one(r):
                 peer_basis=r.get('peer_basis'))
 
 
+def _methods_json(v) -> str:
+    """Per-method transparency payload for the private API: the core methods that
+    set the range, the display-only intrinsic cross-checks, and supplementary
+    comps. All values are per-share fair values, 2dp."""
+    rnd = lambda d: {k: round(float(x), 2) for k, x in d.items()}
+    core = rnd(v.get('methods') or {})
+    display = rnd(v.get('display') or {})
+    supplementary = {k: x for k, x in display.items() if k not in core}
+    return json.dumps({
+        'core': core,
+        'intrinsic': rnd(v.get('intrinsic') or {}),
+        'supplementary': supplementary,
+    }, separators=(',', ':'))
+
+
 def write_to_db(res):
     """Persist the fair-value $ RANGE to nasdaq_stocks.db.stock_consensus (keyed by symbol). upside%/verdict
     are NOT stored — they are derived at export time from the site's current_price (price-source consistency)."""
     now = datetime.now(timezone.utc).isoformat()
     rows = [(round(float(v['fv_low']), 2), round(float(v['fv_mid']), 2), round(float(v['fv_high']), 2),
-             int(v['n_methods']), v.get('peer_basis'), now, sym) for sym, v in res.items()]
+             int(v['n_methods']), v.get('peer_basis'), now, _methods_json(v), sym) for sym, v in res.items()]
     conn = sqlite3.connect(NASDAQ_DB, timeout=60)
     cur = conn.cursor()
+    # Schema-drift guard: the methods column is newer than setup_database on older DBs.
+    cols = {r[1] for r in cur.execute("PRAGMA table_info(stock_consensus)").fetchall()}
+    if 'fair_value_methods' not in cols:
+        cur.execute("ALTER TABLE stock_consensus ADD COLUMN fair_value_methods TEXT")
     cur.executemany("""
         UPDATE stock_consensus SET fair_value_low=?, fair_value_mid=?, fair_value_high=?,
-               fair_value_n_methods=?, fair_value_basis=?, fair_value_computed_at=?
+               fair_value_n_methods=?, fair_value_basis=?, fair_value_computed_at=?,
+               fair_value_methods=?
         WHERE UPPER(symbol)=?
     """, rows)
     n = cur.rowcount

@@ -26,8 +26,10 @@ PARQUET_DIR = PROJECT_ROOT / 'data'
 PARQUET_PATH = str(PARQUET_DIR / 'dashboard_data.parquet')
 PORTFOLIO_CSV = str(PROJECT_ROOT / 'Portfolio.csv')
 
-# Backtest database (separate from daily pipeline DB to keep it fast)
-BACKTEST_DB = str(PROJECT_ROOT / 'backtest.db')
+# Backtest database (separate from daily pipeline DB to keep it fast).
+# BACKTEST_DB_PATH overrides for one-off runs against a copy (e.g. data repair)
+# without touching the repo's archive copy.
+BACKTEST_DB = os.environ.get('BACKTEST_DB_PATH', str(PROJECT_ROOT / 'backtest.db'))
 
 # Historical data collection settings
 HISTORICAL_BATCH_SIZE = 50       # Symbols per batch

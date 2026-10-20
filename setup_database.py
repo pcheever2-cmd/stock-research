@@ -192,6 +192,7 @@ def ensure_database():
         ("fair_value_n_methods", "INTEGER"),
         ("fair_value_basis", "TEXT"),
         ("fair_value_computed_at", "TEXT"),
+        ("fair_value_methods", "TEXT"),
         # STEP 1 bulk rewrite: tracks when the per-symbol analyst DETAIL (price-target consensus,
         # individual targets, grade changes) was last refreshed. The bulk fields refresh daily for
         # the whole universe; these detail fields rotate weekly. Drives the rotation slice in

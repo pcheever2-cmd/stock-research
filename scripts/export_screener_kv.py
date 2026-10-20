@@ -53,6 +53,7 @@ def build_row(stock: dict, val: dict) -> dict:
         'symbol': stock.get('symbol'),
         'name': stock.get('name'),
         'price': price,
+        'priceAsOf': stock.get('priceAsOf'),
         'compass': _num(stock.get('compassScore'), 0),
         'grade': stock.get('grade'),
         'sector': stock.get('sector'),
