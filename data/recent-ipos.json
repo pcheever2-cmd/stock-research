@@ -117,19 +117,6 @@
     "scoreStatus": "pending"
   },
   {
-    "symbol": "WORX",
-    "name": "SCWorx Corp.",
-    "ipoDate": "2026-10-07",
-    "daysPublic": 14,
-    "price": 3.66,
-    "marketCap": 0.058558,
-    "sector": "Healthcare",
-    "industry": "Medical - Healthcare Information Services",
-    "description": "SCWorx Corp., headquartered in New York, New York, is a technology firm primarily dedicated to crafting and marketing advanced information technology solutions and related services for the healthcare industry. Its central aim is to enhance operational efficiency and streamline data flow within hospitals and various medical establishments across the United States. The company delivers a broad spect",
-    "exchange": "NASDAQ",
-    "scoreStatus": "pending"
-  },
-  {
     "symbol": "SAIQ",
     "name": "WISeSat.Space Holdings Corp.",
     "ipoDate": "2026-10-02",
@@ -230,19 +217,6 @@
     "sector": "Financial Services",
     "industry": "Insurance - Property & Casualty",
     "description": "Orion180 Insurance Group, Inc. engages in the provision of innovative insurance solutions, particularly homeowners insurance. It operates through Underwriting and Services segments. The Underwriting segment includes a conventional, regulated insurance model focused on risk selection, pricing, and statutory capital management. The Services segment includes technology-enabled policy servicing operat",
-    "exchange": "NASDAQ",
-    "scoreStatus": "pending"
-  },
-  {
-    "symbol": "WCCB",
-    "name": "West Coast Community Bancorp",
-    "ipoDate": "2026-09-16",
-    "daysPublic": 35,
-    "price": 60.74,
-    "marketCap": 0.638605,
-    "sector": "Financial Services",
-    "industry": "Banks - Regional",
-    "description": "West Coast Community Bancorp functions as the parent organization overseeing West Coast Community Bank, which was formerly recognized as Santa Cruz County Bank. This financial institution offers a comprehensive suite of banking services tailored for both businesses and individual customers. Its diverse product range includes various lending options such as corporate loans, revolving lines of credi",
     "exchange": "NASDAQ",
     "scoreStatus": "pending"
   },
@@ -403,19 +377,6 @@
     "scoreStatus": "pending"
   },
   {
-    "symbol": "CNL",
-    "name": "Collective Mining Ltd.",
-    "ipoDate": "2026-08-11",
-    "daysPublic": 71,
-    "price": 11.55,
-    "marketCap": 1.071178,
-    "sector": "Basic Materials",
-    "industry": "Gold",
-    "description": "Collective Mining Ltd. is a mineral exploration and development firm primarily focused on discovering and advancing promising gold prospects throughout South America. The company holds full ownership of two significant assets in Colombia: the Guayabales project, which comprises 22 claims covering a total area of 4,300.16 hectares in the Caldas department; and the San Antonio project, spanning 4,72",
-    "exchange": "NASDAQ",
-    "scoreStatus": "pending"
-  },
-  {
     "symbol": "PHOS",
     "name": "First Phosphate Corp. Sponsored ADR",
     "ipoDate": "2026-08-10",
@@ -494,19 +455,6 @@
     "scoreStatus": "pending"
   },
   {
-    "symbol": "RCBC",
-    "name": "River City Bank",
-    "ipoDate": "2026-08-06",
-    "daysPublic": 76,
-    "price": 53.77,
-    "marketCap": 0.779837,
-    "sector": "Financial Services",
-    "industry": "Banks - Regional",
-    "description": "River City Bank, together with its subsidiaries, provides various banking products and services. The company offers checking, savings, and term certificate accounts. It also provides personal, consumer, commercial real estate, commercial, commercial, agriculture, and residential mortgage loans; and home equity lines of credit. In addition, the company offers cash management services; lockbox, inte",
-    "exchange": "NASDAQ",
-    "scoreStatus": "pending"
-  },
-  {
     "symbol": "ATTO",
     "name": "Attovia Therapeutics, Inc.",
     "ipoDate": "2026-08-05",
@@ -556,19 +504,6 @@
     "industry": "Restaurants",
     "description": "Jersey Mike's Subs, Inc. engages in franchising fast casual, submarine-style sandwich restaurants specializing in authentic, hand-crafted, and craveable subs. The company was founded by Peter Cancro in 1956 and is headquartered in Tinton Falls, DE.",
     "exchange": "NYSE",
-    "scoreStatus": "pending"
-  },
-  {
-    "symbol": "PBAM",
-    "name": "Private Bancorp of America, Inc.",
-    "ipoDate": "2026-07-30",
-    "daysPublic": 83,
-    "price": 85.64,
-    "marketCap": 0.490349,
-    "sector": "Financial Services",
-    "industry": "Banks - Regional",
-    "description": "Private Bancorp of America, Inc., acting as the parent company for CalPrivate Bank, offers a comprehensive range of financial products and services tailored for both individual and business customers throughout California. For personal banking needs, the institution provides various deposit accounts, including checking, savings, money market, certificate of deposit, and retirement options. It also",
-    "exchange": "NASDAQ",
     "scoreStatus": "pending"
   },
   {
@@ -650,6 +585,19 @@
     "scoreStatus": "pending"
   },
   {
+    "symbol": "GORO",
+    "name": "Goldgroup Mining Inc.",
+    "ipoDate": "2026-07-20",
+    "daysPublic": 93,
+    "price": 3.41,
+    "marketCap": 0.257046,
+    "sector": "Basic Materials",
+    "industry": "Other Precious Metals",
+    "description": "Goldgroup Mining, Inc. is a Canadian-based gold production, development, and exploration company, which focuses on the acquisition, exploration, and development of gold-bearing mineral properties in the Americas. It holds interests in the Cerro Prieto and San Francisco projects. The company was founded by Gregg James Sedun and Thomas David Lamb on November 9, 1989 and is headquartered in Vancouver",
+    "exchange": "AMEX",
+    "scoreStatus": "pending"
+  },
+  {
     "symbol": "CSQR",
     "name": "Csquare Inc.",
     "ipoDate": "2026-07-16",
@@ -686,19 +634,6 @@
     "industry": "Chemicals - Specialty",
     "description": "Standard Nuclear, Inc. is a reactor-agnostic producer of TRISO nuclear fuel, designing and manufacturing advanced nuclear fuels for next-generation reactors to support U.S. energy security. The company is the only independent U.S. manufacturer of TRISO fuel, a robust, high-performance fuel essential to advanced nuclear reactors. It aims to supply advanced fuels to the next-generation nuclear indus",
     "exchange": "NYSE",
-    "scoreStatus": "pending"
-  },
-  {
-    "symbol": "SKHY",
-    "name": "SK hynix Inc.",
-    "ipoDate": "2026-07-10",
-    "daysPublic": 103,
-    "price": 139.79,
-    "marketCap": 992.306152,
-    "sector": "Technology",
-    "industry": "Semiconductors",
-    "description": "SK hynix is one of the world's largest memory semiconductor companies and engages in the design, manufacture, and sale of advanced memory semiconductors. The company sells a wide variety of DRAM and NAND flash memory products with various configurations and performance characteristics tailored to meet application- and customer-specific needs.",
-    "exchange": "NASDAQ",
     "scoreStatus": "pending"
   },
   {
@@ -842,19 +777,6 @@
     "industry": "Manufacturing - Metal Fabrication",
     "description": "DPC Holdings Ltd, doing business as Doncasters, is a holding company that manufactures engineered precision cast components and nickel- and cobalt-based superalloys through its subsidiaries. The company serves the aerospace, industrial gas turbine, and automotive transportation markets.",
     "exchange": "NYSE",
-    "scoreStatus": "pending"
-  },
-  {
-    "symbol": "HAPN",
-    "name": "Happen, Inc. Common Stock",
-    "ipoDate": "2026-06-22",
-    "daysPublic": 121,
-    "price": 14.58,
-    "marketCap": 1.682634,
-    "sector": "Financial Services",
-    "industry": "Banks - Regional",
-    "description": "Happen, Inc., operates as a bank holding company, that provides range of financial products and services in the United States. [8, 24, 33, 52, 60, 62] It offers deposit products, including savings accounts, checking accounts, and certificates of deposit; patient and education finance loans; and commercial loans, including small business loans. [8, 33] The company also provides consumer loans, such",
-    "exchange": "NASDAQ",
     "scoreStatus": "pending"
   },
   {
@@ -1105,19 +1027,6 @@
     "scoreStatus": "pending"
   },
   {
-    "symbol": "AZUL",
-    "name": "Azul S.A.",
-    "ipoDate": "2026-06-01",
-    "daysPublic": 142,
-    "price": 6.45,
-    "marketCap": 1.188599,
-    "sector": "Industrials",
-    "industry": "Airlines, Airports & Air Services",
-    "description": "Azul S.A., a Brazilian-based company, primarily offers air transportation services, both domestically within Brazil and across international routes, supported by its various subsidiaries. In addition to core passenger air travel, the company diversifies its revenue streams through activities such as cargo and mail delivery, passenger charter services, and the development of frequent-flyer programs",
-    "exchange": "NYSE",
-    "scoreStatus": "pending"
-  },
-  {
     "symbol": "PWRL",
     "name": "Powerlaw Corp. Common Stock",
     "ipoDate": "2026-05-27",
@@ -1339,19 +1248,6 @@
     "scoreStatus": "pending"
   },
   {
-    "symbol": "AYA",
-    "name": "Aya Gold & Silver Inc.",
-    "ipoDate": "2026-05-04",
-    "daysPublic": 170,
-    "price": 26.27,
-    "marketCap": 3.783826,
-    "sector": "Basic Materials",
-    "industry": "Silver",
-    "description": "Aya Gold & Silver Inc. specializes in the procurement, investigation, and enhancement of mineral-rich landholdings. Its diverse portfolio encompasses key sites such as Zgounder, Boumadine, Imiter bis, Amizmiz, Azegour, Tirzzit, and Tijirit, in addition to its reported reserves and resources. R\u00e9jean Gosselin established this enterprise on December 19, 2007, and its corporate headquarters are situat",
-    "exchange": "NASDAQ",
-    "scoreStatus": "pending"
-  },
-  {
     "symbol": "COAG",
     "name": "Hemab Therapeutics Holdings, Inc. Common Stock",
     "ipoDate": "2026-05-01",
@@ -1439,32 +1335,6 @@
     "sector": "Industrials",
     "industry": "Industrial - Machinery",
     "description": "X-Energy, Inc. operates within the energy sector, primarily focusing its efforts on the development of modular nuclear reactors and cutting-edge fuel technology to enable clean energy production. This company was established in 2009 by co-founders Kam Ghaffarian and Eben Mulder, and its main corporate offices are situated in Rockville, Maryland.",
-    "exchange": "NASDAQ",
-    "scoreStatus": "pending"
-  },
-  {
-    "symbol": "ELMT",
-    "name": "Elmet Group Co.",
-    "ipoDate": "2026-04-23",
-    "daysPublic": 181,
-    "price": 19.04,
-    "marketCap": 0.579949,
-    "sector": "Industrials",
-    "industry": "Aerospace & Defense",
-    "description": "Elmet Group Co. delivers high-precision engineered components. This firm supplies its products and tailored solutions to a wide array of clients, spanning the aerospace, defense, industrial, medical, semiconductor, electronics, and energy industries, as well as governmental organizations. It conducts its operations through two key divisions: Critical Materials Components and Engineered Microwave P",
-    "exchange": "NASDAQ",
-    "scoreStatus": "pending"
-  },
-  {
-    "symbol": "NHP",
-    "name": "National Healthcare Properties, Inc. (NHP)",
-    "ipoDate": "2026-04-22",
-    "daysPublic": 182,
-    "price": 15.06,
-    "marketCap": 0.666782,
-    "sector": "Real Estate",
-    "industry": "REIT - Healthcare Facilities",
-    "description": "National Healthcare Properties, Inc. (NHP) operates as a real estate investment trust (REIT), concentrating its efforts on acquiring, owning, and overseeing a varied portfolio of properties within the healthcare industry. The company's activities are organized into two primary divisions: Outpatient Medical Facilities (OMF) and Senior Housing Operating Properties (SHOP). The OMF segment covers an a",
     "exchange": "NASDAQ",
     "scoreStatus": "pending"
   },
