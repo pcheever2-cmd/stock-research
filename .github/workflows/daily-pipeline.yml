@@ -73,6 +73,16 @@ jobs:
       - name: Ensure database schema is up to date
         run: python setup_database.py
 
+      - name: Expand universe (new listings, spin-offs, ticker changes)
+        # Best-effort: adds new US common stocks + collects their history so the
+        # next compass-scores run can score them. Never blocks the daily run.
+        continue-on-error: true
+        timeout-minutes: 30
+        env:
+          FMP_API_KEY: ${{ secrets.FMP_API_KEY }}
+          PYTHONUNBUFFERED: '1'
+        run: python collectors/expand_universe.py
+
       - name: Run pipeline
         env:
           FMP_API_KEY: ${{ secrets.FMP_API_KEY }}

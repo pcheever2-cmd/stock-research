@@ -76,12 +76,18 @@ def is_us(exchange: str) -> bool:
 
 
 def fetch_ipo_calendar(months: int) -> list:
+    """Month-sized windows: FMP caps rows per ipos-calendar call (~340), so a
+    single 6-month request silently returned only the newest ~3 months —
+    SpaceX's 2026-06-12 IPO fell off the end."""
     today = datetime.now(timezone.utc).date()
-    frm = (today - timedelta(days=months * 31)).isoformat()
-    to = today.isoformat()
-    rows = fetch('ipos-calendar', **{'from': frm, 'to': to})
-    rows = rows if isinstance(rows, list) else []
-    print(f"ipos-calendar {frm} -> {to}: {len(rows)} rows")
+    start = today - timedelta(days=months * 31)
+    rows: list = []
+    while start <= today:
+        end = min(start + timedelta(days=30), today)
+        chunk = fetch('ipos-calendar', **{'from': start.isoformat(), 'to': end.isoformat()})
+        rows.extend(chunk if isinstance(chunk, list) else [])
+        start = end + timedelta(days=1)
+    print(f"ipos-calendar {today - timedelta(days=months * 31)} -> {today}: {len(rows)} rows")
     return rows
 
 

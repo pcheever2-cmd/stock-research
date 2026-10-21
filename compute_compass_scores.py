@@ -365,7 +365,20 @@ def update_nasdaq_db(scores_df):
     print(f"  Cleared {cleared:,} existing scores")
 
     # Upsert scores - INSERT new stocks or UPDATE existing ones
-    # This ensures stocks from backtest.db get added to stock_consensus
+    # This ensures stocks from backtest.db get added to stock_consensus —
+    # EXCEPT retired tickers (renamed; see collectors/expand_universe.py), whose
+    # leftover backtest rows must not resurrect them next to their successor.
+    try:
+        retired = {r[0] for r in cursor.execute("SELECT symbol FROM retired_symbols")}
+    except sqlite3.OperationalError:
+        retired = set()
+    # Only block RESURRECTION: a retired ticker that is tracked again (re-listed,
+    # or added back by hand) scores normally.
+    retired -= {r[0] for r in cursor.execute("SELECT symbol FROM stock_consensus")}
+    if retired:
+        before = len(scores_df)
+        scores_df = scores_df[~scores_df['symbol'].isin(retired)]
+        print(f"  Skipped {before - len(scores_df)} retired (renamed) tickers")
     upserted = 0
     timestamp = datetime.now().isoformat()
 

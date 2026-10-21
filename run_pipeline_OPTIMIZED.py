@@ -74,6 +74,23 @@ def run_batch_price_update():
             pass  # fresh DB — guard degrades to the price>0 check only
 
     suspect_quotes = []
+    stale_quotes = []
+    # FMP keeps quoting retired tickers at their last trade (BK after its rename
+    # to BNY still quoted its June close in October). Writing those as today's
+    # price fabricates a flat "echo" series that keeps a dead ticker scored and
+    # published forever. Quotes whose own timestamp is older than this are
+    # treated as missing. 6 days spans long holiday weekends.
+    MAX_QUOTE_AGE_SECONDS = 6 * 86400
+    now_ts = datetime.now(timezone.utc).timestamp()
+
+    def quote_fresh(quote) -> bool:
+        ts = quote.get('timestamp')
+        if not isinstance(ts, (int, float)) or ts <= 0:
+            return True  # no timestamp → can't judge; keep prior behavior
+        if now_ts - ts > MAX_QUOTE_AGE_SECONDS:
+            stale_quotes.append(quote.get('symbol'))
+            return False
+        return True
 
     def price_ok(symbol, price, quote_prev=None):
         if price is None or price <= 0:
@@ -110,6 +127,8 @@ def run_batch_price_update():
             # silently; after 90 days without >=30 prices they drop out of scoring).
             returned_syms = {q.get('symbol') for q in data if q.get('symbol')}
             missing_symbols.extend(s for s in batch if s not in returned_syms)
+
+            data = [q for q in data if quote_fresh(q)]
 
             # Update nasdaq_stocks.db (current prices)
             conn = sqlite3.connect(DATABASE_NAME)
@@ -157,6 +176,9 @@ def run_batch_price_update():
             log.error(f"  Batch {i//PRICE_BATCH_SIZE + 1} error: {e}")
 
     log.info(f"  ✓ Price update complete: {updated_count} stocks updated (+ {backtest_count} historical records)")
+    if stale_quotes:
+        log.warning(f"  ⚠ {len(stale_quotes)} quotes older than 6 days skipped (retired/halted tickers): "
+                    f"{', '.join(sorted(s for s in stale_quotes if s)[:20])}")
     if missing_symbols:
         sample = ', '.join(missing_symbols[:25])
         log.warning(
